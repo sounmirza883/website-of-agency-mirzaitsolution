@@ -1,7 +1,8 @@
 "use client";
 
 import { motion, useInView } from "framer-motion";
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useLayoutEffect } from "react";
+import { usePathname } from "next/navigation";
 
 export function GlitchText({
   text,
@@ -125,50 +126,10 @@ export function StaggerItem({
   );
 }
 
-function useTypewriter(lines: string[], charDelay: number, lineDelay: number) {
-  const [visibleLines, setVisibleLines] = useState<string[]>([]);
-  const [typing, setTyping] = useState(true);
-
-  useEffect(() => {
-    let currentLine = 0;
-    let charIndex = 0;
-    let timer: ReturnType<typeof setTimeout>;
-
-    const typeChar = () => {
-      if (currentLine >= lines.length) {
-        setTyping(false);
-        return;
-      }
-
-      const line = lines[currentLine];
-      if (charIndex === 0) {
-        setVisibleLines((prev) => [...prev, ""]);
-      }
-
-      if (charIndex < line.length) {
-        charIndex++;
-        setVisibleLines((prev) => {
-          const next = [...prev];
-          next[currentLine] = line.slice(0, charIndex);
-          return next;
-        });
-        timer = setTimeout(typeChar, charDelay);
-      } else {
-        charIndex = 0;
-        currentLine++;
-        timer = setTimeout(typeChar, lineDelay);
-      }
-    };
-
-    timer = setTimeout(typeChar, 300);
-    return () => clearTimeout(timer);
-  }, [lines, charDelay, lineDelay]);
-
-  return { visibleLines, typing };
-}
-
-export function LoadingScreen({ done }: { done: boolean }) {
+export function LoadingScreen({ visible }: { visible: boolean }) {
+  const [bootLines, setBootLines] = useState<string[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
   const bootMessages = [
     "SYS::INIT — loading kernel modules...",
@@ -178,7 +139,20 @@ export function LoadingScreen({ done }: { done: boolean }) {
     "SYS::DONE — system ready. Access granted.",
   ];
 
-  const { visibleLines, typing } = useTypewriter(bootMessages, 28, 350);
+  useEffect(() => {
+    if (!visible) return;
+    setBootLines([]);
+    let index = 0;
+    timerRef.current = setInterval(() => {
+      if (index < bootMessages.length) {
+        setBootLines((prev) => [...prev, bootMessages[index]]);
+        index++;
+      } else {
+        clearInterval(timerRef.current);
+      }
+    }, 250);
+    return () => clearInterval(timerRef.current);
+  }, [visible]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -195,9 +169,9 @@ export function LoadingScreen({ done }: { done: boolean }) {
     const drops: number[] = Array(columns).fill(1);
 
     const draw = () => {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.04)";
+      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "rgba(230, 57, 70, 0.08)";
+      ctx.fillStyle = "rgba(230, 57, 70, 0.12)";
       ctx.font = `${fontSize}px monospace`;
 
       for (let i = 0; i < drops.length; i++) {
@@ -216,17 +190,18 @@ export function LoadingScreen({ done }: { done: boolean }) {
     return () => cancelAnimationFrame(frame);
   }, []);
 
+  if (!visible) return null;
+
   return (
-    <div className={`loading-screen ${done ? "loading-fade-out" : ""}`}>
-      <div className="loading-screen-bg" />
+    <div className="loading-screen">
       <canvas ref={canvasRef} className="loading-matrix" aria-hidden="true" />
       <div className="loading-content">
         <div className="loading-logo" data-text="ZEPHTRIX STUDIO">ZEPHTRIX STUDIO</div>
         <div className="loading-terminal">
-          {visibleLines.map((line, i) => (
-            <p key={i} className="loading-line">{line}<span className="loading-cursor-inline" /></p>
+          {bootLines.map((line, i) => (
+            <p key={i} className="loading-line" style={{ animationDelay: `${i * 0.1}s` }}>{line}</p>
           ))}
-          {typing && visibleLines.length > 0 && <span className="loading-cursor" />}
+          {bootLines.length < bootMessages.length && <span className="loading-cursor" />}
         </div>
       </div>
     </div>
@@ -234,30 +209,29 @@ export function LoadingScreen({ done }: { done: boolean }) {
 }
 
 export function BodyWrapper({ children }: { children: React.ReactNode }) {
-  const [done, setDone] = useState(false);
-  const [hide, setHide] = useState(false);
-  const [contentReady, setContentReady] = useState(false);
+  const pathname = usePathname();
+  const prevPath = useRef(pathname);
+  const [visible, setVisible] = useState(true);
+
+  useLayoutEffect(() => {
+    if (prevPath.current !== pathname) {
+      prevPath.current = pathname;
+      setVisible(true);
+    }
+  }, [pathname]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDone(true);
-      setContentReady(true);
-    }, 4200);
+    if (!visible) return;
+    const timer = setTimeout(() => setVisible(false), 2400);
     return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    if (!done) return;
-    const timer = setTimeout(() => setHide(true), 600);
-    return () => clearTimeout(timer);
-  }, [done]);
+  }, [visible]);
 
   return (
     <>
-      {!hide && <LoadingScreen done={done} />}
+      <LoadingScreen visible={visible} />
       <div style={{
-        opacity: contentReady ? 1 : 0,
-        transition: "opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1)",
+        opacity: visible ? 0 : 1,
+        transition: "opacity 0.5s ease",
       }}>
         {children}
       </div>
