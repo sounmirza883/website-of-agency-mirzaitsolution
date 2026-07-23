@@ -1,65 +1,7 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Icon, SiteShell } from "./components";
+import { services } from "./data";
 
 export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+  return <SiteShell active="Home"><section className="campaign-hero"><div className="container"><div className="section-eyebrow">Premium Creative Studio</div><h1 className="campaign-headline">Zephtrix Studio -<br />Creative Design, Motion &amp;<br />Digital Growth Solutions</h1><p className="campaign-sub">We help brands grow with powerful visuals, stunning videos, modern websites, UI/UX designs, motion graphics, and result-driven social media marketing.</p><div className="campaign-actions"><Link href="/portfolio" className="pill pill-primary"><Icon name="fa-eye" /> View Our Work</Link><Link href="/contact" className="pill pill-outline"><Icon name="fa-arrow-right" /> Start Your Project</Link></div></div></section><section><div className="container text-center"><div className="section-eyebrow">About</div><h2 className="section-title">Turning Ideas Into <strong>Digital Experiences</strong></h2><p className="section-subtitle">At Zephtrix Studio, we turn ideas into powerful digital experiences. From eye-catching graphic design to high-converting websites and professional video editing, we create digital content that makes brands stand out.</p></div></section><section className="section-soft"><div className="container"><div className="text-center"><div className="section-eyebrow">What We Do</div><h2 className="section-title">Our Services</h2><p className="section-subtitle">Complete creative solutions to grow your brand with design, video, web, and marketing.</p></div><div className="grid-3">{services.map((service) => <div className="service-card" key={service.title}><div className="icon"><Icon name={service.icon} /></div><h3>{service.title}</h3><p>{service.description}</p></div>)}</div><div className="text-center section-link"><Link href="/services" className="pill pill-primary">Explore All Services <Icon name="fa-arrow-right" /></Link></div></div></section><section><div className="container"><div className="text-center"><div className="section-eyebrow">Why Us</div><h2 className="section-title">Why Choose Zephtrix Studio</h2></div><div className="why-grid">{["Creative and modern design approach", "Professional quality work", "Fast delivery and clear communication", "SEO-friendly website structure", "Mobile responsive designs", "Brand-focused digital solutions", "Affordable and result-driven services", "Complete creative support in one place"].map((item) => <div className="why-item" key={item}><Icon name="fa-check" /><span>{item}</span></div>)}</div></div></section><section className="section-soft"><div className="container"><div className="grid-4 stats">{[["100+", "Projects Completed"], ["50+", "Happy Clients"], ["12", "Creative Services"], ["24/7", "Client Support"]].map(([number, label]) => <div key={label}><div className="stat-number">{number}</div><div className="stat-label">{label}</div></div>)}</div></div></section><section><div className="container text-center"><div className="section-eyebrow">Let&apos;s Create</div><h2 className="section-title display-title">Ready to Build Something Creative?</h2><p className="section-subtitle">Let Zephtrix Studio help you create powerful visuals, videos, websites, and marketing content that make your brand stand out.</p><Link href="/contact" className="pill pill-primary">Contact Us Today <Icon name="fa-arrow-right" /></Link></div></section></SiteShell>;
 }
