@@ -13,6 +13,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en"><body><BodyWrapper>{children}</BodyWrapper></body></html>
+    <html lang="en"><body suppressHydrationWarning><BodyWrapper>{children}</BodyWrapper></body></html>
   );
 }

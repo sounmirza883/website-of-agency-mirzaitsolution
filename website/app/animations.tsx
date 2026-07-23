@@ -125,9 +125,49 @@ export function StaggerItem({
   );
 }
 
-export function LoadingScreen() {
-  const [visible, setVisible] = useState(true);
-  const [bootLines, setBootLines] = useState<string[]>([]);
+function useTypewriter(lines: string[], charDelay: number, lineDelay: number) {
+  const [visibleLines, setVisibleLines] = useState<string[]>([]);
+  const [typing, setTyping] = useState(true);
+
+  useEffect(() => {
+    let currentLine = 0;
+    let charIndex = 0;
+    let timer: ReturnType<typeof setTimeout>;
+
+    const typeChar = () => {
+      if (currentLine >= lines.length) {
+        setTyping(false);
+        return;
+      }
+
+      const line = lines[currentLine];
+      if (charIndex === 0) {
+        setVisibleLines((prev) => [...prev, ""]);
+      }
+
+      if (charIndex < line.length) {
+        charIndex++;
+        setVisibleLines((prev) => {
+          const next = [...prev];
+          next[currentLine] = line.slice(0, charIndex);
+          return next;
+        });
+        timer = setTimeout(typeChar, charDelay);
+      } else {
+        charIndex = 0;
+        currentLine++;
+        timer = setTimeout(typeChar, lineDelay);
+      }
+    };
+
+    timer = setTimeout(typeChar, 300);
+    return () => clearTimeout(timer);
+  }, [lines, charDelay, lineDelay]);
+
+  return { visibleLines, typing };
+}
+
+export function LoadingScreen({ done }: { done: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const bootMessages = [
@@ -138,19 +178,7 @@ export function LoadingScreen() {
     "SYS::DONE — system ready. Access granted.",
   ];
 
-  useEffect(() => {
-    let index = 0;
-    const timer = setInterval(() => {
-      if (index < bootMessages.length) {
-        setBootLines((prev) => [...prev, bootMessages[index]]);
-        index++;
-      } else {
-        clearInterval(timer);
-        setTimeout(() => setVisible(false), 400);
-      }
-    }, 250);
-    return () => clearInterval(timer);
-  }, []);
+  const { visibleLines, typing } = useTypewriter(bootMessages, 28, 350);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -167,9 +195,9 @@ export function LoadingScreen() {
     const drops: number[] = Array(columns).fill(1);
 
     const draw = () => {
-      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+      ctx.fillStyle = "rgba(0, 0, 0, 0.04)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "rgba(230, 57, 70, 0.12)";
+      ctx.fillStyle = "rgba(230, 57, 70, 0.08)";
       ctx.font = `${fontSize}px monospace`;
 
       for (let i = 0; i < drops.length; i++) {
@@ -182,22 +210,23 @@ export function LoadingScreen() {
       }
     };
 
-    const interval = setInterval(draw, 60);
-    return () => clearInterval(interval);
+    let frame: number;
+    const loop = () => { draw(); frame = requestAnimationFrame(loop); };
+    frame = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(frame);
   }, []);
 
-  if (!visible) return null;
-
   return (
-    <div className="loading-screen">
+    <div className={`loading-screen ${done ? "loading-fade-out" : ""}`}>
+      <div className="loading-screen-bg" />
       <canvas ref={canvasRef} className="loading-matrix" aria-hidden="true" />
       <div className="loading-content">
         <div className="loading-logo" data-text="ZEPHTRIX STUDIO">ZEPHTRIX STUDIO</div>
         <div className="loading-terminal">
-          {bootLines.map((line, i) => (
-            <p key={i} className="loading-line" style={{ animationDelay: `${i * 0.05}s` }}>{line}</p>
+          {visibleLines.map((line, i) => (
+            <p key={i} className="loading-line">{line}<span className="loading-cursor-inline" /></p>
           ))}
-          {bootLines.length < bootMessages.length && <span className="loading-cursor" />}
+          {typing && visibleLines.length > 0 && <span className="loading-cursor" />}
         </div>
       </div>
     </div>
@@ -205,17 +234,31 @@ export function LoadingScreen() {
 }
 
 export function BodyWrapper({ children }: { children: React.ReactNode }) {
-  const [ready, setReady] = useState(false);
+  const [done, setDone] = useState(false);
+  const [hide, setHide] = useState(false);
+  const [contentReady, setContentReady] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setReady(true), 2200);
+    const timer = setTimeout(() => {
+      setDone(true);
+      setContentReady(true);
+    }, 4200);
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    if (!done) return;
+    const timer = setTimeout(() => setHide(true), 600);
+    return () => clearTimeout(timer);
+  }, [done]);
+
   return (
     <>
-      {!ready && <LoadingScreen />}
-      <div style={{ opacity: ready ? 1 : 0, transition: "opacity 0.4s ease" }}>
+      {!hide && <LoadingScreen done={done} />}
+      <div style={{
+        opacity: contentReady ? 1 : 0,
+        transition: "opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1)",
+      }}>
         {children}
       </div>
     </>
