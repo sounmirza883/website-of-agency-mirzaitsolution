@@ -11,7 +11,6 @@ export function Icon({ name }: { name: string }) { return <i className={`fas ${n
 export function Header({ active }: { active?: string }) {
   const [open, setOpen] = useState(false);
   return <>
-    <div className="utility-bar"><div className="container"><a href="#">Find a Store</a><span>|</span><a href="#">Help</a><span>|</span><a href="#">Join Us</a><span>|</span><a href="#">Sign In</a></div></div>
     <header id="header" className={open ? "menu-open" : ""}><div className="container header-inner">
       <Link href="/" className="logo">Zephtrix <strong>Studio</strong></Link>
       <button className={`hamburger ${open ? "open" : ""}`} aria-label="Toggle menu" onClick={() => setOpen(!open)}><span /><span /><span /></button>
