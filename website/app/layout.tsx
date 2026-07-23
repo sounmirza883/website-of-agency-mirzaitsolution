@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { BodyWrapper } from "./animations";
 import { Providers } from "./providers";
-import { ThemeProvider } from "./theme";
 
 export const metadata: Metadata = {
   title: "Zephtrix Studio | Creative Digital Studio",
@@ -15,6 +14,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en"><body suppressHydrationWarning><ThemeProvider><Providers><BodyWrapper>{children}</BodyWrapper></Providers></ThemeProvider></body></html>
+    <html lang="en"><body><Providers><BodyWrapper>{children}</BodyWrapper></Providers></body></html>
   );
 }
