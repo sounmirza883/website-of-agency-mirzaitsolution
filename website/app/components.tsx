@@ -8,12 +8,18 @@ const serviceLinks = ["Graphic Design", "Video Editing", "Motion Graphics", "UI/
 
 export function Icon({ name }: { name: string }) { return <i className={`fas ${name}`} aria-hidden="true" />; }
 
+import { useTheme } from "./theme";
+
 export function Header({ active }: { active?: string }) {
   const [open, setOpen] = useState(false);
+  const { theme, toggle } = useTheme();
   return <>
     <header id="header" className={open ? "menu-open" : ""}><div className="container header-inner">
       <Link href="/" className="logo">Zephtrix <strong>Studio</strong></Link>
-      <button className={`hamburger ${open ? "open" : ""}`} aria-label="Toggle menu" onClick={() => setOpen(!open)}><span /><span /><span /></button>
+      <div className="header-right">
+        <button className="theme-toggle" onClick={toggle} aria-label="Toggle theme"><i className={`fas ${theme === "light" ? "fa-moon" : "fa-sun"}`} /></button>
+        <button className={`hamburger ${open ? "open" : ""}`} aria-label="Toggle menu" onClick={() => setOpen(!open)}><span /><span /><span /></button>
+      </div>
       <nav className={`nav-links ${open ? "open" : ""}`}>
         {nav.map(([label, href]) => <Link key={href} href={href} className={active === label ? "active" : ""} onClick={() => setOpen(false)}>{label}</Link>)}
         <Link href="/contact" className="pill pill-primary nav-cta" onClick={() => setOpen(false)}>Get Started</Link>
