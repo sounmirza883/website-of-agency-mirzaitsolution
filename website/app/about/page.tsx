@@ -1,5 +1,5 @@
 import { Icon, PageHero, Reveal, SiteShell } from "../components";
-import { FadeIn, GlitchText, StaggerContainer, StaggerItem } from "../animations";
+import { FadeIn, StaggerContainer, StaggerItem } from "../animations";
 
 const values = [["Creativity", "We bring fresh ideas and creative thinking to every project.", "fa-lightbulb"], ["Quality", "We deliver high-quality work that exceeds expectations.", "fa-medal"], ["Innovation", "We stay ahead with modern tools and innovative approaches.", "fa-rocket"], ["Professionalism", "Maintaining clear communication and professional standards.", "fa-handshake"], ["Client Satisfaction", "Your success and satisfaction are our top priority.", "fa-smile"], ["Fast Delivery", "We respect your time and deliver projects on schedule.", "fa-bolt"]];
 const tools = ["Photoshop", "Illustrator", "Premiere Pro", "After Effects", "Figma", "WordPress", "Elementor", "Canva", "CapCut", "Meta Ads", "TikTok Ads", "Google Analytics"];

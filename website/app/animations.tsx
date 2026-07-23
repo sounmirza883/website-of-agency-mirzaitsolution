@@ -7,45 +7,19 @@ export function GlitchText({
   text,
   as: Tag = "span",
   className = "",
-  glitchInterval = 3000,
-  scramble = false,
+  glitchInterval = 4000,
 }: {
   text: string;
   as?: "h1" | "h2" | "h3" | "span" | "div" | "p";
   className?: string;
   glitchInterval?: number;
-  scramble?: boolean;
 }) {
   const [glitching, setGlitching] = useState(false);
-  const [displayText, setDisplayText] = useState(text);
-
-  useEffect(() => {
-    if (!scramble) return;
-    let iterations = 0;
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()";
-    const interval = setInterval(() => {
-      setDisplayText(
-        text
-          .split("")
-          .map((char, i) => {
-            if (i < Math.floor(iterations)) return text[i];
-            return chars[Math.floor(Math.random() * chars.length)];
-          })
-          .join("")
-      );
-      iterations += 0.5;
-      if (iterations >= text.length) {
-        clearInterval(interval);
-        setDisplayText(text);
-      }
-    }, 50);
-    return () => clearInterval(interval);
-  }, [text, scramble]);
 
   useEffect(() => {
     const glitch = () => {
       setGlitching(true);
-      setTimeout(() => setGlitching(false), 200);
+      setTimeout(() => setGlitching(false), 120);
     };
     const id = setInterval(glitch, glitchInterval);
     return () => clearInterval(id);
@@ -54,9 +28,9 @@ export function GlitchText({
   return (
     <Tag
       className={`glitch-text ${glitching ? "glitching" : ""} ${className}`}
-      data-text={displayText}
+      data-text={text}
     >
-      {displayText}
+      {text}
     </Tag>
   );
 }
@@ -66,7 +40,7 @@ export function FadeIn({
   className = "",
   delay = 0,
   direction = "up",
-  duration = 0.5,
+  duration = 0.35,
   once = true,
 }: {
   children: React.ReactNode;
@@ -77,13 +51,13 @@ export function FadeIn({
   once?: boolean;
 }) {
   const ref = useRef(null);
-  const isInView = useInView(ref, { once, margin: "-50px" });
+  const isInView = useInView(ref, { once, margin: "-80px" });
 
   const dirVariants: Record<string, { x?: number; y?: number }> = {
-    up: { y: 40 },
-    down: { y: -40 },
-    left: { x: 40 },
-    right: { x: -40 },
+    up: { y: 24 },
+    down: { y: -24 },
+    left: { x: 24 },
+    right: { x: -24 },
     none: {},
   };
 
@@ -93,7 +67,8 @@ export function FadeIn({
       className={className}
       initial={{ opacity: 0, ...dirVariants[direction] }}
       animate={isInView ? { opacity: 1, x: 0, y: 0 } : {}}
-      transition={{ duration, delay, ease: [0.25, 0.1, 0.25, 1] }}
+      transition={{ duration, delay, ease: "easeOut" }}
+      style={{ willChange: "transform, opacity" }}
     >
       {children}
     </motion.div>
@@ -103,7 +78,7 @@ export function FadeIn({
 export function StaggerContainer({
   children,
   className = "",
-  staggerDelay = 0.08,
+  staggerDelay = 0.05,
 }: {
   children: React.ReactNode;
   className?: string;
@@ -114,7 +89,7 @@ export function StaggerContainer({
       className={className}
       initial="hidden"
       whileInView="visible"
-      viewport={{ once: true, margin: "-50px" }}
+      viewport={{ once: true, margin: "-80px" }}
       variants={{
         hidden: {},
         visible: { transition: { staggerChildren: staggerDelay } },
@@ -136,13 +111,14 @@ export function StaggerItem({
     <motion.div
       className={className}
       variants={{
-        hidden: { opacity: 0, y: 24 },
+        hidden: { opacity: 0, y: 16 },
         visible: {
           opacity: 1,
           y: 0,
-          transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] },
+          transition: { duration: 0.3, ease: "easeOut" },
         },
       }}
+      style={{ willChange: "transform, opacity" }}
     >
       {children}
     </motion.div>
