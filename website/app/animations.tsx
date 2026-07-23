@@ -125,6 +125,103 @@ export function StaggerItem({
   );
 }
 
+export function LoadingScreen() {
+  const [visible, setVisible] = useState(true);
+  const [bootLines, setBootLines] = useState<string[]>([]);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const bootMessages = [
+    "SYS::INIT — loading kernel modules...",
+    "SYS::NET — establishing secure channel...",
+    "SYS::CRYPTO — decrypting session key...",
+    "SYS::UI — compiling interface layers...",
+    "SYS::DONE — system ready. Access granted.",
+  ];
+
+  useEffect(() => {
+    let index = 0;
+    const timer = setInterval(() => {
+      if (index < bootMessages.length) {
+        setBootLines((prev) => [...prev, bootMessages[index]]);
+        index++;
+      } else {
+        clearInterval(timer);
+        setTimeout(() => setVisible(false), 400);
+      }
+    }, 250);
+    return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const chars = "01";
+    const fontSize = 12;
+    const columns = Math.floor(canvas.width / fontSize);
+    const drops: number[] = Array(columns).fill(1);
+
+    const draw = () => {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "rgba(230, 57, 70, 0.12)";
+      ctx.font = `${fontSize}px monospace`;
+
+      for (let i = 0; i < drops.length; i++) {
+        const char = chars[Math.floor(Math.random() * chars.length)];
+        ctx.fillText(char, i * fontSize, drops[i] * fontSize);
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    };
+
+    const interval = setInterval(draw, 60);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!visible) return null;
+
+  return (
+    <div className="loading-screen">
+      <canvas ref={canvasRef} className="loading-matrix" aria-hidden="true" />
+      <div className="loading-content">
+        <div className="loading-logo" data-text="ZEPHTRIX STUDIO">ZEPHTRIX STUDIO</div>
+        <div className="loading-terminal">
+          {bootLines.map((line, i) => (
+            <p key={i} className="loading-line" style={{ animationDelay: `${i * 0.05}s` }}>{line}</p>
+          ))}
+          {bootLines.length < bootMessages.length && <span className="loading-cursor" />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function BodyWrapper({ children }: { children: React.ReactNode }) {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setReady(true), 2200);
+    return () => clearTimeout(timer);
+  }, []);
+
+  return (
+    <>
+      {!ready && <LoadingScreen />}
+      <div style={{ opacity: ready ? 1 : 0, transition: "opacity 0.4s ease" }}>
+        {children}
+      </div>
+    </>
+  );
+}
+
 export function MatrixRain({ className = "" }: { className?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
