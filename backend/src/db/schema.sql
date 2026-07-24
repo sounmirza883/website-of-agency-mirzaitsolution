@@ -3,6 +3,22 @@ CREATE TABLE website_services (id SERIAL PRIMARY KEY, title TEXT NOT NULL, icon 
 CREATE TABLE website_portfolio (id SERIAL PRIMARY KEY, title TEXT NOT NULL, category TEXT NOT NULL, slug TEXT NOT NULL, icon TEXT NOT NULL);
 CREATE TABLE website_service_details (id SERIAL PRIMARY KEY, title TEXT NOT NULL, description TEXT NOT NULL, features TEXT[] NOT NULL, class_name TEXT NOT NULL);
 
+-- Auth (shared login for admin/employee/client portals)
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('admin', 'employee', 'client')),
+  status TEXT NOT NULL DEFAULT 'Active',
+  dept TEXT,
+  position TEXT,
+  company TEXT,
+  can_create_clients BOOLEAN NOT NULL DEFAULT FALSE,
+  created_by INTEGER REFERENCES users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Admin
 CREATE TABLE admin_users (id SERIAL PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL, role TEXT NOT NULL, status TEXT NOT NULL);
 CREATE TABLE admin_employees (id SERIAL PRIMARY KEY, name TEXT NOT NULL, dept TEXT NOT NULL, position TEXT NOT NULL, status TEXT NOT NULL);

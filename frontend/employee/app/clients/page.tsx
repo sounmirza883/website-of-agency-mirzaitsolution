@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useClientsList, useCreateClient } from "../hooks";
+import { useMyClients, useCreateClient } from "../hooks";
 
 export default function ClientsPage() {
-  const { data: clients } = useClientsList();
+  const { data: clients } = useMyClients();
   const createClient = useCreateClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", password: "", company: "" });
@@ -27,9 +27,9 @@ export default function ClientsPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold mb-1">Clients</h1>
-          <p className="text-sm text-gray-500">Manage all clients</p>
+          <p className="text-sm text-gray-500">Clients you've onboarded</p>
         </div>
-        <button onClick={() => setOpen(true)} className="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg">+ Add Client</button>
+        <button onClick={() => setOpen(true)} className="bg-emerald-600 text-white text-sm font-medium px-4 py-2 rounded-lg">+ Add Client</button>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -37,7 +37,7 @@ export default function ClientsPage() {
           <thead><tr className="bg-gray-50 text-left">{["Name", "Email", "Company", "Status"].map((h) => <th key={h} className="px-5 py-3 font-medium text-gray-600">{h}</th>)}</tr></thead>
           <tbody>{clients?.map((c) => <tr key={c.id} className="border-t border-gray-100 hover:bg-gray-50"><td className="px-5 py-3 font-medium">{c.name}</td><td className="px-5 py-3 text-gray-600">{c.email}</td><td className="px-5 py-3 text-gray-600">{c.company}</td><td className="px-5 py-3"><span className={`text-xs font-medium px-2 py-0.5 rounded ${c.status === "Active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>{c.status}</span></td></tr>)}</tbody>
         </table>
-        {clients?.length === 0 && <div className="px-5 py-8 text-center text-sm text-gray-400">No clients yet</div>}
+        {clients?.length === 0 && <div className="px-5 py-8 text-center text-sm text-gray-400">You haven't added any clients yet</div>}
       </div>
 
       {open && (
@@ -53,7 +53,7 @@ export default function ClientsPage() {
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
-              <button type="submit" disabled={createClient.isPending} className="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{createClient.isPending ? "Creating…" : "Create"}</button>
+              <button type="submit" disabled={createClient.isPending} className="bg-emerald-600 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{createClient.isPending ? "Creating…" : "Create"}</button>
             </div>
           </form>
         </div>

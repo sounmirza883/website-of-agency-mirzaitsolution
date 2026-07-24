@@ -1,20 +1,83 @@
 "use client";
 
-import { useEmployees } from "../hooks";
+import { useState } from "react";
+import { useEmployees, useCreateEmployee, useSetEmployeePermission } from "../hooks";
 
 export default function EmployeesPage() {
   const { data: employees } = useEmployees();
+  const createEmployee = useCreateEmployee();
+  const setPermission = useSetEmployeePermission();
+  const [open, setOpen] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", password: "", dept: "", position: "", canCreateClients: false });
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    try {
+      await createEmployee.mutateAsync(form);
+      setForm({ name: "", email: "", password: "", dept: "", position: "", canCreateClients: false });
+      setOpen(false);
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-1">Employees</h1>
-      <p className="text-sm text-gray-500 mb-6">Manage all employees</p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold mb-1">Employees</h1>
+          <p className="text-sm text-gray-500">Manage all employees</p>
+        </div>
+        <button onClick={() => setOpen(true)} className="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg">+ Add Employee</button>
+      </div>
+
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <table className="w-full text-sm">
-          <thead><tr className="bg-gray-50 text-left">{["Name", "Department", "Position", "Status"].map((h) => <th key={h} className="px-5 py-3 font-medium text-gray-600">{h}</th>)}</tr></thead>
-          <tbody>{employees?.map((e) => <tr key={e.id} className="border-t border-gray-100 hover:bg-gray-50"><td className="px-5 py-3 font-medium">{e.name}</td><td className="px-5 py-3 text-gray-600">{e.dept}</td><td className="px-5 py-3 text-gray-600">{e.position}</td><td className="px-5 py-3"><span className={`text-xs font-medium px-2 py-0.5 rounded ${e.status === "Active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>{e.status}</span></td></tr>)}</tbody>
+          <thead><tr className="bg-gray-50 text-left">{["Name", "Email", "Department", "Position", "Status", "Can create clients"].map((h) => <th key={h} className="px-5 py-3 font-medium text-gray-600">{h}</th>)}</tr></thead>
+          <tbody>{employees?.map((e) => (
+            <tr key={e.id} className="border-t border-gray-100 hover:bg-gray-50">
+              <td className="px-5 py-3 font-medium">{e.name}</td>
+              <td className="px-5 py-3 text-gray-600">{e.email}</td>
+              <td className="px-5 py-3 text-gray-600">{e.dept}</td>
+              <td className="px-5 py-3 text-gray-600">{e.position}</td>
+              <td className="px-5 py-3"><span className={`text-xs font-medium px-2 py-0.5 rounded ${e.status === "Active" ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>{e.status}</span></td>
+              <td className="px-5 py-3">
+                <label className="inline-flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={e.canCreateClients} onChange={(ev) => setPermission.mutate({ id: e.id, canCreateClients: ev.target.checked })} />
+                  <span className="text-gray-600 text-xs">{e.canCreateClients ? "Allowed" : "Not allowed"}</span>
+                </label>
+              </td>
+            </tr>
+          ))}</tbody>
         </table>
+        {employees?.length === 0 && <div className="px-5 py-8 text-center text-sm text-gray-400">No employees yet</div>}
       </div>
+
+      {open && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setOpen(false)}>
+          <form onSubmit={handleSubmit} onClick={(e) => e.stopPropagation()} className="w-full max-w-md bg-white rounded-xl p-6">
+            <h2 className="text-lg font-bold mb-4">Add Employee</h2>
+            {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</div>}
+            <div className="space-y-3">
+              <input required placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <input required type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <input required type="password" placeholder="Temporary password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <input required placeholder="Department" value={form.dept} onChange={(e) => setForm({ ...form, dept: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <input required placeholder="Position" value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <label className="flex items-center gap-2 text-sm text-gray-700">
+                <input type="checkbox" checked={form.canCreateClients} onChange={(e) => setForm({ ...form, canCreateClients: e.target.checked })} />
+                Allow this employee to create clients
+              </label>
+            </div>
+            <div className="flex justify-end gap-2 mt-6">
+              <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
+              <button type="submit" disabled={createEmployee.isPending} className="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{createEmployee.isPending ? "Creating…" : "Create"}</button>
+            </div>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

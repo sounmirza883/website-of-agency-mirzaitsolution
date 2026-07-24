@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { useAuth } from "./auth";
 
 const nav = [
   { label: "Dashboard", icon: "fa-chart-pie", href: "/" },
@@ -17,6 +19,18 @@ export function Icon({ name }: { name: string }) { return <i className={`fas ${n
 
 export function ClientShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
+  const router = useRouter();
+  const { user, loading, logout } = useAuth();
+  const isLoginPage = path === "/login";
+
+  useEffect(() => {
+    if (loading || isLoginPage) return;
+    if (!user || user.role !== "client") router.replace("/login");
+  }, [loading, isLoginPage, user, router]);
+
+  if (isLoginPage) return <>{children}</>;
+  if (loading || !user || user.role !== "client") return null;
+
   return (
     <div className="flex flex-col min-h-screen" style={{background:"var(--soft)"}}>
       <header className="sticky top-0 z-50" style={{background:"rgba(255,255,255,.96)",borderBottom:"1px solid var(--line)",backdropFilter:"blur(10px)"}}>
@@ -24,7 +38,8 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
           <Link href="/" className="logo" style={{fontSize:"20px"}}>Zephtrix <strong>Studio</strong> <span style={{fontFamily:"var(--mono)",fontSize:"11px",color:"var(--ink-soft)",marginLeft:"4px"}}>Client</span></Link>
           <div className="flex items-center gap-4">
             <Link href="/" style={{fontSize:"13px",color:"var(--ink-soft)",transition:"color .2s"}} onMouseEnter={e => e.currentTarget.style.color = "var(--ink)"} onMouseLeave={e => e.currentTarget.style.color = "var(--ink-soft)"}><Icon name="fa-arrow-left" /> Back to site</Link>
-            <div style={{width:"36px",height:"36px",borderRadius:"50%",background:"var(--red)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:"700"}}>B</div>
+            <button onClick={logout} style={{fontSize:"13px",color:"var(--ink-soft)",background:"none",border:"none",cursor:"pointer"}}>Logout</button>
+            <div title={user.email} style={{width:"36px",height:"36px",borderRadius:"50%",background:"var(--red)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:"700"}}>{user.name.charAt(0).toUpperCase()}</div>
           </div>
         </div>
       </header>

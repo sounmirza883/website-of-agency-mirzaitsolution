@@ -1,12 +1,6 @@
 export interface User {
   id: number; name: string; email: string; role: string; status: string;
 }
-export interface Employee {
-  id: number; name: string; dept: string; position: string; status: string;
-}
-export interface Client {
-  id: number; name: string; email: string; company: string; status: string;
-}
 export interface Service {
   id: number; name: string; price: string; duration: string;
 }

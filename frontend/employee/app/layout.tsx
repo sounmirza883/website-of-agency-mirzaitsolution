@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { EmployeeShell } from "./components";
 import { Provider } from "./provider";
+import { AuthProvider } from "./auth";
 
 export const metadata: Metadata = {
   title: "Employee Portal – Zephtrix Studio",
@@ -13,7 +14,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="antialiased" suppressHydrationWarning>
         <Provider>
-          <EmployeeShell>{children}</EmployeeShell>
+          <AuthProvider>
+            <EmployeeShell>{children}</EmployeeShell>
+          </AuthProvider>
         </Provider>
       </body>
     </html>

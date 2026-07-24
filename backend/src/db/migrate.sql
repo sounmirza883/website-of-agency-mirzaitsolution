@@ -8,6 +8,22 @@ CREATE TABLE IF NOT EXISTS website_services (id SERIAL PRIMARY KEY, title TEXT N
 CREATE TABLE IF NOT EXISTS website_portfolio (id SERIAL PRIMARY KEY, title TEXT NOT NULL, category TEXT NOT NULL, slug TEXT NOT NULL, icon TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS website_service_details (id SERIAL PRIMARY KEY, title TEXT NOT NULL, description TEXT NOT NULL, features TEXT[] NOT NULL, class_name TEXT NOT NULL);
 
+-- Auth (shared login for admin/employee/client portals)
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  role TEXT NOT NULL CHECK (role IN ('admin', 'employee', 'client')),
+  status TEXT NOT NULL DEFAULT 'Active',
+  dept TEXT,
+  position TEXT,
+  company TEXT,
+  can_create_clients BOOLEAN NOT NULL DEFAULT FALSE,
+  created_by INTEGER REFERENCES users(id),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Admin
 CREATE TABLE IF NOT EXISTS admin_users (id SERIAL PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL, role TEXT NOT NULL, status TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS admin_employees (id SERIAL PRIMARY KEY, name TEXT NOT NULL, dept TEXT NOT NULL, position TEXT NOT NULL, status TEXT NOT NULL);
@@ -54,6 +70,11 @@ INSERT INTO website_services (title, icon, description) VALUES
 ('SaaS Design', 'fa-cloud', 'SaaS websites, dashboards, and product interfaces built for conversion and scale.'),
 ('Web Hosting', 'fa-server', 'Reliable, secure, high-performance hosting with 24/7 monitoring and support.')
 ON CONFLICT DO NOTHING;
+
+-- Bootstrap admin login (password: ChangeMe123! — change after first login)
+INSERT INTO users (name, email, password_hash, role, status) VALUES
+('Admin', 'admin@zephtrix.com', '$2b$10$Mr475kmRIDt6XsF493/TwuySS16fmGtWgGBaQ9xDs1U5NboD8s6gm', 'admin', 'Active')
+ON CONFLICT (email) DO NOTHING;
 
 -- Admin Users
 INSERT INTO admin_users (name, email, role, status) VALUES

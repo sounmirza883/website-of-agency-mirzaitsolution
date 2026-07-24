@@ -1,18 +1,48 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { fetchUsers, fetchEmployees, fetchClientsList, fetchServices, fetchProjects, fetchInvoices, fetchNotifications, fetchBlogPosts, fetchPortfolioList } from "./queries";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "./auth";
+import { fetchUsers, fetchEmployees, fetchClientsList, createEmployee, createClient, setEmployeePermission, fetchServices, fetchProjects, fetchInvoices, fetchNotifications, fetchBlogPosts, fetchPortfolioList } from "./queries";
 
 export function useUsers() {
   return useQuery({ queryKey: ["users"], queryFn: fetchUsers, staleTime: 1000 * 60 * 5 });
 }
 
 export function useEmployees() {
-  return useQuery({ queryKey: ["employees"], queryFn: fetchEmployees, staleTime: 1000 * 60 * 5 });
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["employees"], queryFn: () => fetchEmployees(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
 }
 
 export function useClientsList() {
-  return useQuery({ queryKey: ["clientsList"], queryFn: fetchClientsList, staleTime: 1000 * 60 * 5 });
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["clientsList"], queryFn: () => fetchClientsList(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
+}
+
+export function useCreateEmployee() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Parameters<typeof createEmployee>[1]) => createEmployee(token!, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["employees"] }),
+  });
+}
+
+export function useCreateClient() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Parameters<typeof createClient>[1]) => createClient(token!, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["clientsList"] }),
+  });
+}
+
+export function useSetEmployeePermission() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, canCreateClients }: { id: number; canCreateClients: boolean }) => setEmployeePermission(token!, id, canCreateClients),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["employees"] }),
+  });
 }
 
 export function useServices() {

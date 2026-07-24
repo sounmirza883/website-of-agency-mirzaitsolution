@@ -1,7 +1,22 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { fetchAssignedProjects, fetchEmpTasks, fetchEmpFiles, fetchStatusUpdates, fetchAttendance, fetchLeaveRequests } from "./queries";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "./auth";
+import { fetchMyClients, createClient, fetchAssignedProjects, fetchEmpTasks, fetchEmpFiles, fetchStatusUpdates, fetchAttendance, fetchLeaveRequests } from "./queries";
+
+export function useMyClients() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["myClients"], queryFn: () => fetchMyClients(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
+}
+
+export function useCreateClient() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Parameters<typeof createClient>[1]) => createClient(token!, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["myClients"] }),
+  });
+}
 
 export function useAssignedProjects() {
   return useQuery({ queryKey: ["assignedProjects"], queryFn: fetchAssignedProjects, staleTime: 1000 * 60 * 5 });

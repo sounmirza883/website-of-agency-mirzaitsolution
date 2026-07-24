@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { useAuth } from "./auth";
 
 const nav = [
   { label: "Dashboard", href: "/" },
@@ -18,6 +20,18 @@ const nav = [
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
+  const router = useRouter();
+  const { user, loading, logout } = useAuth();
+  const isLoginPage = path === "/login";
+
+  useEffect(() => {
+    if (loading || isLoginPage) return;
+    if (!user || user.role !== "admin") router.replace("/login");
+  }, [loading, isLoginPage, user, router]);
+
+  if (isLoginPage) return <>{children}</>;
+  if (loading || !user || user.role !== "admin") return null;
+
   return (
     <div className="flex h-screen bg-gray-50 text-gray-900">
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col shrink-0">
@@ -36,10 +50,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0">
-          <div className="text-sm text-gray-500">Welcome, Admin</div>
+          <div className="text-sm text-gray-500">Welcome, {user.name}</div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-600">admin@zephtrix.com</span>
-            <div className="w-8 h-8 bg-gray-800 text-white rounded-full flex items-center justify-center text-xs font-bold">A</div>
+            <span className="text-sm text-gray-600">{user.email}</span>
+            <div className="w-8 h-8 bg-gray-800 text-white rounded-full flex items-center justify-center text-xs font-bold">{user.name.charAt(0).toUpperCase()}</div>
+            <button onClick={logout} className="text-sm text-gray-500 hover:text-gray-900">Logout</button>
           </div>
         </header>
         <div className="flex-1 p-6 overflow-auto">{children}</div>

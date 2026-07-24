@@ -6,6 +6,7 @@ import websiteRoutes from "./routes/website.js";
 import adminRoutes from "./routes/admin.js";
 import employeeRoutes from "./routes/employee.js";
 import clientRoutes from "./routes/client.js";
+import authRoutes from "./routes/auth.js";
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -26,6 +27,7 @@ app.use(express.json());
 app.get("/", (_req, res) => res.json({ status: "ok", service: "Mirza IT Solution API" }));
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
+app.use("/api/auth", authRoutes);
 app.use("/api/website", websiteRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/employee", employeeRoutes);
