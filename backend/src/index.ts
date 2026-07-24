@@ -23,6 +23,7 @@ const allowedOrigins = [
 app.use(cors({ origin: (origin, cb) => cb(null, !origin || allowedOrigins.includes(origin)) }));
 app.use(express.json());
 
+app.get("/", (_req, res) => res.json({ status: "ok", service: "Mirza IT Solution API" }));
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
 app.use("/api/website", websiteRoutes);
