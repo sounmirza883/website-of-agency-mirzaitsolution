@@ -55,3 +55,11 @@ When `SUPABASE_URL` and `SUPABASE_ANON_KEY` are not set in `.env`, the server re
 ## Domain
 
 `https://backend.vesseldrop.com`
+
+## Vercel Deployment
+
+The backend is deployed on Vercel as a serverless function:
+
+- `vercel.json` — routes all requests to `src/index.ts`, compiled by `@vercel/node` with esbuild
+- `src/index.ts` — exports the Express app as default (Vercel calls this as a serverless handler)
+- `app.listen()` still runs for local dev — Vercel ignores it and uses the exported app instead
