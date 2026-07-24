@@ -13,6 +13,8 @@ const nav = [
   { label: "Services", href: "/services" },
   { label: "Projects", href: "/projects" },
   { label: "Invoices", href: "/invoices" },
+  { label: "Attendance", href: "/attendance" },
+  { label: "Leave", href: "/leave" },
   { label: "Notifications", href: "/notifications" },
   { label: "Blog", href: "/blog" },
   { label: "Portfolio", href: "/portfolio" },

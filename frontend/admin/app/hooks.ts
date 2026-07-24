@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
-import { fetchUsers, fetchEmployees, fetchClientsList, createEmployee, createClient, setEmployeePermission, fetchServices, fetchProjects, fetchInvoices, fetchNotifications, fetchBlogPosts, fetchPortfolioList, fetchContactSubmissions, createService, createProject, updateProjectStatus, createInvoice, createNotification, createBlogPost, setBlogPostStatus, createPortfolioItem, setUserStatus } from "./queries";
+import { fetchUsers, fetchEmployees, fetchClientsList, createEmployee, createClient, setEmployeePermission, fetchServices, fetchProjects, fetchInvoices, fetchNotifications, fetchBlogPosts, fetchPortfolioList, fetchContactSubmissions, createService, createProject, updateProjectStatus, assignProjectEmployee, createInvoice, verifyInvoice, createNotification, createBlogPost, setBlogPostStatus, createPortfolioItem, setUserStatus, updateUserDetails, deleteUserAccount, fetchAdminAttendance, fetchAdminLeaveRequests, setLeaveRequestStatus, fetchProjectMessages, sendProjectMessage } from "./queries";
 
 export function useUsers() {
   const { token } = useAuth();
@@ -124,6 +124,24 @@ export function useCreateInvoice() {
   });
 }
 
+export function useVerifyInvoice() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, approve }: { id: number; approve: boolean }) => verifyInvoice(token!, id, approve),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["invoices"] }),
+  });
+}
+
+export function useAssignProjectEmployee() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, employeeId }: { id: number; employeeId: number | null }) => assignProjectEmployee(token!, id, employeeId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["projects"] }),
+  });
+}
+
 export function useCreateNotification() {
   const { token } = useAuth();
   const qc = useQueryClient();
@@ -166,5 +184,69 @@ export function useSetUserStatus() {
   return useMutation({
     mutationFn: ({ id, status }: { id: number; status: string }) => setUserStatus(token!, id, status),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
+  });
+}
+
+export function useUpdateUserDetails() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: Parameters<typeof updateUserDetails>[2] }) => updateUserDetails(token!, id, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["employees"] });
+      qc.invalidateQueries({ queryKey: ["clientsList"] });
+      qc.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+}
+
+export function useDeleteUser() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => deleteUserAccount(token!, id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["employees"] });
+      qc.invalidateQueries({ queryKey: ["clientsList"] });
+      qc.invalidateQueries({ queryKey: ["users"] });
+    },
+  });
+}
+
+export function useAdminAttendance() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["adminAttendance"], queryFn: () => fetchAdminAttendance(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
+}
+
+export function useAdminLeaveRequests() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["adminLeaveRequests"], queryFn: () => fetchAdminLeaveRequests(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
+}
+
+export function useSetLeaveRequestStatus() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: number; status: "Approved" | "Rejected" }) => setLeaveRequestStatus(token!, id, status),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminLeaveRequests"] }),
+  });
+}
+
+export function useProjectMessages(projectId: number | null | undefined) {
+  const { token } = useAuth();
+  return useQuery({
+    queryKey: ["projectMessages", projectId],
+    queryFn: () => fetchProjectMessages(token!, projectId!),
+    enabled: !!token && !!projectId,
+    refetchInterval: 5000,
+  });
+}
+
+export function useSendProjectMessage() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ projectId, text }: { projectId: number; text: string }) => sendProjectMessage(token!, projectId, text),
+    onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: ["projectMessages", vars.projectId] }),
   });
 }

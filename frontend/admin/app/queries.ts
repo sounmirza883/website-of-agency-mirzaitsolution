@@ -20,6 +20,20 @@ async function apiPatch<T>(path: string, token: string, body: unknown): Promise<
   return data;
 }
 
+async function apiDelete(path: string, token: string): Promise<void> {
+  const res = await fetch(`${API_BASE}${path}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) {
+    let message = "Request failed";
+    try {
+      const data = await res.json();
+      message = data.error || message;
+    } catch {
+      // no JSON body
+    }
+    throw new Error(message);
+  }
+}
+
 export function fetchUsers(token: string) { return apiGet<any[]>("/admin/users", token); }
 export function fetchEmployees(token: string) { return apiGet<any[]>("/admin/employees", token); }
 export function fetchClientsList(token: string) { return apiGet<any[]>("/admin/clients", token); }
@@ -43,16 +57,22 @@ export function fetchContactSubmissions(token: string) { return apiGet<any[]>("/
 export function createService(token: string, payload: { name: string; price: string; duration: string }) {
   return apiPost<any>("/admin/services", token, payload);
 }
-export function createProject(token: string, payload: { name: string; client: string; status: string; deadline: string }) {
+export function createProject(token: string, payload: { name: string; client: string; clientId?: number; employeeId?: number; status: string; deadline: string }) {
   return apiPost<any>("/admin/projects", token, payload);
 }
 export function updateProjectStatus(token: string, id: number, status: string) {
   return apiPatch<any>(`/admin/projects/${id}/status`, token, { status });
 }
+export function assignProjectEmployee(token: string, id: number, employeeId: number | null) {
+  return apiPatch<any>(`/admin/projects/${id}/assign`, token, { employeeId });
+}
 export function createInvoice(token: string, payload: { client: string; clientUserId: number; project: string; amount: number; date: string }) {
   return apiPost<any>("/admin/invoices", token, payload);
 }
-export function createNotification(token: string, payload: { title: string; msg: string }) {
+export function verifyInvoice(token: string, id: number, approve: boolean) {
+  return apiPatch<any>(`/admin/invoices/${id}/verify`, token, { approve });
+}
+export function createNotification(token: string, payload: { title: string; msg: string; targetRole?: "all" | "employee" | "client"; targetUserId?: number }) {
   return apiPost<any>("/admin/notifications", token, payload);
 }
 export function createBlogPost(token: string, payload: { title: string; author: string; content: string; status: string }) {
@@ -66,4 +86,25 @@ export function createPortfolioItem(token: string, payload: { title: string; cli
 }
 export function setUserStatus(token: string, id: number, status: string) {
   return apiPatch<any>(`/admin/users/${id}/status`, token, { status });
+}
+
+export function updateUserDetails(token: string, id: number, payload: { name?: string; email?: string; dept?: string; position?: string; company?: string }) {
+  return apiPatch<any>(`/admin/users/${id}`, token, payload);
+}
+
+export function deleteUserAccount(token: string, id: number) {
+  return apiDelete(`/admin/users/${id}`, token);
+}
+
+export function fetchAdminAttendance(token: string) { return apiGet<any[]>("/admin/attendance", token); }
+export function fetchAdminLeaveRequests(token: string) { return apiGet<any[]>("/admin/leave-requests", token); }
+export function setLeaveRequestStatus(token: string, id: number, status: "Approved" | "Rejected") {
+  return apiPatch<any>(`/admin/leave-requests/${id}/status`, token, { status });
+}
+
+export function fetchProjectMessages(token: string, projectId: number) {
+  return apiGet<any[]>(`/admin/messages?projectId=${projectId}`, token);
+}
+export function sendProjectMessage(token: string, projectId: number, text: string) {
+  return apiPost<any>("/admin/messages", token, { projectId, text });
 }

@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
-import { fetchProjects, fetchMilestones, fetchFiles, fetchInvoices, fetchTickets, fetchMessages, payInvoice, createTicket, updateTicketStatus, sendMessage } from "./queries";
+import { fetchProjects, fetchMilestones, fetchFiles, fetchInvoices, fetchTickets, fetchMessages, submitInvoicePayment, createTicket, updateTicketStatus, sendMessage, fetchClientNotifications } from "./queries";
 
 export function useProjects() {
   const { token } = useAuth();
@@ -29,16 +29,21 @@ export function useTickets() {
   return useQuery({ queryKey: ["tickets"], queryFn: () => fetchTickets(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
 }
 
-export function useMessages() {
+export function useMessages(projectId?: string) {
   const { token } = useAuth();
-  return useQuery({ queryKey: ["messages"], queryFn: () => fetchMessages(token!), enabled: !!token, staleTime: 1000 * 60 * 5, refetchInterval: 5000 });
+  return useQuery({ queryKey: ["messages", projectId], queryFn: () => fetchMessages(token!, projectId!), enabled: !!token && !!projectId, staleTime: 1000 * 60 * 5, refetchInterval: 5000 });
 }
 
-export function usePayInvoice() {
+export function useClientNotifications() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["notifications"], queryFn: () => fetchClientNotifications(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
+}
+
+export function useSubmitInvoicePayment() {
   const { token } = useAuth();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => payInvoice(token!, id),
+    mutationFn: (vars: { id: string; formData: FormData }) => submitInvoicePayment(token!, vars.id, vars.formData),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["invoices"] }),
   });
 }
@@ -74,7 +79,7 @@ export function useSendMessage() {
   const { token } = useAuth();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (text: string) => sendMessage(token!, text),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["messages"] }),
+    mutationFn: (vars: { projectId: string; text: string }) => sendMessage(token!, vars.projectId, vars.text),
+    onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: ["messages", vars.projectId] }),
   });
 }

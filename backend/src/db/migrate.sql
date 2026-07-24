@@ -108,6 +108,76 @@ BEGIN
 END $$;
 
 -- ============================================================
+-- Phase 3: project assignment, employee<->client chat, user edit/delete,
+-- invoice verification, targeted notifications, leave approval
+-- ============================================================
+
+-- Unify projects: admin_projects becomes the single source of truth.
+-- employee_assigned_projects / client_projects were dead-end duplicates —
+-- each only ever had a GET route, nothing anywhere ever wrote to them.
+ALTER TABLE admin_projects ADD COLUMN IF NOT EXISTS client_id INTEGER REFERENCES users(id);
+ALTER TABLE admin_projects ADD COLUMN IF NOT EXISTS employee_id INTEGER REFERENCES users(id);
+ALTER TABLE admin_projects ADD COLUMN IF NOT EXISTS progress INTEGER NOT NULL DEFAULT 0;
+DROP TABLE IF EXISTS employee_assigned_projects, client_projects;
+
+-- Chat, scoped to a project. client_messages only ever held client->nowhere
+-- messages (sender was always hardcoded "client"); repurposed as a real
+-- project-scoped thread any of admin/employee/client can read/write.
+ALTER TABLE IF EXISTS client_messages RENAME TO project_messages;
+ALTER TABLE project_messages ADD COLUMN IF NOT EXISTS project_id INTEGER REFERENCES admin_projects(id);
+ALTER TABLE project_messages ADD COLUMN IF NOT EXISTS sender_id INTEGER REFERENCES users(id);
+ALTER TABLE project_messages ADD COLUMN IF NOT EXISTS sender_role TEXT NOT NULL DEFAULT 'client';
+ALTER TABLE project_messages DROP COLUMN IF EXISTS sender;
+
+-- Invoice payment verification (client uploads proof, admin verifies).
+ALTER TABLE client_invoices ADD COLUMN IF NOT EXISTS proof_path TEXT;
+ALTER TABLE admin_invoices ADD COLUMN IF NOT EXISTS proof_path TEXT;
+
+-- Notifications gain a target audience; no longer admin-only.
+ALTER TABLE IF EXISTS admin_notifications RENAME TO notifications;
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS created_by INTEGER REFERENCES users(id);
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS creator_role TEXT NOT NULL DEFAULT 'admin';
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS target_role TEXT NOT NULL DEFAULT 'all';
+ALTER TABLE notifications ADD COLUMN IF NOT EXISTS target_user_id INTEGER REFERENCES users(id);
+
+-- FK safety net so deleting a user never hard-fails on historical rows —
+-- it orphans (nulls) them instead. Auto-generated constraint names follow
+-- Postgres's default <table>_<column>_fkey convention. project_messages'
+-- client_id constraint predates its table rename, so both possible names
+-- are handled.
+ALTER TABLE admin_projects DROP CONSTRAINT IF EXISTS admin_projects_employee_id_fkey,
+  ADD CONSTRAINT admin_projects_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE admin_projects DROP CONSTRAINT IF EXISTS admin_projects_client_id_fkey,
+  ADD CONSTRAINT admin_projects_client_id_fkey FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE employee_tasks DROP CONSTRAINT IF EXISTS employee_tasks_employee_id_fkey,
+  ADD CONSTRAINT employee_tasks_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE employee_status_updates DROP CONSTRAINT IF EXISTS employee_status_updates_employee_id_fkey,
+  ADD CONSTRAINT employee_status_updates_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE employee_attendance DROP CONSTRAINT IF EXISTS employee_attendance_employee_id_fkey,
+  ADD CONSTRAINT employee_attendance_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE employee_leave_requests DROP CONSTRAINT IF EXISTS employee_leave_requests_employee_id_fkey,
+  ADD CONSTRAINT employee_leave_requests_employee_id_fkey FOREIGN KEY (employee_id) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE client_milestones DROP CONSTRAINT IF EXISTS client_milestones_client_id_fkey,
+  ADD CONSTRAINT client_milestones_client_id_fkey FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE client_invoices DROP CONSTRAINT IF EXISTS client_invoices_client_id_fkey,
+  ADD CONSTRAINT client_invoices_client_id_fkey FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE client_tickets DROP CONSTRAINT IF EXISTS client_tickets_client_id_fkey,
+  ADD CONSTRAINT client_tickets_client_id_fkey FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE project_messages DROP CONSTRAINT IF EXISTS client_messages_client_id_fkey,
+  DROP CONSTRAINT IF EXISTS project_messages_client_id_fkey,
+  ADD CONSTRAINT project_messages_client_id_fkey FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE project_messages DROP CONSTRAINT IF EXISTS project_messages_sender_id_fkey,
+  ADD CONSTRAINT project_messages_sender_id_fkey FOREIGN KEY (sender_id) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE project_messages DROP CONSTRAINT IF EXISTS project_messages_project_id_fkey,
+  ADD CONSTRAINT project_messages_project_id_fkey FOREIGN KEY (project_id) REFERENCES admin_projects(id) ON DELETE SET NULL;
+ALTER TABLE project_files DROP CONSTRAINT IF EXISTS project_files_uploaded_by_fkey,
+  ADD CONSTRAINT project_files_uploaded_by_fkey FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE project_files DROP CONSTRAINT IF EXISTS project_files_client_id_fkey,
+  ADD CONSTRAINT project_files_client_id_fkey FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_created_by_fkey,
+  ADD CONSTRAINT users_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+
+-- ============================================================
 -- Seed Data
 -- ============================================================
 

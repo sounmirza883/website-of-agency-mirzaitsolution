@@ -20,17 +20,27 @@ async function apiPatch<T>(path: string, token: string, body?: unknown): Promise
   return data;
 }
 
+async function apiUpload<T>(path: string, token: string, formData: FormData): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
+
 export function fetchProjects(token: string) { return apiGet<any[]>("/client/projects", token); }
 export function fetchMilestones(token: string) { return apiGet<any[]>("/client/milestones", token); }
 export function fetchFiles(token: string) { return apiGet<any[]>("/client/files", token); }
 export function fetchInvoices(token: string) { return apiGet<any[]>("/client/invoices", token); }
 export function fetchTickets(token: string) { return apiGet<any[]>("/client/tickets", token); }
-export function fetchMessages(token: string) { return apiGet<any[]>("/client/messages", token); }
-export function payInvoice(token: string, id: string) { return apiPatch<any>(`/client/invoices/${id}/pay`, token); }
+export function fetchMessages(token: string, projectId: string) { return apiGet<any[]>(`/client/messages?projectId=${projectId}`, token); }
+export function submitInvoicePayment(token: string, id: string, formData: FormData) {
+  return apiUpload<any>(`/client/invoices/${id}/submit-payment`, token, formData);
+}
 export function createTicket(token: string, payload: { subject: string; priority: string; description: string }) {
   return apiPost<any>("/client/tickets", token, payload);
 }
 export function updateTicketStatus(token: string, id: string, status: string) {
   return apiPatch<any>(`/client/tickets/${id}/status`, token, { status });
 }
-export function sendMessage(token: string, text: string) { return apiPost<any>("/client/messages", token, { text }); }
+export function sendMessage(token: string, projectId: string, text: string) { return apiPost<any>("/client/messages", token, { projectId, text }); }
+export function fetchClientNotifications(token: string) { return apiGet<any[]>("/client/notifications", token); }

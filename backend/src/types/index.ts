@@ -5,22 +5,19 @@ export interface Service {
   id: number; name: string; price: string; duration: string;
 }
 export interface Project {
-  id: number; name: string; client: string; status: string; deadline: string;
+  id: number; name: string; client: string; clientId: number | null; employeeId: number | null; status: string; deadline: string; progress: number;
 }
 export interface Invoice {
-  id: string; client: string; amount: string; status: string; date: string;
+  id: string; client: string; amount: string; status: string; date: string; proofUrl: string | null;
 }
 export interface Notification {
-  id: number; title: string; msg: string; date: string;
+  id: number; title: string; msg: string; date: string; createdBy: number | null; creatorRole: string; targetRole: string; targetUserId: number | null;
 }
 export interface BlogPost {
   id: number; title: string; author: string; date: string; status: string; content: string;
 }
 export interface PortfolioItem {
   id: number; title: string; client: string; category: string; description: string | null;
-}
-export interface AssignedProject {
-  id: number; name: string; role: string; status: string; deadline: string; employee_id: number;
 }
 export interface Task {
   id: number; project: string; task: string; priority: string; due: string; status: string; employee_id: number;
@@ -37,20 +34,17 @@ export interface Attendance {
 export interface LeaveRequest {
   id: number; type: string; reason: string; from: string; to: string; status: string; employee_id: number;
 }
-export interface ClientProject {
-  id: number; name: string; status: string; deadline: string; progress: number; client_id: number;
-}
 export interface Milestone {
   id: number; project: string; task: string; status: string; date: string; client_id: number;
 }
 export interface ClientInvoice {
-  id: string; project: string; amount: string; status: string; due: string; client_id: number;
+  id: string; project: string; amount: string; status: string; due: string; client_id: number; proofUrl: string | null;
 }
 export interface Ticket {
   id: string; subject: string; status: string; priority: string; updated: string; client_id: number; description: string;
 }
-export interface Message {
-  id: number; from: string; text: string; time: string; client_id: number;
+export interface ProjectMessage {
+  id: number; projectId: number; senderId: number | null; senderRole: string; text: string; time: string; client_id: number;
 }
 export interface WebsiteContactSubmission {
   id: number; name: string; email: string; phone: string | null; service: string | null; message: string; created_at: string;

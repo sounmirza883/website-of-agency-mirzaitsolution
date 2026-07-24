@@ -24,7 +24,7 @@ export default function EmployeeDashboard() {
           <h2 className="font-semibold text-gray-900 mb-3">My Projects</h2>
           {projects?.map((p) => (
             <div key={p.id} className="flex items-center justify-between py-2 border-b border-gray-100 last:border-0">
-              <div><div className="text-sm font-medium">{p.name}</div><div className="text-xs text-gray-500">{p.role}</div></div>
+              <div><div className="text-sm font-medium">{p.name}</div><div className="text-xs text-gray-500">{p.client}</div></div>
               <span className={`text-xs font-medium px-2 py-0.5 rounded ${p.status === "Completed" ? "bg-green-100 text-green-700" : p.status === "In Progress" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"}`}>{p.status}</span>
             </div>
           ))}

@@ -150,7 +150,7 @@ router.post("/files", requireAuth, requireRole("employee"), upload.single("file"
 
 router.get("/assigned-projects", requireAuth, requireRole("employee"), async (req: AuthedRequest, res) => {
   if (!supabase) return res.json([]);
-  const { data, error } = await supabase.from("employee_assigned_projects").select("*").eq("employee_id", req.user!.id);
+  const { data, error } = await supabase.from("admin_projects").select("id,name,client,clientId:client_id,employeeId:employee_id,status,deadline,progress").eq("employee_id", req.user!.id);
   if (error) return res.status(500).json({ error: error.message });
   return res.json(data);
 });
@@ -160,6 +160,53 @@ router.get("/tasks", requireAuth, requireRole("employee"), async (req: AuthedReq
   const { data, error } = await supabase.from("employee_tasks").select("*").eq("employee_id", req.user!.id);
   if (error) return res.status(500).json({ error: error.message });
   return res.json(data);
+});
+
+router.get("/messages", requireAuth, requireRole("employee"), async (req: AuthedRequest, res) => {
+  const projectId = Number(req.query.projectId);
+  if (!projectId) return res.status(400).json({ error: "projectId query param is required" });
+  if (!supabase) return res.json([]);
+  const project = await supabase.from("admin_projects").select("id,employee_id").eq("id", projectId).maybeSingle();
+  if (!project.data || project.data.employee_id !== req.user!.id) return res.status(403).json({ error: "You are not assigned to this project" });
+  const { data, error } = await supabase.from("project_messages").select("id,projectId:project_id,senderId:sender_id,senderRole:sender_role,text,time,client_id").eq("project_id", projectId).order("id", { ascending: true });
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json(data);
+});
+
+router.post("/messages", requireAuth, requireRole("employee"), async (req: AuthedRequest, res) => {
+  const { projectId, text } = req.body ?? {};
+  if (!projectId || !text) return res.status(400).json({ error: "projectId, text are required" });
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+  const project = await supabase.from("admin_projects").select("id,employee_id,client_id").eq("id", projectId).maybeSingle();
+  if (!project.data || project.data.employee_id !== req.user!.id) return res.status(403).json({ error: "You are not assigned to this project" });
+  const time = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  const { data, error } = await supabase.from("project_messages").insert({
+    project_id: projectId, sender_id: req.user!.id, sender_role: "employee", text, time, client_id: project.data.client_id,
+  }).select("id,projectId:project_id,senderId:sender_id,senderRole:sender_role,text,time,client_id").single();
+  if (error) return res.status(500).json({ error: error.message });
+  return res.status(201).json(data);
+});
+
+router.get("/notifications", requireAuth, requireRole("employee"), async (req: AuthedRequest, res) => {
+  if (!supabase) return res.json([]);
+  const { data, error } = await supabase.from("notifications").select("*").in("target_role", ["employee", "all"]).order("id", { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json(data);
+});
+
+router.post("/notifications", requireAuth, requireRole("employee"), async (req: AuthedRequest, res) => {
+  const { title, msg, targetRole, targetClientId } = req.body ?? {};
+  if (!title || !msg) return res.status(400).json({ error: "title, msg are required" });
+  if (!["employee", "client", "all"].includes(targetRole)) return res.status(400).json({ error: "targetRole must be employee, client, or all" });
+  if (targetRole === "client" && !targetClientId) return res.status(400).json({ error: "targetClientId is required when targetRole is client" });
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+  const date = new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const { data, error } = await supabase.from("notifications").insert({
+    title, msg, date, created_by: req.user!.id, creator_role: "employee",
+    target_role: targetRole, target_user_id: targetRole === "client" ? Number(targetClientId) : null,
+  }).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  return res.status(201).json(data);
 });
 
 export default router;

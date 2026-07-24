@@ -164,3 +164,44 @@ export async function setUserStatus(id: number, status: string): Promise<AuthUse
   const { data } = await supabase.from("users").update({ status }).eq("id", id).select().maybeSingle();
   return data ? rowToUser(data) : null;
 }
+
+export interface UpdateUserDetailsInput {
+  name?: string;
+  email?: string;
+  dept?: string | null;
+  position?: string | null;
+  company?: string | null;
+}
+
+export async function updateUserDetails(id: number, input: UpdateUserDetailsInput): Promise<AuthUser | null> {
+  if (!supabase) {
+    const user = memoryUsers.find((u) => u.id === id);
+    if (!user) return null;
+    if (input.name !== undefined) user.name = input.name;
+    if (input.email !== undefined) user.email = input.email;
+    if (input.dept !== undefined) user.dept = input.dept;
+    if (input.position !== undefined) user.position = input.position;
+    if (input.company !== undefined) user.company = input.company;
+    return user;
+  }
+  const patch: Record<string, unknown> = {};
+  if (input.name !== undefined) patch.name = input.name;
+  if (input.email !== undefined) patch.email = input.email;
+  if (input.dept !== undefined) patch.dept = input.dept;
+  if (input.position !== undefined) patch.position = input.position;
+  if (input.company !== undefined) patch.company = input.company;
+  const { data } = await supabase.from("users").update(patch).eq("id", id).select().maybeSingle();
+  return data ? rowToUser(data) : null;
+}
+
+export async function deleteUser(id: number): Promise<boolean> {
+  if (!supabase) {
+    const idx = memoryUsers.findIndex((u) => u.id === id);
+    if (idx === -1) return false;
+    memoryUsers.splice(idx, 1);
+    return true;
+  }
+  const { error, count } = await supabase.from("users").delete({ count: "exact" }).eq("id", id);
+  if (error) throw new Error(error.message);
+  return (count ?? 0) > 0;
+}

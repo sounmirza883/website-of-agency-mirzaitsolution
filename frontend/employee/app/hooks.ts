@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
-import { fetchMyClients, createClient, fetchAssignedProjects, fetchEmpTasks, fetchEmpFiles, fetchStatusUpdates, fetchAttendance, fetchLeaveRequests, createTask, updateTaskStatus, postStatusUpdate, checkIn, checkOut, requestLeave, uploadFile } from "./queries";
+import { fetchMyClients, createClient, fetchAssignedProjects, fetchEmpTasks, fetchEmpFiles, fetchStatusUpdates, fetchAttendance, fetchLeaveRequests, createTask, updateTaskStatus, postStatusUpdate, checkIn, checkOut, requestLeave, uploadFile, fetchProjectMessages, sendProjectMessage, fetchEmpNotifications, createEmpNotification } from "./queries";
 
 export function useMyClients() {
   const { token } = useAuth();
@@ -115,5 +115,38 @@ export function useUploadFile() {
   return useMutation({
     mutationFn: (formData: FormData) => uploadFile(token!, formData),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["empFiles"] }),
+  });
+}
+
+export function useProjectMessages(projectId: number | undefined) {
+  const { token } = useAuth();
+  return useQuery({
+    queryKey: ["projectMessages", projectId],
+    queryFn: () => fetchProjectMessages(token!, projectId!),
+    enabled: !!token && !!projectId,
+    refetchInterval: 5000,
+  });
+}
+
+export function useSendProjectMessage() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { projectId: number; text: string }) => sendProjectMessage(token!, vars.projectId, vars.text),
+    onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: ["projectMessages", vars.projectId] }),
+  });
+}
+
+export function useEmpNotifications() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["empNotifications"], queryFn: () => fetchEmpNotifications(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
+}
+
+export function useCreateEmpNotification() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Parameters<typeof createEmpNotification>[1]) => createEmpNotification(token!, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["empNotifications"] }),
   });
 }

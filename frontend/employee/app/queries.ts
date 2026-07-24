@@ -54,3 +54,15 @@ export function requestLeave(token: string, payload: { type: string; reason: str
   return apiPost<any>("/employee/leave-requests", token, payload);
 }
 export function uploadFile(token: string, formData: FormData) { return apiUpload<any>("/employee/files", token, formData); }
+
+export function fetchProjectMessages(token: string, projectId: number) {
+  return apiGet<any[]>(`/employee/messages?projectId=${projectId}`, token);
+}
+export function sendProjectMessage(token: string, projectId: number, text: string) {
+  return apiPost<any>("/employee/messages", token, { projectId, text });
+}
+
+export function fetchEmpNotifications(token: string) { return apiGet<any[]>("/employee/notifications", token); }
+export function createEmpNotification(token: string, payload: { title: string; msg: string; targetRole: "employee" | "client" | "all"; targetClientId?: number }) {
+  return apiPost<any>("/employee/notifications", token, payload);
+}

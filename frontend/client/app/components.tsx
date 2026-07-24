@@ -13,6 +13,7 @@ const nav = [
   { label: "Invoices", icon: "fa-file-invoice", href: "/invoices" },
   { label: "Tickets", icon: "fa-ticket-alt", href: "/tickets" },
   { label: "Chat", icon: "fa-comments", href: "/chat" },
+  { label: "Notifications", icon: "fa-bell", href: "/notifications" },
 ];
 
 export function Icon({ name }: { name: string }) { return <i className={`fas ${name}`} aria-hidden="true" />; }

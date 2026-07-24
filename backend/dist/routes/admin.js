@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const supabase_js_1 = require("../supabase.js");
+const supabaseAdmin_js_1 = require("../supabaseAdmin.js");
 const authStore_js_1 = require("../authStore.js");
 const auth_js_1 = require("../middleware/auth.js");
 const router = (0, express_1.Router)();
@@ -63,6 +64,34 @@ router.get("/users", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"),
     const users = await (0, authStore_js_1.listAllUsers)();
     return res.json(users.map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, status: u.status })));
 });
+router.patch("/users/:id/status", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
+    const id = Number(req.params.id);
+    const { status } = req.body ?? {};
+    if (!status)
+        return res.status(400).json({ error: "status is required" });
+    const user = await (0, authStore_js_1.setUserStatus)(id, status);
+    if (!user)
+        return res.status(404).json({ error: "User not found" });
+    return res.json({ id: user.id, name: user.name, email: user.email, role: user.role, status: user.status });
+});
+router.patch("/users/:id", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
+    const id = Number(req.params.id);
+    const { name, email, dept, position, company } = req.body ?? {};
+    if (!name && !email && dept === undefined && position === undefined && company === undefined) {
+        return res.status(400).json({ error: "At least one field to update is required" });
+    }
+    const user = await (0, authStore_js_1.updateUserDetails)(id, { name, email, dept, position, company });
+    if (!user)
+        return res.status(404).json({ error: "User not found" });
+    return res.json({ id: user.id, name: user.name, email: user.email, role: user.role, status: user.status, dept: user.dept, position: user.position, company: user.company });
+});
+router.delete("/users/:id", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
+    const id = Number(req.params.id);
+    const ok = await (0, authStore_js_1.deleteUser)(id);
+    if (!ok)
+        return res.status(404).json({ error: "User not found" });
+    return res.status(204).send();
+});
 router.get("/contact-submissions", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (_req, res) => {
     if (!supabase_js_1.supabase)
         return res.json([]);
@@ -71,11 +100,167 @@ router.get("/contact-submissions", auth_js_1.requireAuth, (0, auth_js_1.requireR
         return res.status(500).json({ error: error.message });
     return res.json(data);
 });
+router.post("/services", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
+    const { name, price, duration } = req.body ?? {};
+    if (!name || !price || !duration)
+        return res.status(400).json({ error: "name, price, duration are required" });
+    if (!supabase_js_1.supabase)
+        return res.status(503).json({ error: "Database not configured" });
+    const { data, error } = await supabase_js_1.supabase.from("admin_services").insert({ name, price, duration }).select().single();
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.status(201).json(data);
+});
+router.post("/projects", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
+    const { name, client, clientId, employeeId, status, deadline } = req.body ?? {};
+    if (!name || !client || !status || !deadline)
+        return res.status(400).json({ error: "name, client, status, deadline are required" });
+    if (!supabase_js_1.supabase)
+        return res.status(503).json({ error: "Database not configured" });
+    const { data, error } = await supabase_js_1.supabase.from("admin_projects").insert({
+        name, client, status, deadline, client_id: clientId ? Number(clientId) : null, employee_id: employeeId ? Number(employeeId) : null,
+    }).select().single();
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.status(201).json(data);
+});
+router.patch("/projects/:id/status", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
+    const id = Number(req.params.id);
+    const { status } = req.body ?? {};
+    if (!status)
+        return res.status(400).json({ error: "status is required" });
+    if (!supabase_js_1.supabase)
+        return res.status(503).json({ error: "Database not configured" });
+    const { data, error } = await supabase_js_1.supabase.from("admin_projects").update({ status }).eq("id", id).select().maybeSingle();
+    if (error)
+        return res.status(500).json({ error: error.message });
+    if (!data)
+        return res.status(404).json({ error: "Project not found" });
+    return res.json(data);
+});
+router.patch("/projects/:id/assign", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
+    const id = Number(req.params.id);
+    const { employeeId } = req.body ?? {};
+    if (!supabase_js_1.supabase)
+        return res.status(503).json({ error: "Database not configured" });
+    const { data, error } = await supabase_js_1.supabase.from("admin_projects").update({ employee_id: employeeId ? Number(employeeId) : null }).eq("id", id).select().maybeSingle();
+    if (error)
+        return res.status(500).json({ error: error.message });
+    if (!data)
+        return res.status(404).json({ error: "Project not found" });
+    return res.json(data);
+});
+async function nextInvoiceId() {
+    const { data } = await supabase_js_1.supabase.from("admin_invoices").select("id");
+    const max = Math.max(0, ...(data ?? []).map((r) => parseInt(r.id.replace("INV-", ""), 10) || 0));
+    return `INV-${String(max + 1).padStart(3, "0")}`;
+}
+router.post("/invoices", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
+    const { client, clientUserId, project, amount, date } = req.body ?? {};
+    if (!client || !clientUserId || !project || !amount || !date) {
+        return res.status(400).json({ error: "client, clientUserId, project, amount, date are required" });
+    }
+    if (!supabase_js_1.supabase)
+        return res.status(503).json({ error: "Database not configured" });
+    const id = await nextInvoiceId();
+    const formattedAmount = "$" + Number(amount).toLocaleString("en-US");
+    const { data, error } = await supabase_js_1.supabase.from("admin_invoices").insert({ id, client, amount: formattedAmount, status: "Unpaid", date }).select().single();
+    if (error)
+        return res.status(500).json({ error: error.message });
+    await supabase_js_1.supabase.from("client_invoices").insert({ id, project, amount: formattedAmount, status: "Unpaid", due: date, client_id: clientUserId });
+    return res.status(201).json(data);
+});
+async function attachProofUrl(rows) {
+    const admin = supabaseAdmin_js_1.supabaseAdmin;
+    return Promise.all(rows.map(async (r) => {
+        if (!r.proof_path || !admin)
+            return { ...r, proofUrl: null };
+        const { data } = await admin.storage.from(supabaseAdmin_js_1.FILES_BUCKET).createSignedUrl(r.proof_path, 3600);
+        return { ...r, proofUrl: data?.signedUrl ?? null };
+    }));
+}
+router.get("/invoices", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (_req, res) => {
+    if (!supabase_js_1.supabase)
+        return res.json([]);
+    const { data, error } = await supabase_js_1.supabase.from("admin_invoices").select("*");
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.json(await attachProofUrl(data ?? []));
+});
+router.patch("/invoices/:id/verify", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
+    const id = req.params.id;
+    const { approve } = req.body ?? {};
+    if (typeof approve !== "boolean")
+        return res.status(400).json({ error: "approve (boolean) is required" });
+    if (!supabase_js_1.supabase)
+        return res.status(503).json({ error: "Database not configured" });
+    const patch = approve ? { status: "Paid" } : { status: "Unpaid", proof_path: null };
+    const { data, error } = await supabase_js_1.supabase.from("admin_invoices").update(patch).eq("id", id).select().maybeSingle();
+    if (error)
+        return res.status(500).json({ error: error.message });
+    if (!data)
+        return res.status(404).json({ error: "Invoice not found" });
+    await supabase_js_1.supabase.from("client_invoices").update(patch).eq("id", id);
+    return res.json((await attachProofUrl([data]))[0]);
+});
+router.post("/notifications", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
+    const { title, msg, targetRole, targetUserId } = req.body ?? {};
+    if (!title || !msg)
+        return res.status(400).json({ error: "title, msg are required" });
+    if (targetRole && !["all", "employee", "client"].includes(targetRole))
+        return res.status(400).json({ error: "targetRole must be all, employee, or client" });
+    if (!supabase_js_1.supabase)
+        return res.status(503).json({ error: "Database not configured" });
+    const date = new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const { data, error } = await supabase_js_1.supabase.from("notifications").insert({
+        title, msg, date, created_by: req.user.id, creator_role: "admin",
+        target_role: targetRole || "all", target_user_id: targetUserId ? Number(targetUserId) : null,
+    }).select().single();
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.status(201).json(data);
+});
+router.post("/blog", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
+    const { title, author, content, status } = req.body ?? {};
+    if (!title || !author || !content)
+        return res.status(400).json({ error: "title, author, content are required" });
+    if (!supabase_js_1.supabase)
+        return res.status(503).json({ error: "Database not configured" });
+    const date = new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    const { data, error } = await supabase_js_1.supabase.from("admin_blog").insert({ title, author, content, status: status === "Published" ? "Published" : "Draft", date }).select().single();
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.status(201).json(data);
+});
+router.patch("/blog/:id/status", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
+    const id = Number(req.params.id);
+    const { status } = req.body ?? {};
+    if (status !== "Draft" && status !== "Published")
+        return res.status(400).json({ error: "status must be Draft or Published" });
+    if (!supabase_js_1.supabase)
+        return res.status(503).json({ error: "Database not configured" });
+    const { data, error } = await supabase_js_1.supabase.from("admin_blog").update({ status }).eq("id", id).select().maybeSingle();
+    if (error)
+        return res.status(500).json({ error: error.message });
+    if (!data)
+        return res.status(404).json({ error: "Blog post not found" });
+    return res.json(data);
+});
+router.post("/portfolio", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
+    const { title, client, category, description } = req.body ?? {};
+    if (!title || !client || !category)
+        return res.status(400).json({ error: "title, client, category are required" });
+    if (!supabase_js_1.supabase)
+        return res.status(503).json({ error: "Database not configured" });
+    const { data, error } = await supabase_js_1.supabase.from("admin_portfolio").insert({ title, client, category, description: description || null }).select().single();
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.status(201).json(data);
+});
 const tableMap = {
     services: "admin_services",
     projects: "admin_projects",
-    invoices: "admin_invoices",
-    notifications: "admin_notifications",
+    notifications: "notifications",
     blog: "admin_blog",
     portfolio: "admin_portfolio",
 };
@@ -88,5 +273,63 @@ Object.entries(tableMap).forEach(([key, table]) => {
             return res.status(500).json({ error: error.message });
         return res.json(data);
     });
+});
+router.get("/messages", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
+    const projectId = Number(req.query.projectId);
+    if (!projectId)
+        return res.status(400).json({ error: "projectId query param is required" });
+    if (!supabase_js_1.supabase)
+        return res.json([]);
+    const { data, error } = await supabase_js_1.supabase.from("project_messages").select("id,projectId:project_id,senderId:sender_id,senderRole:sender_role,text,time,client_id").eq("project_id", projectId).order("id", { ascending: true });
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.json(data);
+});
+router.post("/messages", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
+    const { projectId, text } = req.body ?? {};
+    if (!projectId || !text)
+        return res.status(400).json({ error: "projectId, text are required" });
+    if (!supabase_js_1.supabase)
+        return res.status(503).json({ error: "Database not configured" });
+    const project = await supabase_js_1.supabase.from("admin_projects").select("id,client_id").eq("id", projectId).maybeSingle();
+    if (!project.data)
+        return res.status(404).json({ error: "Project not found" });
+    const time = new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+    const { data, error } = await supabase_js_1.supabase.from("project_messages").insert({
+        project_id: projectId, sender_id: req.user.id, sender_role: "admin", text, time, client_id: project.data.client_id,
+    }).select("id,projectId:project_id,senderId:sender_id,senderRole:sender_role,text,time,client_id").single();
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.status(201).json(data);
+});
+router.get("/attendance", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (_req, res) => {
+    if (!supabase_js_1.supabase)
+        return res.json([]);
+    const { data, error } = await supabase_js_1.supabase.from("employee_attendance").select("id,date,checkIn:check_in,checkOut:check_out,status,employee_id,users(name)");
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.json(data);
+});
+router.get("/leave-requests", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (_req, res) => {
+    if (!supabase_js_1.supabase)
+        return res.json([]);
+    const { data, error } = await supabase_js_1.supabase.from("employee_leave_requests").select("id,type,reason,from:from_date,to:to_date,status,employee_id,users(name)");
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.json(data);
+});
+router.patch("/leave-requests/:id/status", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
+    const id = Number(req.params.id);
+    const { status } = req.body ?? {};
+    if (status !== "Approved" && status !== "Rejected")
+        return res.status(400).json({ error: "status must be Approved or Rejected" });
+    if (!supabase_js_1.supabase)
+        return res.status(503).json({ error: "Database not configured" });
+    const { data, error } = await supabase_js_1.supabase.from("employee_leave_requests").update({ status }).eq("id", id).select("id,type,reason,from:from_date,to:to_date,status,employee_id").maybeSingle();
+    if (error)
+        return res.status(500).json({ error: error.message });
+    if (!data)
+        return res.status(404).json({ error: "Leave request not found" });
+    return res.json(data);
 });
 exports.default = router;

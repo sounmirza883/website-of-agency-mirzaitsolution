@@ -1,12 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { useInvoices, useCreateInvoice, useClientsList } from "../hooks";
+import { useInvoices, useCreateInvoice, useClientsList, useVerifyInvoice } from "../hooks";
+
+function statusBadgeClass(status: string) {
+  if (status === "Paid") return "bg-green-100 text-green-700";
+  if (status === "PendingVerification") return "bg-amber-100 text-amber-700";
+  return "bg-yellow-100 text-yellow-700"; // Unpaid
+}
 
 export default function InvoicesPage() {
   const { data: invoices } = useInvoices();
   const { data: clients } = useClientsList();
   const createInvoice = useCreateInvoice();
+  const verifyInvoice = useVerifyInvoice();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ clientUserId: "", project: "", amount: "", date: "" });
   const [error, setError] = useState("");
@@ -43,8 +50,25 @@ export default function InvoicesPage() {
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <table className="w-full text-sm">
-          <thead><tr className="bg-gray-50 text-left">{["Invoice", "Client", "Amount", "Status", "Date"].map((h) => <th key={h} className="px-5 py-3 font-medium text-gray-600">{h}</th>)}</tr></thead>
-          <tbody>{invoices?.map((inv) => <tr key={inv.id} className="border-t border-gray-100 hover:bg-gray-50"><td className="px-5 py-3 font-medium">{inv.id}</td><td className="px-5 py-3 text-gray-600">{inv.client}</td><td className="px-5 py-3 font-medium">{inv.amount}</td><td className="px-5 py-3"><span className={`text-xs font-medium px-2 py-0.5 rounded ${inv.status === "Paid" ? "bg-green-100 text-green-700" : inv.status === "Unpaid" ? "bg-yellow-100 text-yellow-700" : "bg-red-100 text-red-700"}`}>{inv.status}</span></td><td className="px-5 py-3 text-gray-600">{inv.date}</td></tr>)}</tbody>
+          <thead><tr className="bg-gray-50 text-left">{["Invoice", "Client", "Amount", "Status", "Date", "Proof / Verification"].map((h) => <th key={h} className="px-5 py-3 font-medium text-gray-600">{h}</th>)}</tr></thead>
+          <tbody>{invoices?.map((inv) => (
+            <tr key={inv.id} className="border-t border-gray-100 hover:bg-gray-50">
+              <td className="px-5 py-3 font-medium">{inv.id}</td>
+              <td className="px-5 py-3 text-gray-600">{inv.client}</td>
+              <td className="px-5 py-3 font-medium">{inv.amount}</td>
+              <td className="px-5 py-3"><span className={`text-xs font-medium px-2 py-0.5 rounded ${statusBadgeClass(inv.status)}`}>{inv.status}</span></td>
+              <td className="px-5 py-3 text-gray-600">{inv.date}</td>
+              <td className="px-5 py-3">
+                {inv.status === "PendingVerification" && (
+                  <div className="flex items-center gap-2">
+                    {inv.proofUrl && <a href={inv.proofUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-600 hover:underline">View Proof</a>}
+                    <button onClick={() => verifyInvoice.mutate({ id: inv.id, approve: true })} disabled={verifyInvoice.isPending} className="text-xs text-green-700 hover:text-green-900 border border-green-200 rounded-md px-2 py-1 disabled:opacity-50">Verify</button>
+                    <button onClick={() => verifyInvoice.mutate({ id: inv.id, approve: false })} disabled={verifyInvoice.isPending} className="text-xs text-red-600 hover:text-red-800 border border-red-200 rounded-md px-2 py-1 disabled:opacity-50">Reject</button>
+                  </div>
+                )}
+              </td>
+            </tr>
+          ))}</tbody>
         </table>
         {invoices?.length === 0 && <div className="px-5 py-8 text-center text-sm text-gray-400">No invoices yet</div>}
       </div>
