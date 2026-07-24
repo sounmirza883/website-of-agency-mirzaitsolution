@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
-import { fetchUsers, fetchEmployees, fetchClientsList, createEmployee, createClient, setEmployeePermission, fetchServices, fetchProjects, fetchInvoices, fetchNotifications, fetchBlogPosts, fetchPortfolioList, fetchContactSubmissions } from "./queries";
+import { fetchUsers, fetchEmployees, fetchClientsList, createEmployee, createClient, setEmployeePermission, fetchServices, fetchProjects, fetchInvoices, fetchNotifications, fetchBlogPosts, fetchPortfolioList, fetchContactSubmissions, createService, createProject, updateProjectStatus, createInvoice, createNotification, createBlogPost, setBlogPostStatus, createPortfolioItem, setUserStatus } from "./queries";
 
 export function useUsers() {
   const { token } = useAuth();
@@ -79,4 +79,92 @@ export function usePortfolioList() {
 export function useContactSubmissions() {
   const { token } = useAuth();
   return useQuery({ queryKey: ["contactSubmissions"], queryFn: () => fetchContactSubmissions(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
+}
+
+export function useCreateService() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Parameters<typeof createService>[1]) => createService(token!, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["services"] }),
+  });
+}
+
+export function useCreateProject() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Parameters<typeof createProject>[1]) => createProject(token!, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["projects"] }),
+  });
+}
+
+export function useUpdateProjectStatus() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { id: number; status: string }) => updateProjectStatus(token!, vars.id, vars.status),
+    onMutate: async (vars) => {
+      await qc.cancelQueries({ queryKey: ["projects"] });
+      const prev = qc.getQueryData<any[]>(["projects"]);
+      qc.setQueryData<any[]>(["projects"], (old) => old?.map((p) => (p.id === vars.id ? { ...p, status: vars.status } : p)));
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => { if (ctx?.prev) qc.setQueryData(["projects"], ctx.prev); },
+    onSettled: () => qc.invalidateQueries({ queryKey: ["projects"] }),
+  });
+}
+
+export function useCreateInvoice() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Parameters<typeof createInvoice>[1]) => createInvoice(token!, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["invoices"] }),
+  });
+}
+
+export function useCreateNotification() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Parameters<typeof createNotification>[1]) => createNotification(token!, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
+  });
+}
+
+export function useCreateBlogPost() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Parameters<typeof createBlogPost>[1]) => createBlogPost(token!, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["blogPosts"] }),
+  });
+}
+
+export function useSetBlogPostStatus() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: number; status: string }) => setBlogPostStatus(token!, id, status),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["blogPosts"] }),
+  });
+}
+
+export function useCreatePortfolioItem() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Parameters<typeof createPortfolioItem>[1]) => createPortfolioItem(token!, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["portfolioList"] }),
+  });
+}
+
+export function useSetUserStatus() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: number; status: string }) => setUserStatus(token!, id, status),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["users"] }),
+  });
 }

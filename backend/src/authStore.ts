@@ -153,3 +153,14 @@ export async function setCanCreateClients(id: number, canCreateClients: boolean)
   const { data } = await supabase.from("users").update({ can_create_clients: canCreateClients }).eq("id", id).select().maybeSingle();
   return data ? rowToUser(data) : null;
 }
+
+export async function setUserStatus(id: number, status: string): Promise<AuthUser | null> {
+  if (!supabase) {
+    const user = memoryUsers.find((u) => u.id === id);
+    if (!user) return null;
+    user.status = status;
+    return user;
+  }
+  const { data } = await supabase.from("users").update({ status }).eq("id", id).select().maybeSingle();
+  return data ? rowToUser(data) : null;
+}

@@ -13,6 +13,20 @@ async function apiPost<T>(path: string, token: string, body: unknown): Promise<T
   return data;
 }
 
+async function apiPatch<T>(path: string, token: string, body: unknown): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
+
+async function apiUpload<T>(path: string, token: string, formData: FormData): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
+
 export function fetchMyClients(token: string) { return apiGet<any[]>("/employee/clients", token); }
 export function createClient(token: string, payload: { name: string; email: string; password: string; company: string }) {
   return apiPost<any>("/employee/clients", token, payload);
@@ -24,3 +38,19 @@ export function fetchEmpFiles(token: string) { return apiGet<any[]>("/employee/f
 export function fetchStatusUpdates(token: string) { return apiGet<any[]>("/employee/status-updates", token); }
 export function fetchAttendance(token: string) { return apiGet<any[]>("/employee/attendance", token); }
 export function fetchLeaveRequests(token: string) { return apiGet<any[]>("/employee/leave-requests", token); }
+
+export function createTask(token: string, payload: { project: string; task: string; priority: string; due: string }) {
+  return apiPost<any>("/employee/tasks", token, payload);
+}
+export function updateTaskStatus(token: string, id: number, status: string) {
+  return apiPatch<any>(`/employee/tasks/${id}/status`, token, { status });
+}
+export function postStatusUpdate(token: string, payload: { project: string; update: string; progress: number }) {
+  return apiPost<any>("/employee/status-updates", token, payload);
+}
+export function checkIn(token: string) { return apiPost<any>("/employee/attendance/check-in", token, {}); }
+export function checkOut(token: string) { return apiPost<any>("/employee/attendance/check-out", token, {}); }
+export function requestLeave(token: string, payload: { type: string; reason: string; from: string; to: string }) {
+  return apiPost<any>("/employee/leave-requests", token, payload);
+}
+export function uploadFile(token: string, formData: FormData) { return apiUpload<any>("/employee/files", token, formData); }

@@ -25,13 +25,12 @@ CREATE TABLE admin_services (id SERIAL PRIMARY KEY, name TEXT NOT NULL, price TE
 CREATE TABLE admin_projects (id SERIAL PRIMARY KEY, name TEXT NOT NULL, client TEXT NOT NULL, status TEXT NOT NULL, deadline TEXT NOT NULL);
 CREATE TABLE admin_invoices (id TEXT PRIMARY KEY, client TEXT NOT NULL, amount TEXT NOT NULL, status TEXT NOT NULL, date TEXT NOT NULL);
 CREATE TABLE admin_notifications (id SERIAL PRIMARY KEY, title TEXT NOT NULL, msg TEXT NOT NULL, date TEXT NOT NULL);
-CREATE TABLE admin_blog (id SERIAL PRIMARY KEY, title TEXT NOT NULL, author TEXT NOT NULL, date TEXT NOT NULL, status TEXT NOT NULL);
-CREATE TABLE admin_portfolio (id SERIAL PRIMARY KEY, title TEXT NOT NULL, client TEXT NOT NULL, category TEXT NOT NULL);
+CREATE TABLE admin_blog (id SERIAL PRIMARY KEY, title TEXT NOT NULL, author TEXT NOT NULL, date TEXT NOT NULL, status TEXT NOT NULL, content TEXT NOT NULL DEFAULT '');
+CREATE TABLE admin_portfolio (id SERIAL PRIMARY KEY, title TEXT NOT NULL, client TEXT NOT NULL, category TEXT NOT NULL, description TEXT);
 
 -- Employee
 CREATE TABLE employee_assigned_projects (id SERIAL PRIMARY KEY, name TEXT NOT NULL, role TEXT NOT NULL, status TEXT NOT NULL, deadline TEXT NOT NULL, employee_id INTEGER REFERENCES users(id));
 CREATE TABLE employee_tasks (id SERIAL PRIMARY KEY, project TEXT NOT NULL, task TEXT NOT NULL, priority TEXT NOT NULL, due TEXT NOT NULL, status TEXT NOT NULL, employee_id INTEGER REFERENCES users(id));
-CREATE TABLE employee_files (id SERIAL PRIMARY KEY, name TEXT NOT NULL, project TEXT NOT NULL, size TEXT NOT NULL, uploaded TEXT NOT NULL, status TEXT NOT NULL, employee_id INTEGER REFERENCES users(id));
 CREATE TABLE employee_status_updates (id SERIAL PRIMARY KEY, project TEXT NOT NULL, update_text TEXT NOT NULL, progress INTEGER NOT NULL, date TEXT NOT NULL, employee_id INTEGER REFERENCES users(id));
 CREATE TABLE employee_attendance (id SERIAL PRIMARY KEY, date TEXT NOT NULL, check_in TEXT NOT NULL, check_out TEXT NOT NULL, status TEXT NOT NULL, employee_id INTEGER REFERENCES users(id));
 CREATE TABLE employee_leave_requests (id SERIAL PRIMARY KEY, type TEXT NOT NULL, reason TEXT NOT NULL, from_date TEXT NOT NULL, to_date TEXT NOT NULL, status TEXT NOT NULL, employee_id INTEGER REFERENCES users(id));
@@ -39,7 +38,19 @@ CREATE TABLE employee_leave_requests (id SERIAL PRIMARY KEY, type TEXT NOT NULL,
 -- Client
 CREATE TABLE client_projects (id SERIAL PRIMARY KEY, name TEXT NOT NULL, status TEXT NOT NULL, deadline TEXT NOT NULL, progress INTEGER NOT NULL, client_id INTEGER REFERENCES users(id));
 CREATE TABLE client_milestones (id SERIAL PRIMARY KEY, project TEXT NOT NULL, task TEXT NOT NULL, status TEXT NOT NULL, date TEXT NOT NULL, client_id INTEGER REFERENCES users(id));
-CREATE TABLE client_files (id SERIAL PRIMARY KEY, name TEXT NOT NULL, project TEXT NOT NULL, size TEXT NOT NULL, uploaded TEXT NOT NULL, client_id INTEGER REFERENCES users(id));
 CREATE TABLE client_invoices (id TEXT PRIMARY KEY, project TEXT NOT NULL, amount TEXT NOT NULL, status TEXT NOT NULL, due TEXT NOT NULL, client_id INTEGER REFERENCES users(id));
-CREATE TABLE client_tickets (id TEXT PRIMARY KEY, subject TEXT NOT NULL, status TEXT NOT NULL, priority TEXT NOT NULL, updated TEXT NOT NULL, client_id INTEGER REFERENCES users(id));
+CREATE TABLE client_tickets (id TEXT PRIMARY KEY, subject TEXT NOT NULL, status TEXT NOT NULL, priority TEXT NOT NULL, updated TEXT NOT NULL, client_id INTEGER REFERENCES users(id), description TEXT NOT NULL DEFAULT '');
 CREATE TABLE client_messages (id SERIAL PRIMARY KEY, sender TEXT NOT NULL, text TEXT NOT NULL, time TEXT NOT NULL, client_id INTEGER REFERENCES users(id));
+
+-- Shared file storage (employee uploads, optionally visible to a client)
+CREATE TABLE project_files (
+  id SERIAL PRIMARY KEY,
+  name TEXT NOT NULL,
+  project TEXT NOT NULL,
+  size TEXT NOT NULL,
+  path TEXT NOT NULL,
+  uploaded TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'Pending',
+  uploaded_by INTEGER REFERENCES users(id),
+  client_id INTEGER REFERENCES users(id)
+);

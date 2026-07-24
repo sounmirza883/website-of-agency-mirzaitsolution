@@ -14,10 +14,10 @@ export interface Notification {
   id: number; title: string; msg: string; date: string;
 }
 export interface BlogPost {
-  id: number; title: string; author: string; date: string; status: string;
+  id: number; title: string; author: string; date: string; status: string; content: string;
 }
 export interface PortfolioItem {
-  id: number; title: string; client: string; category: string;
+  id: number; title: string; client: string; category: string; description: string | null;
 }
 export interface AssignedProject {
   id: number; name: string; role: string; status: string; deadline: string; employee_id: number;
@@ -25,8 +25,8 @@ export interface AssignedProject {
 export interface Task {
   id: number; project: string; task: string; priority: string; due: string; status: string; employee_id: number;
 }
-export interface EmployeeFile {
-  id: number; name: string; project: string; size: string; uploaded: string; status: string; employee_id: number;
+export interface ProjectFile {
+  id: number; name: string; project: string; size: string; uploaded: string; status: string; uploaded_by: number; client_id: number | null; url: string;
 }
 export interface StatusUpdate {
   id: number; project: string; update: string; progress: number; date: string; employee_id: number;
@@ -43,14 +43,11 @@ export interface ClientProject {
 export interface Milestone {
   id: number; project: string; task: string; status: string; date: string; client_id: number;
 }
-export interface ClientFile {
-  id: number; name: string; project: string; size: string; uploaded: string; client_id: number;
-}
 export interface ClientInvoice {
   id: string; project: string; amount: string; status: string; due: string; client_id: number;
 }
 export interface Ticket {
-  id: string; subject: string; status: string; priority: string; updated: string; client_id: number;
+  id: string; subject: string; status: string; priority: string; updated: string; client_id: number; description: string;
 }
 export interface Message {
   id: number; from: string; text: string; time: string; client_id: number;

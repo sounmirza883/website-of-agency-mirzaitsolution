@@ -1,9 +1,18 @@
 "use client";
 
-import { useMessages } from "../hooks";
+import { useState } from "react";
+import { useMessages, useSendMessage } from "../hooks";
 
 export default function ChatPage() {
   const { data: messages } = useMessages();
+  const sendMessage = useSendMessage();
+  const [draft, setDraft] = useState("");
+
+  function handleSend() {
+    const text = draft.trim();
+    if (!text) return;
+    sendMessage.mutate(text, { onSuccess: () => setDraft("") });
+  }
 
   return (
     <div>
@@ -21,8 +30,8 @@ export default function ChatPage() {
           ))}
         </div>
         <div className="flex gap-2" style={{borderTop:"1px solid var(--line)",paddingTop:"16px"}}>
-          <input type="text" placeholder="Type your message..." style={{flex:1,padding:"10px 16px",border:"1px solid var(--line)",borderRadius:"12px",fontSize:"14px",outline:"none",background:"var(--canvas)",color:"var(--ink)"}} />
-          <button style={{padding:"10px 20px",background:"var(--red)",color:"#fff",fontSize:"14px",fontWeight:"500",borderRadius:"12px",border:0,cursor:"pointer"}}>Send</button>
+          <input type="text" placeholder="Type your message..." value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }} style={{flex:1,padding:"10px 16px",border:"1px solid var(--line)",borderRadius:"12px",fontSize:"14px",outline:"none",background:"var(--canvas)",color:"var(--ink)"}} />
+          <button onClick={handleSend} disabled={sendMessage.isPending || !draft.trim()} style={{padding:"10px 20px",background:"var(--red)",color:"#fff",fontSize:"14px",fontWeight:"500",borderRadius:"12px",border:0,cursor:"pointer",opacity:sendMessage.isPending || !draft.trim()?.6:1}}>Send</button>
         </div>
       </div>
     </div>

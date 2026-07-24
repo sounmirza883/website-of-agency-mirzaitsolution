@@ -39,3 +39,31 @@ export function fetchNotifications(token: string) { return apiGet<any[]>("/admin
 export function fetchBlogPosts(token: string) { return apiGet<any[]>("/admin/blog", token); }
 export function fetchPortfolioList(token: string) { return apiGet<any[]>("/admin/portfolio", token); }
 export function fetchContactSubmissions(token: string) { return apiGet<any[]>("/admin/contact-submissions", token); }
+
+export function createService(token: string, payload: { name: string; price: string; duration: string }) {
+  return apiPost<any>("/admin/services", token, payload);
+}
+export function createProject(token: string, payload: { name: string; client: string; status: string; deadline: string }) {
+  return apiPost<any>("/admin/projects", token, payload);
+}
+export function updateProjectStatus(token: string, id: number, status: string) {
+  return apiPatch<any>(`/admin/projects/${id}/status`, token, { status });
+}
+export function createInvoice(token: string, payload: { client: string; clientUserId: number; project: string; amount: number; date: string }) {
+  return apiPost<any>("/admin/invoices", token, payload);
+}
+export function createNotification(token: string, payload: { title: string; msg: string }) {
+  return apiPost<any>("/admin/notifications", token, payload);
+}
+export function createBlogPost(token: string, payload: { title: string; author: string; content: string; status: string }) {
+  return apiPost<any>("/admin/blog", token, payload);
+}
+export function setBlogPostStatus(token: string, id: number, status: string) {
+  return apiPatch<any>(`/admin/blog/${id}/status`, token, { status });
+}
+export function createPortfolioItem(token: string, payload: { title: string; client: string; category: string; description?: string }) {
+  return apiPost<any>("/admin/portfolio", token, payload);
+}
+export function setUserStatus(token: string, id: number, status: string) {
+  return apiPatch<any>(`/admin/users/${id}/status`, token, { status });
+}

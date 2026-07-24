@@ -1,14 +1,53 @@
 "use client";
 
-import { useAttendance } from "../hooks";
+import { useState } from "react";
+import { useAttendance, useCheckIn, useCheckOut } from "../hooks";
 
 export default function AttendancePage() {
   const { data: attendance } = useAttendance();
+  const checkIn = useCheckIn();
+  const checkOut = useCheckOut();
+  const [error, setError] = useState("");
+
+  const today = new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const todayRow = attendance?.find((a) => a.date === today);
+  const canCheckIn = !todayRow;
+  const canCheckOut = !!todayRow && !todayRow.checkOut;
+
+  async function handleCheckIn() {
+    setError("");
+    try {
+      await checkIn.mutateAsync();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
+  async function handleCheckOut() {
+    setError("");
+    try {
+      await checkOut.mutateAsync();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-1">Attendance</h1>
-      <p className="text-sm text-gray-500 mb-6">Mark and view your attendance</p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold mb-1">Attendance</h1>
+          <p className="text-sm text-gray-500">Mark and view your attendance</p>
+        </div>
+        <div className="text-right">
+          <div className="flex gap-2">
+            <button onClick={handleCheckIn} disabled={!canCheckIn || checkIn.isPending} className="bg-emerald-600 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{checkIn.isPending ? "Checking In…" : "Check In"}</button>
+            <button onClick={handleCheckOut} disabled={!canCheckOut || checkOut.isPending} className="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{checkOut.isPending ? "Checking Out…" : "Check Out"}</button>
+          </div>
+          {error && <p className="text-xs text-red-600 mt-2">{error}</p>}
+        </div>
+      </div>
+
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <table className="w-full text-sm">
           <thead><tr className="bg-gray-50 text-left">{["Date", "Check-In", "Check-Out", "Status"].map((h) => <th key={h} className="px-5 py-3 font-medium text-gray-600">{h}</th>)}</tr></thead>
