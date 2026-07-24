@@ -10,7 +10,17 @@ import clientRoutes from "./routes/client.js";
 const app = express();
 const port = process.env.PORT || 4000;
 
-app.use(cors({ origin: true }));
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://localhost:3002",
+  "http://localhost:3003",
+  "https://agency.vesseldrop.com",
+  "https://admin.vesseldrop.com",
+  "https://client.vesseldrop.com",
+  "https://employee.vesseldrop.com",
+];
+app.use(cors({ origin: (origin, cb) => cb(null, !origin || allowedOrigins.includes(origin)) }));
 app.use(express.json());
 
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));

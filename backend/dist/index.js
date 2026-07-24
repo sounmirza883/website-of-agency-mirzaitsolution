@@ -12,7 +12,17 @@ const employee_js_1 = __importDefault(require("./routes/employee.js"));
 const client_js_1 = __importDefault(require("./routes/client.js"));
 const app = (0, express_1.default)();
 const port = process.env.PORT || 4000;
-app.use((0, cors_1.default)({ origin: true }));
+const allowedOrigins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:3002",
+    "http://localhost:3003",
+    "https://agency.vesseldrop.com",
+    "https://admin.vesseldrop.com",
+    "https://client.vesseldrop.com",
+    "https://employee.vesseldrop.com",
+];
+app.use((0, cors_1.default)({ origin: (origin, cb) => cb(null, !origin || allowedOrigins.includes(origin)) }));
 app.use(express_1.default.json());
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 app.use("/api/website", website_js_1.default);

@@ -27,3 +27,13 @@ Each subproject has its own `AGENTS.md` — check it before editing.
 2. Start backend: `cd backend && npm run dev`
 3. Start any frontend: `cd frontend/<app> && npm run dev`
 4. Set `NEXT_PUBLIC_API_URL=http://localhost:4000/api` in frontend `.env.local` if backend is not on port 4000
+
+## Production Domains
+
+| App | Domain |
+|-----|--------|
+| Backend API | `https://backend.vesseldrop.com` |
+| Agency Website | `https://agency.vesseldrop.com` |
+| Admin Portal | `https://admin.vesseldrop.com` |
+| Client Portal | `https://client.vesseldrop.com` |
+| Employee Portal | `https://employee.vesseldrop.com` |

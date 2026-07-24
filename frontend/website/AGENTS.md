@@ -39,5 +39,9 @@ No separate typecheck or test commands — `npm run build` includes TypeScript c
 - All page files return JSX in a single `return` statement (no multi-line formatting in pages).
 - `SiteShell` wraps every page with `Header`, WhatsApp float, and `Footer`.
 - Loading screen replays on every navigation (controlled by `BodyWrapper` via `usePathname()`).
-- No API endpoints — all data is static from `app/data.ts`. TanStack Query is wired up but unused.
+- All data is static from `app/data.ts`. TanStack Query is wired up with `app/queries.ts` + `app/hooks.ts` calling backend at `NEXT_PUBLIC_API_URL`.
 - Fonts: `DM Mono` (mono), `Inter` (sans) via Google Fonts.
+
+## Domain
+
+`https://agency.vesseldrop.com`

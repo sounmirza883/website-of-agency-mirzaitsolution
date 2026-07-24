@@ -15,7 +15,7 @@ Express.js + TypeScript API server that connects all four frontend apps to Supab
 - **Express.js** (`^4.21.2`) — HTTP server
 - **TypeScript** (`^5.7.3`) — compiled via `tsc`, run via `tsx`
 - **Supabase** (`@supabase/supabase-js`) — database client
-- **CORS** — enabled for all origins (dev mode)
+- **CORS** — whitelisted origins: `agency.vesseldrop.com`, `admin.vesseldrop.com`, `client.vesseldrop.com`, `employee.vesseldrop.com`, localhost
 
 ## Structure
 
@@ -51,3 +51,7 @@ When `SUPABASE_URL` and `SUPABASE_ANON_KEY` are not set in `.env`, the server re
 ## Health Check
 
 `GET /api/health` returns `{ status: "ok" }`.
+
+## Domain
+
+`https://backend.vesseldrop.com`
