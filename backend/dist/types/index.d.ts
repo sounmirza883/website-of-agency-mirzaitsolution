@@ -5,20 +5,6 @@ export interface User {
     role: string;
     status: string;
 }
-export interface Employee {
-    id: number;
-    name: string;
-    dept: string;
-    position: string;
-    status: string;
-}
-export interface Client {
-    id: number;
-    name: string;
-    email: string;
-    company: string;
-    status: string;
-}
 export interface Service {
     id: number;
     name: string;
@@ -64,6 +50,7 @@ export interface AssignedProject {
     role: string;
     status: string;
     deadline: string;
+    employee_id: number;
 }
 export interface Task {
     id: number;
@@ -72,6 +59,7 @@ export interface Task {
     priority: string;
     due: string;
     status: string;
+    employee_id: number;
 }
 export interface EmployeeFile {
     id: number;
@@ -80,6 +68,7 @@ export interface EmployeeFile {
     size: string;
     uploaded: string;
     status: string;
+    employee_id: number;
 }
 export interface StatusUpdate {
     id: number;
@@ -87,6 +76,7 @@ export interface StatusUpdate {
     update: string;
     progress: number;
     date: string;
+    employee_id: number;
 }
 export interface Attendance {
     id: number;
@@ -94,6 +84,7 @@ export interface Attendance {
     checkIn: string;
     checkOut: string;
     status: string;
+    employee_id: number;
 }
 export interface LeaveRequest {
     id: number;
@@ -102,6 +93,7 @@ export interface LeaveRequest {
     from: string;
     to: string;
     status: string;
+    employee_id: number;
 }
 export interface ClientProject {
     id: number;
@@ -109,6 +101,7 @@ export interface ClientProject {
     status: string;
     deadline: string;
     progress: number;
+    client_id: number;
 }
 export interface Milestone {
     id: number;
@@ -116,6 +109,7 @@ export interface Milestone {
     task: string;
     status: string;
     date: string;
+    client_id: number;
 }
 export interface ClientFile {
     id: number;
@@ -123,6 +117,7 @@ export interface ClientFile {
     project: string;
     size: string;
     uploaded: string;
+    client_id: number;
 }
 export interface ClientInvoice {
     id: string;
@@ -130,6 +125,7 @@ export interface ClientInvoice {
     amount: string;
     status: string;
     due: string;
+    client_id: number;
 }
 export interface Ticket {
     id: string;
@@ -137,12 +133,23 @@ export interface Ticket {
     status: string;
     priority: string;
     updated: string;
+    client_id: number;
 }
 export interface Message {
     id: number;
     from: string;
     text: string;
     time: string;
+    client_id: number;
+}
+export interface WebsiteContactSubmission {
+    id: number;
+    name: string;
+    email: string;
+    phone: string | null;
+    service: string | null;
+    message: string;
+    created_at: string;
 }
 export interface WebsiteService {
     title: string;
