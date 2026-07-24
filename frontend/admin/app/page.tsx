@@ -1,20 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { useProjects, useNotifications } from "./hooks";
-
-const stats = [
-  { label: "Total Users", value: "5", href: "/users" },
-  { label: "Employees", value: "5", href: "/employees" },
-  { label: "Clients", value: "5", href: "/clients" },
-  { label: "Active Projects", value: "3", href: "/projects" },
-  { label: "Pending Invoices", value: "2", href: "/invoices" },
-  { label: "Services", value: "6", href: "/services" },
-];
+import { useProjects, useNotifications, useUsers, useEmployees, useClientsList, useServices, useInvoices } from "./hooks";
 
 export default function AdminDashboard() {
   const { data: projects } = useProjects();
   const { data: notifications } = useNotifications();
+  const { data: users } = useUsers();
+  const { data: employees } = useEmployees();
+  const { data: clients } = useClientsList();
+  const { data: services } = useServices();
+  const { data: invoices } = useInvoices();
+
+  const stats = [
+    { label: "Total Users", value: String(users?.length ?? 0), href: "/users" },
+    { label: "Employees", value: String(employees?.length ?? 0), href: "/employees" },
+    { label: "Clients", value: String(clients?.length ?? 0), href: "/clients" },
+    { label: "Active Projects", value: String(projects?.filter((p) => p.status !== "Completed").length ?? 0), href: "/projects" },
+    { label: "Pending Invoices", value: String(invoices?.filter((i) => i.status !== "Paid").length ?? 0), href: "/invoices" },
+    { label: "Services", value: String(services?.length ?? 0), href: "/services" },
+  ];
 
   return (
     <div>

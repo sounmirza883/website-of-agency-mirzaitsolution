@@ -16,6 +16,7 @@ const nav = [
   { label: "Notifications", href: "/notifications" },
   { label: "Blog", href: "/blog" },
   { label: "Portfolio", href: "/portfolio" },
+  { label: "Leads", href: "/leads" },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {

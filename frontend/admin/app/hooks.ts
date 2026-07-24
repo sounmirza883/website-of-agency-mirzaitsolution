@@ -2,10 +2,11 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
-import { fetchUsers, fetchEmployees, fetchClientsList, createEmployee, createClient, setEmployeePermission, fetchServices, fetchProjects, fetchInvoices, fetchNotifications, fetchBlogPosts, fetchPortfolioList } from "./queries";
+import { fetchUsers, fetchEmployees, fetchClientsList, createEmployee, createClient, setEmployeePermission, fetchServices, fetchProjects, fetchInvoices, fetchNotifications, fetchBlogPosts, fetchPortfolioList, fetchContactSubmissions } from "./queries";
 
 export function useUsers() {
-  return useQuery({ queryKey: ["users"], queryFn: fetchUsers, staleTime: 1000 * 60 * 5 });
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["users"], queryFn: () => fetchUsers(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
 }
 
 export function useEmployees() {
@@ -46,25 +47,36 @@ export function useSetEmployeePermission() {
 }
 
 export function useServices() {
-  return useQuery({ queryKey: ["services"], queryFn: fetchServices, staleTime: 1000 * 60 * 5 });
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["services"], queryFn: () => fetchServices(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
 }
 
 export function useProjects() {
-  return useQuery({ queryKey: ["projects"], queryFn: fetchProjects, staleTime: 1000 * 60 * 5 });
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["projects"], queryFn: () => fetchProjects(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
 }
 
 export function useInvoices() {
-  return useQuery({ queryKey: ["invoices"], queryFn: fetchInvoices, staleTime: 1000 * 60 * 5 });
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["invoices"], queryFn: () => fetchInvoices(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
 }
 
 export function useNotifications() {
-  return useQuery({ queryKey: ["notifications"], queryFn: fetchNotifications, staleTime: 1000 * 60 * 5 });
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["notifications"], queryFn: () => fetchNotifications(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
 }
 
 export function useBlogPosts() {
-  return useQuery({ queryKey: ["blogPosts"], queryFn: fetchBlogPosts, staleTime: 1000 * 60 * 5 });
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["blogPosts"], queryFn: () => fetchBlogPosts(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
 }
 
 export function usePortfolioList() {
-  return useQuery({ queryKey: ["portfolioList"], queryFn: fetchPortfolioList, staleTime: 1000 * 60 * 5 });
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["portfolioList"], queryFn: () => fetchPortfolioList(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
+}
+
+export function useContactSubmissions() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["contactSubmissions"], queryFn: () => fetchContactSubmissions(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
 }

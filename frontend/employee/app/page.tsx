@@ -1,11 +1,12 @@
 "use client";
 
-import { useAssignedProjects, useEmpTasks, useAttendance } from "./hooks";
+import { useAssignedProjects, useEmpTasks, useAttendance, useLeaveRequests } from "./hooks";
 
 export default function EmployeeDashboard() {
   const { data: projects } = useAssignedProjects();
   const { data: tasks } = useEmpTasks();
   const { data: attendance } = useAttendance();
+  const { data: leaveRequests } = useLeaveRequests();
   const today = attendance?.[attendance.length - 1];
 
   return (
@@ -16,7 +17,7 @@ export default function EmployeeDashboard() {
         <div className="bg-white rounded-xl border border-gray-200 p-5"><div className="text-2xl font-bold text-gray-900">{projects?.filter(p => p.status === "In Progress").length ?? "—"}</div><div className="text-sm text-gray-500 mt-1">Active Projects</div></div>
         <div className="bg-white rounded-xl border border-gray-200 p-5"><div className="text-2xl font-bold text-gray-900">{tasks?.filter(t => t.status === "Pending" || t.status === "In Progress").length ?? "—"}</div><div className="text-sm text-gray-500 mt-1">Pending Tasks</div></div>
         <div className="bg-white rounded-xl border border-gray-200 p-5"><div className="text-2xl font-bold text-gray-900">{today?.status === "Present" ? "✓" : "—"}</div><div className="text-sm text-gray-500 mt-1">Today: {today?.status ?? "..."}</div></div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5"><div className="text-2xl font-bold text-gray-900">1</div><div className="text-sm text-gray-500 mt-1">Pending Leave</div></div>
+        <div className="bg-white rounded-xl border border-gray-200 p-5"><div className="text-2xl font-bold text-gray-900">{leaveRequests?.filter(l => l.status === "Pending").length ?? "—"}</div><div className="text-sm text-gray-500 mt-1">Pending Leave</div></div>
       </div>
       <div className="grid grid-cols-2 gap-6">
         <div className="bg-white rounded-xl border border-gray-200 p-5">

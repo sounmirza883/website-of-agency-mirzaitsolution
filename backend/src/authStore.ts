@@ -76,6 +76,13 @@ export async function listUsersByRole(role: Role, createdBy?: number): Promise<A
   return (data ?? []).map(rowToUser);
 }
 
+export async function listAllUsers(): Promise<AuthUser[]> {
+  if (!supabase) return [...memoryUsers];
+  const { data, error } = await supabase.from("users").select("*");
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(rowToUser);
+}
+
 export interface CreateUserInput {
   name: string;
   email: string;

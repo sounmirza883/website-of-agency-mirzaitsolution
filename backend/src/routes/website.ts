@@ -70,4 +70,22 @@ router.get("/service-details", async (_req, res) => {
   return res.json(data);
 });
 
+router.post("/contact", async (req, res) => {
+  const { name, email, phone, service, message } = req.body ?? {};
+  if (!name || !email || !message) {
+    return res.status(400).json({ error: "name, email, and message are required" });
+  }
+  if (!supabase) {
+    console.log("[contact] Supabase not configured — submission not persisted:", { name, email, phone, service, message });
+    return res.status(201).json({ ok: true });
+  }
+  const { data, error } = await supabase
+    .from("website_contact_submissions")
+    .insert({ name, email, phone: phone || null, service: service || null, message })
+    .select()
+    .single();
+  if (error) return res.status(500).json({ error: error.message });
+  return res.status(201).json(data);
+});
+
 export default router;

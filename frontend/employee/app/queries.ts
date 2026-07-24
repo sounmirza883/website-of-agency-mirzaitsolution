@@ -18,9 +18,9 @@ export function createClient(token: string, payload: { name: string; email: stri
   return apiPost<any>("/employee/clients", token, payload);
 }
 
-export function fetchAssignedProjects() { return apiGet<any[]>("/employee/assigned-projects"); }
-export function fetchEmpTasks() { return apiGet<any[]>("/employee/tasks"); }
-export function fetchEmpFiles() { return apiGet<any[]>("/employee/files"); }
-export function fetchStatusUpdates() { return apiGet<any[]>("/employee/status-updates"); }
-export function fetchAttendance() { return apiGet<any[]>("/employee/attendance"); }
-export function fetchLeaveRequests() { return apiGet<any[]>("/employee/leave-requests"); }
+export function fetchAssignedProjects(token: string) { return apiGet<any[]>("/employee/assigned-projects", token); }
+export function fetchEmpTasks(token: string) { return apiGet<any[]>("/employee/tasks", token); }
+export function fetchEmpFiles(token: string) { return apiGet<any[]>("/employee/files", token); }
+export function fetchStatusUpdates(token: string) { return apiGet<any[]>("/employee/status-updates", token); }
+export function fetchAttendance(token: string) { return apiGet<any[]>("/employee/attendance", token); }
+export function fetchLeaveRequests(token: string) { return apiGet<any[]>("/employee/leave-requests", token); }

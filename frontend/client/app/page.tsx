@@ -1,18 +1,19 @@
 "use client";
 
 import { Icon } from "./components";
-import { useProjects, useInvoices } from "./hooks";
-
-const stats = [
-  { label: "Active Projects", value: "2", icon: "fa-folder-open" },
-  { label: "Completed Projects", value: "1", icon: "fa-check-circle" },
-  { label: "Open Tickets", value: "3", icon: "fa-ticket-alt" },
-  { label: "Pending Invoices", value: "2", icon: "fa-file-invoice" },
-];
+import { useProjects, useInvoices, useTickets } from "./hooks";
 
 export default function ClientDashboard() {
   const { data: projects } = useProjects();
   const { data: invoices } = useInvoices();
+  const { data: tickets } = useTickets();
+
+  const stats = [
+    { label: "Active Projects", value: String(projects?.filter(p => p.status === "In Progress").length ?? 0), icon: "fa-folder-open" },
+    { label: "Completed Projects", value: String(projects?.filter(p => p.status === "Completed").length ?? 0), icon: "fa-check-circle" },
+    { label: "Open Tickets", value: String(tickets?.filter(t => t.status === "Open").length ?? 0), icon: "fa-ticket-alt" },
+    { label: "Pending Invoices", value: String(invoices?.filter(i => i.status !== "Paid").length ?? 0), icon: "fa-file-invoice" },
+  ];
 
   return (
     <div>

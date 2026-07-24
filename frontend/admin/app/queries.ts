@@ -20,7 +20,7 @@ async function apiPatch<T>(path: string, token: string, body: unknown): Promise<
   return data;
 }
 
-export function fetchUsers() { return apiGet<any[]>("/admin/users"); }
+export function fetchUsers(token: string) { return apiGet<any[]>("/admin/users", token); }
 export function fetchEmployees(token: string) { return apiGet<any[]>("/admin/employees", token); }
 export function fetchClientsList(token: string) { return apiGet<any[]>("/admin/clients", token); }
 export function createEmployee(token: string, payload: { name: string; email: string; password: string; dept: string; position: string; canCreateClients: boolean }) {
@@ -32,9 +32,10 @@ export function createClient(token: string, payload: { name: string; email: stri
 export function setEmployeePermission(token: string, id: number, canCreateClients: boolean) {
   return apiPatch<any>(`/admin/employees/${id}/permission`, token, { canCreateClients });
 }
-export function fetchServices() { return apiGet<any[]>("/admin/services"); }
-export function fetchProjects() { return apiGet<any[]>("/admin/projects"); }
-export function fetchInvoices() { return apiGet<any[]>("/admin/invoices"); }
-export function fetchNotifications() { return apiGet<any[]>("/admin/notifications"); }
-export function fetchBlogPosts() { return apiGet<any[]>("/admin/blog"); }
-export function fetchPortfolioList() { return apiGet<any[]>("/admin/portfolio"); }
+export function fetchServices(token: string) { return apiGet<any[]>("/admin/services", token); }
+export function fetchProjects(token: string) { return apiGet<any[]>("/admin/projects", token); }
+export function fetchInvoices(token: string) { return apiGet<any[]>("/admin/invoices", token); }
+export function fetchNotifications(token: string) { return apiGet<any[]>("/admin/notifications", token); }
+export function fetchBlogPosts(token: string) { return apiGet<any[]>("/admin/blog", token); }
+export function fetchPortfolioList(token: string) { return apiGet<any[]>("/admin/portfolio", token); }
+export function fetchContactSubmissions(token: string) { return apiGet<any[]>("/admin/contact-submissions", token); }
