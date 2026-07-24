@@ -20,7 +20,7 @@ function Card({ project }: { project: any }) {
 function Column({ status, items, onAdd }: { status: string; items: any[]; onAdd: () => void }) {
   const { ref, isDropTarget } = useDroppable({ id: status });
   return (
-    <div ref={ref} className={`bg-gray-50 rounded-xl border border-gray-200 p-3 flex flex-col gap-3 min-h-[240px] transition-colors ${isDropTarget ? "ring-2 ring-gray-300 bg-gray-100" : ""}`}>
+    <div ref={ref} className={`bg-gray-50 rounded-xl border border-gray-200 p-3 flex flex-col gap-3 min-h-60 transition-colors ${isDropTarget ? "ring-2 ring-gray-300 bg-gray-100" : ""}`}>
       <div className="flex items-center justify-between px-1">
         <h3 className="font-semibold text-sm text-gray-700">{status}</h3>
         <span className="text-xs font-medium bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full">{items.length}</span>
