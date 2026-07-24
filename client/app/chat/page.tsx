@@ -3,22 +3,22 @@ import { chatMessages } from "../data";
 export default function ChatPage() {
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-1">Chat with Your Team</h1>
-      <p className="text-sm text-gray-500 mb-6">Communicate directly with the Zephtrix team</p>
-      <div className="bg-white rounded-xl border border-gray-200 p-5 max-w-2xl">
-        <div className="space-y-4 mb-4 max-h-96 overflow-auto">
+      <h1 className="text-2xl font-bold mb-1" style={{color:"var(--ink)"}}>Chat with Your Team</h1>
+      <p className="text-sm mb-6" style={{color:"var(--ink-soft)"}}>Communicate directly with the Zephtrix team</p>
+      <div style={{background:"var(--canvas)",borderRadius:"var(--radius)",border:"1px solid var(--line)",padding:"20px",maxWidth:"640px"}}>
+        <div className="space-y-4 mb-4" style={{maxHeight:"384px",overflow:"auto"}}>
           {chatMessages.map((m) => (
             <div key={m.id} className={`flex ${m.from === "client" ? "justify-end" : "justify-start"}`}>
-              <div className={`max-w-sm rounded-xl px-4 py-2.5 ${m.from === "client" ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-900"}`}>
+              <div style={{maxWidth:"300px",borderRadius:"12px",padding:"10px 16px",background:m.from==="client"?"var(--red)":"var(--soft)",color:m.from==="client"?"#fff":"var(--ink)"}}>
                 <div className="text-sm">{m.text}</div>
-                <div className={`text-xs mt-1 ${m.from === "client" ? "text-blue-200" : "text-gray-400"}`}>{m.time}</div>
+                <div className="text-xs mt-1" style={{color:m.from==="client"?"rgba(255,255,255,.7)":"var(--ink-soft)"}}>{m.time}</div>
               </div>
             </div>
           ))}
         </div>
-        <div className="flex gap-2 border-t border-gray-200 pt-4">
-          <input type="text" placeholder="Type your message..." className="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-sm outline-none focus:border-blue-500" />
-          <button className="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">Send</button>
+        <div className="flex gap-2" style={{borderTop:"1px solid var(--line)",paddingTop:"16px"}}>
+          <input type="text" placeholder="Type your message..." style={{flex:1,padding:"10px 16px",border:"1px solid var(--line)",borderRadius:"12px",fontSize:"14px",outline:"none",background:"var(--canvas)",color:"var(--ink)"}} />
+          <button style={{padding:"10px 20px",background:"var(--red)",color:"#fff",fontSize:"14px",fontWeight:"500",borderRadius:"12px",border:0,cursor:"pointer"}}>Send</button>
         </div>
       </div>
     </div>

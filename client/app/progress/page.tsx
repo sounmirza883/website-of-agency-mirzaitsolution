@@ -3,12 +3,12 @@ import { milestones } from "../data";
 export default function ProgressPage() {
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-1">Track Progress</h1>
-      <p className="text-sm text-gray-500 mb-6">Track progress of your project milestones</p>
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <h1 className="text-2xl font-bold mb-1" style={{color:"var(--ink)"}}>Track Progress</h1>
+      <p className="text-sm mb-6" style={{color:"var(--ink-soft)"}}>Track progress of your project milestones</p>
+      <div style={{background:"var(--canvas)",borderRadius:"var(--radius)",border:"1px solid var(--line)",overflow:"hidden"}}>
         <table className="w-full text-sm">
-          <thead><tr className="bg-gray-50 text-left">{["Project", "Milestone", "Status", "Date"].map((h) => <th key={h} className="px-5 py-3 font-medium text-gray-600">{h}</th>)}</tr></thead>
-          <tbody>{milestones.map((m) => <tr key={m.id} className="border-t border-gray-100 hover:bg-gray-50"><td className="px-5 py-3 font-medium">{m.project}</td><td className="px-5 py-3 text-gray-600">{m.task}</td><td className="px-5 py-3"><span className={`text-xs font-medium px-2 py-0.5 rounded ${m.status === "Done" ? "bg-green-100 text-green-700" : m.status === "In Progress" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"}`}>{m.status}</span></td><td className="px-5 py-3 text-gray-600">{m.date}</td></tr>)}</tbody>
+          <thead><tr style={{background:"var(--soft)",textAlign:"left"}}>{["Project", "Milestone", "Status", "Date"].map((h) => <th key={h} style={{padding:"12px 20px",fontWeight:"500",color:"var(--ink-soft)"}}>{h}</th>)}</tr></thead>
+          <tbody>{milestones.map((m) => <tr key={m.id} style={{borderTop:"1px solid var(--line)"}}><td style={{padding:"12px 20px",fontWeight:"500",color:"var(--ink)"}}>{m.project}</td><td style={{padding:"12px 20px",color:"var(--ink-soft)"}}>{m.task}</td><td style={{padding:"12px 20px"}}><span style={{fontSize:"12px",fontWeight:"500",padding:"2px 8px",borderRadius:"4px",background:m.status==="Done"?"#dcfce7":m.status==="In Progress"?"var(--red-light)":"#f3f4f6",color:m.status==="Done"?"#166534":m.status==="In Progress"?"var(--red)":"#4b5563"}}>{m.status}</span></td><td style={{padding:"12px 20px",color:"var(--ink-soft)"}}>{m.date}</td></tr>)}</tbody>
         </table>
       </div>
     </div>
