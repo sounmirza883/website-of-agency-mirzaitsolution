@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { ClientShell } from "./components";
+import { Provider } from "./provider";
 
 export const metadata: Metadata = {
   title: "Client Portal – Zephtrix Studio",
@@ -10,7 +11,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body suppressHydrationWarning><ClientShell>{children}</ClientShell></body>
+      <body suppressHydrationWarning>
+        <Provider>
+          <ClientShell>{children}</ClientShell>
+        </Provider>
+      </body>
     </html>
   );
 }

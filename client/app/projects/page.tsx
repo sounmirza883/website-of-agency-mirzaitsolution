@@ -1,13 +1,17 @@
+"use client";
+
 import { Icon } from "../components";
-import { clientProjects } from "../data";
+import { useProjects } from "../hooks";
 
 export default function ProjectsPage() {
+  const { data: projects } = useProjects();
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-1" style={{color:"var(--ink)"}}>My Projects</h1>
       <p className="text-sm mb-6" style={{color:"var(--ink-soft)"}}>View all your ongoing and completed projects</p>
       <div className="grid gap-4">
-        {clientProjects.map((p) => (
+        {projects?.map((p) => (
           <div key={p.id} className="flex items-center justify-between" style={{background:"var(--canvas)",borderRadius:"var(--radius)",border:"1px solid var(--line)",padding:"20px"}}>
             <div><h3 className="font-semibold" style={{color:"var(--ink)"}}>{p.name}</h3><p className="text-sm mt-0.5" style={{color:"var(--ink-soft)"}}>Deadline: {p.deadline}</p></div>
             <div className="flex items-center gap-4">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AdminShell } from "./components";
+import { Provider } from "./provider";
 
 export const metadata: Metadata = {
   title: "Admin Panel – Zephtrix Studio",
@@ -10,7 +11,11 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="antialiased" suppressHydrationWarning><AdminShell>{children}</AdminShell></body>
+      <body className="antialiased" suppressHydrationWarning>
+        <Provider>
+          <AdminShell>{children}</AdminShell>
+        </Provider>
+      </body>
     </html>
   );
 }

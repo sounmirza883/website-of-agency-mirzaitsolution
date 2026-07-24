@@ -1,13 +1,17 @@
-import { chatMessages } from "../data";
+"use client";
+
+import { useMessages } from "../hooks";
 
 export default function ChatPage() {
+  const { data: messages } = useMessages();
+
   return (
     <div>
       <h1 className="text-2xl font-bold mb-1" style={{color:"var(--ink)"}}>Chat with Your Team</h1>
       <p className="text-sm mb-6" style={{color:"var(--ink-soft)"}}>Communicate directly with the Zephtrix team</p>
       <div style={{background:"var(--canvas)",borderRadius:"var(--radius)",border:"1px solid var(--line)",padding:"20px",maxWidth:"640px"}}>
         <div className="space-y-4 mb-4" style={{maxHeight:"384px",overflow:"auto"}}>
-          {chatMessages.map((m) => (
+          {messages?.map((m) => (
             <div key={m.id} className={`flex ${m.from === "client" ? "justify-end" : "justify-start"}`}>
               <div style={{maxWidth:"300px",borderRadius:"12px",padding:"10px 16px",background:m.from==="client"?"var(--red)":"var(--soft)",color:m.from==="client"?"#fff":"var(--ink)"}}>
                 <div className="text-sm">{m.text}</div>
