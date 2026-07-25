@@ -1,0 +1,26 @@
+# EAS archives from the git repo root, but only `app/` is needed to build the
+# mobile app (it has its own package.json and node_modules — this is not an npm
+# workspace). Without this, the upload balloons to ~1.1 GB by pulling in the
+# backend and all four Next.js apps plus their dependencies.
+# https://expo.fyi/eas-build-archive
+
+# Sibling projects — irrelevant to the Expo build
+/backend
+/frontend
+
+# Dependencies and build output (backend/node_modules is currently tracked in
+# git, so .gitignore alone does not keep it out of the archive)
+node_modules/
+**/node_modules/
+dist/
+.next/
+.expo/
+android/
+ios/
+
+# Local env and tooling
+.env
+.env.*
+*.log
+.vscode/
+.claude/
