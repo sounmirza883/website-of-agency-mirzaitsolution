@@ -14,17 +14,22 @@ const auth_js_1 = __importDefault(require("./routes/auth.js"));
 const app = (0, express_1.default)();
 const port = process.env.PORT || 4000;
 const allowedOrigins = [
-    "http://localhost:3000",
-    "http://localhost:3001",
-    "http://localhost:3002",
-    "http://localhost:3003",
-    "http://localhost:8081",
     "https://agency.vesseldrop.com",
     "https://admin.vesseldrop.com",
     "https://client.vesseldrop.com",
     "https://employee.vesseldrop.com",
 ];
-app.use((0, cors_1.default)({ origin: (origin, cb) => cb(null, !origin || allowedOrigins.includes(origin)) }));
+// Any localhost/127.0.0.1 port, since dev servers pick whatever port is free
+// (Next.js 3000-3003, Expo web 8081 then 8082+ when taken). Safe to allow
+// broadly here because auth is Bearer-token only — no cookies, so a page on
+// another localhost port still can't read a token it doesn't have.
+const localhostOrigin = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
+function isAllowedOrigin(origin) {
+    if (!origin)
+        return true; // non-browser clients (curl, native mobile) send no Origin
+    return allowedOrigins.includes(origin) || localhostOrigin.test(origin);
+}
+app.use((0, cors_1.default)({ origin: (origin, cb) => cb(null, isAllowedOrigin(origin)) }));
 app.use(express_1.default.json());
 app.get("/", (_req, res) => res.json({ status: "ok", service: "Mirza IT Solution API" }));
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
