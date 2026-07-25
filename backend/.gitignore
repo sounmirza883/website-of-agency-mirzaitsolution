@@ -16,7 +16,9 @@
 .env
 .env.local
 .env.production
-
+.env.example
+.env.development
+.env.test
 # misc
 .DS_Store
 *.pem
