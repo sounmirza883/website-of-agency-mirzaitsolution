@@ -46,7 +46,7 @@ export default function TasksScreen() {
       <View className="px-6 pb-10 pt-6">
         <View className="mb-4 flex-row items-center justify-between">
           <Text className="text-xl font-bold text-text dark:text-text-dark">Tasks</Text>
-          <Pressable onPress={() => setShowForm((s) => !s)} className="rounded-lg bg-black px-3 py-1.5">
+          <Pressable onPress={() => setShowForm((s) => !s)} className="rounded-lg bg-brand px-3 py-1.5">
             <Text className="text-sm font-medium text-white">{showForm ? 'Cancel' : '+ New Task'}</Text>
           </Pressable>
         </View>
@@ -85,7 +85,7 @@ export default function TasksScreen() {
             <Pressable
               onPress={handleCreate}
               disabled={createTask.isPending}
-              className="items-center rounded-lg bg-black py-2.5 disabled:opacity-50"
+              className="items-center rounded-lg bg-brand py-2.5 disabled:opacity-50"
             >
               <Text className="text-sm font-semibold text-white">
                 {createTask.isPending ? 'Creating…' : 'Create Task'}

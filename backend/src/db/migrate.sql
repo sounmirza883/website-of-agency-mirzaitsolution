@@ -176,6 +176,14 @@ ALTER TABLE project_files DROP CONSTRAINT IF EXISTS project_files_client_id_fkey
   ADD CONSTRAINT project_files_client_id_fkey FOREIGN KEY (client_id) REFERENCES users(id) ON DELETE SET NULL;
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_created_by_fkey,
   ADD CONSTRAINT users_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+-- notifications was renamed from admin_notifications above, so its constraints may
+-- still carry either name.
+ALTER TABLE notifications DROP CONSTRAINT IF EXISTS admin_notifications_created_by_fkey,
+  DROP CONSTRAINT IF EXISTS notifications_created_by_fkey,
+  ADD CONSTRAINT notifications_created_by_fkey FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE notifications DROP CONSTRAINT IF EXISTS admin_notifications_target_user_id_fkey,
+  DROP CONSTRAINT IF EXISTS notifications_target_user_id_fkey,
+  ADD CONSTRAINT notifications_target_user_id_fkey FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE SET NULL;
 
 -- ============================================================
 -- Seed Data

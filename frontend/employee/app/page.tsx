@@ -1,8 +1,10 @@
 "use client";
 
+import { useAuth } from "./auth";
 import { useAssignedProjects, useEmpTasks, useAttendance, useLeaveRequests } from "./hooks";
 
 export default function EmployeeDashboard() {
+  const { user } = useAuth();
   const { data: projects } = useAssignedProjects();
   const { data: tasks } = useEmpTasks();
   const { data: attendance } = useAttendance();
@@ -12,7 +14,7 @@ export default function EmployeeDashboard() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-1">Dashboard</h1>
-      <p className="text-sm text-gray-500 mb-6">Welcome back, Ali Khan</p>
+      <p className="text-sm text-gray-500 mb-6">Welcome back{user?.name ? `, ${user.name}` : ""}</p>
       <div className="grid grid-cols-4 gap-4 mb-8">
         <div className="bg-white rounded-xl border border-gray-200 p-5"><div className="text-2xl font-bold text-gray-900">{projects?.filter(p => p.status === "In Progress").length ?? "—"}</div><div className="text-sm text-gray-500 mt-1">Active Projects</div></div>
         <div className="bg-white rounded-xl border border-gray-200 p-5"><div className="text-2xl font-bold text-gray-900">{tasks?.filter(t => t.status === "Pending" || t.status === "In Progress").length ?? "—"}</div><div className="text-sm text-gray-500 mt-1">Pending Tasks</div></div>

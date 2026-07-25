@@ -54,7 +54,7 @@ export default function LoginScreen() {
       <Pressable
         onPress={handleSubmit}
         disabled={submitting || !email || !password}
-        className="items-center rounded-lg bg-black py-3 disabled:opacity-50"
+        className="items-center rounded-lg bg-brand py-3 disabled:opacity-50"
       >
         {submitting ? <ActivityIndicator color="#fff" /> : <Text className="text-base font-semibold text-white">Sign In</Text>}
       </Pressable>

@@ -3,6 +3,7 @@ import { supabase } from "../supabase.js";
 import { supabaseAdmin, FILES_BUCKET } from "../supabaseAdmin.js";
 import { createUser, deleteUser, EmailTakenError, listAllUsers, listUsersByRole, setCanCreateClients, setUserStatus, updateUserDetails } from "../authStore.js";
 import { type AuthedRequest, requireAuth, requireRole } from "../middleware/auth.js";
+import { asyncHandler } from "../middleware/asyncHandler.js";
 
 const router = Router();
 
@@ -13,10 +14,16 @@ function toClientProfile(u: Awaited<ReturnType<typeof listUsersByRole>>[number])
   return { id: u.id, name: u.name, email: u.email, company: u.company, status: u.status };
 }
 
-router.get("/employees", requireAuth, async (_req, res) => {
+// A plain select("*") on admin_projects returns raw snake_case columns, but every
+// client reads `clientId`/`employeeId` — the same names /employee/assigned-projects
+// and /client/projects already alias to — so an assigned employee silently read as
+// undefined. Every admin_projects read/write goes through these aliases.
+const PROJECT_COLUMNS = "id,name,client,clientId:client_id,employeeId:employee_id,status,deadline,progress";
+
+router.get("/employees", requireAuth, asyncHandler(async (_req, res) => {
   const employees = await listUsersByRole("employee");
   return res.json(employees.map(toEmployeeProfile));
-});
+}));
 
 router.post("/employees", requireAuth, requireRole("admin"), async (req: AuthedRequest, res) => {
   const { name, email, password, dept, position, canCreateClients } = req.body ?? {};
@@ -41,10 +48,10 @@ router.patch("/employees/:id/permission", requireAuth, requireRole("admin"), asy
   return res.json(toEmployeeProfile(user));
 });
 
-router.get("/clients", requireAuth, async (_req, res) => {
+router.get("/clients", requireAuth, asyncHandler(async (_req, res) => {
   const clients = await listUsersByRole("client");
   return res.json(clients.map(toClientProfile));
-});
+}));
 
 router.post("/clients", requireAuth, requireRole("admin"), async (req: AuthedRequest, res) => {
   const { name, email, password, company } = req.body ?? {};
@@ -60,10 +67,10 @@ router.post("/clients", requireAuth, requireRole("admin"), async (req: AuthedReq
   }
 });
 
-router.get("/users", requireAuth, requireRole("admin"), async (_req, res) => {
+router.get("/users", requireAuth, requireRole("admin"), asyncHandler(async (_req, res) => {
   const users = await listAllUsers();
   return res.json(users.map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, status: u.status })));
-});
+}));
 
 router.patch("/users/:id/status", requireAuth, requireRole("admin"), async (req, res) => {
   const id = Number(req.params.id);
@@ -74,23 +81,28 @@ router.patch("/users/:id/status", requireAuth, requireRole("admin"), async (req,
   return res.json({ id: user.id, name: user.name, email: user.email, role: user.role, status: user.status });
 });
 
-router.patch("/users/:id", requireAuth, requireRole("admin"), async (req, res) => {
+router.patch("/users/:id", requireAuth, requireRole("admin"), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   const { name, email, dept, position, company } = req.body ?? {};
   if (!name && !email && dept === undefined && position === undefined && company === undefined) {
     return res.status(400).json({ error: "At least one field to update is required" });
   }
-  const user = await updateUserDetails(id, { name, email, dept, position, company });
-  if (!user) return res.status(404).json({ error: "User not found" });
-  return res.json({ id: user.id, name: user.name, email: user.email, role: user.role, status: user.status, dept: user.dept, position: user.position, company: user.company });
-});
+  try {
+    const user = await updateUserDetails(id, { name, email, dept, position, company });
+    if (!user) return res.status(404).json({ error: "User not found" });
+    return res.json({ id: user.id, name: user.name, email: user.email, role: user.role, status: user.status, dept: user.dept, position: user.position, company: user.company });
+  } catch (err) {
+    if (err instanceof EmailTakenError) return res.status(409).json({ error: err.message });
+    throw err;
+  }
+}));
 
-router.delete("/users/:id", requireAuth, requireRole("admin"), async (req, res) => {
+router.delete("/users/:id", requireAuth, requireRole("admin"), asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   const ok = await deleteUser(id);
   if (!ok) return res.status(404).json({ error: "User not found" });
   return res.status(204).send();
-});
+}));
 
 router.get("/contact-submissions", requireAuth, requireRole("admin"), async (_req, res) => {
   if (!supabase) return res.json([]);
@@ -114,7 +126,7 @@ router.post("/projects", requireAuth, requireRole("admin"), async (req, res) => 
   if (!supabase) return res.status(503).json({ error: "Database not configured" });
   const { data, error } = await supabase.from("admin_projects").insert({
     name, client, status, deadline, client_id: clientId ? Number(clientId) : null, employee_id: employeeId ? Number(employeeId) : null,
-  }).select().single();
+  }).select(PROJECT_COLUMNS).single();
   if (error) return res.status(500).json({ error: error.message });
   return res.status(201).json(data);
 });
@@ -124,7 +136,7 @@ router.patch("/projects/:id/status", requireAuth, requireRole("admin"), async (r
   const { status } = req.body ?? {};
   if (!status) return res.status(400).json({ error: "status is required" });
   if (!supabase) return res.status(503).json({ error: "Database not configured" });
-  const { data, error } = await supabase.from("admin_projects").update({ status }).eq("id", id).select().maybeSingle();
+  const { data, error } = await supabase.from("admin_projects").update({ status }).eq("id", id).select(PROJECT_COLUMNS).maybeSingle();
   if (error) return res.status(500).json({ error: error.message });
   if (!data) return res.status(404).json({ error: "Project not found" });
   return res.json(data);
@@ -134,7 +146,7 @@ router.patch("/projects/:id/assign", requireAuth, requireRole("admin"), async (r
   const id = Number(req.params.id);
   const { employeeId } = req.body ?? {};
   if (!supabase) return res.status(503).json({ error: "Database not configured" });
-  const { data, error } = await supabase.from("admin_projects").update({ employee_id: employeeId ? Number(employeeId) : null }).eq("id", id).select().maybeSingle();
+  const { data, error } = await supabase.from("admin_projects").update({ employee_id: employeeId ? Number(employeeId) : null }).eq("id", id).select(PROJECT_COLUMNS).maybeSingle();
   if (error) return res.status(500).json({ error: error.message });
   if (!data) return res.status(404).json({ error: "Project not found" });
   return res.json(data);
@@ -233,9 +245,17 @@ router.post("/portfolio", requireAuth, requireRole("admin"), async (req, res) =>
   return res.status(201).json(data);
 });
 
+// Projects are deliberately not in the generic tableMap below — they need the
+// PROJECT_COLUMNS aliasing declared at the top of this file.
+router.get("/projects", requireAuth, requireRole("admin"), async (_req, res) => {
+  if (!supabase) return res.json([]);
+  const { data, error } = await supabase.from("admin_projects").select(PROJECT_COLUMNS);
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json(data);
+});
+
 const tableMap: Record<string, string> = {
   services: "admin_services",
-  projects: "admin_projects",
   notifications: "notifications",
   blog: "admin_blog",
   portfolio: "admin_portfolio",

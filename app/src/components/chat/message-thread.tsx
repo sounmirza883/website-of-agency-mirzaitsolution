@@ -57,7 +57,7 @@ export function MessageThread({
                 <View
                   className={
                     mine
-                      ? 'max-w-[80%] rounded-2xl rounded-br-sm bg-black px-3 py-2'
+                      ? 'max-w-[80%] rounded-2xl rounded-br-sm bg-brand px-3 py-2'
                       : 'max-w-[80%] rounded-2xl rounded-bl-sm bg-surface-element px-3 py-2 dark:bg-surface-element-dark'
                   }
                 >
@@ -81,7 +81,7 @@ export function MessageThread({
           placeholder="Type a message…"
           className="flex-1 rounded-full border border-surface-selected px-4 py-2 text-sm text-text dark:border-surface-selected-dark dark:text-text-dark"
         />
-        <Pressable onPress={handleSend} disabled={sending || !text.trim()} className="h-10 w-10 items-center justify-center rounded-full bg-black disabled:opacity-50">
+        <Pressable onPress={handleSend} disabled={sending || !text.trim()} className="h-10 w-10 items-center justify-center rounded-full bg-brand disabled:opacity-50">
           <Ionicons name="send" size={16} color="#fff" />
         </Pressable>
       </View>

@@ -81,7 +81,7 @@ function NewNotificationForm({ onDone }: { onDone: () => void }) {
       ) : null}
 
       <View className="mt-4 flex-row gap-3">
-        <Pressable disabled={!canSubmit} onPress={handleSubmit} className="rounded-lg bg-black px-3 py-1.5 disabled:opacity-50">
+        <Pressable disabled={!canSubmit} onPress={handleSubmit} className="rounded-lg bg-brand px-3 py-1.5 disabled:opacity-50">
           <Text className="text-xs font-medium text-white">Send</Text>
         </Pressable>
         <Pressable onPress={onDone} className="rounded-lg border border-surface-selected px-3 py-1.5 dark:border-surface-selected-dark">
@@ -101,7 +101,7 @@ export default function AdminNotificationsScreen() {
       <View className="flex-row items-center justify-between px-4 pt-4">
         <Text className="text-base font-semibold text-text dark:text-text-dark">Notifications</Text>
         {!showForm ? (
-          <Pressable onPress={() => setShowForm(true)} className="rounded-lg bg-black px-3 py-1.5">
+          <Pressable onPress={() => setShowForm(true)} className="rounded-lg bg-brand px-3 py-1.5">
             <Text className="text-xs font-medium text-white">+ New</Text>
           </Pressable>
         ) : null}

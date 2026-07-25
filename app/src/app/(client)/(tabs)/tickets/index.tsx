@@ -75,7 +75,7 @@ function NewTicketForm({ onDone }: { onDone: () => void }) {
         <Pressable
           disabled={createTicket.isPending || !subject.trim()}
           onPress={handleSubmit}
-          className="flex-1 items-center rounded-lg bg-black py-2.5 disabled:opacity-50"
+          className="flex-1 items-center rounded-lg bg-brand py-2.5 disabled:opacity-50"
         >
           {createTicket.isPending ? <ActivityIndicator color="#fff" /> : <Text className="text-sm font-semibold text-white">Submit</Text>}
         </Pressable>
@@ -107,7 +107,7 @@ export default function ClientTicketsScreen() {
       <View className="flex-row items-center justify-between p-4 pb-0">
         <Text className="text-lg font-bold text-text dark:text-text-dark">Tickets</Text>
         {!showForm ? (
-          <Pressable onPress={() => setShowForm(true)} className="rounded-lg bg-black px-3 py-1.5">
+          <Pressable onPress={() => setShowForm(true)} className="rounded-lg bg-brand px-3 py-1.5">
             <Text className="text-xs font-medium text-white">+ New Ticket</Text>
           </Pressable>
         ) : null}

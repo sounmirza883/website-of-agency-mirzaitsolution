@@ -9,6 +9,7 @@ const supabase_js_1 = require("../supabase.js");
 const supabaseAdmin_js_1 = require("../supabaseAdmin.js");
 const authStore_js_1 = require("../authStore.js");
 const auth_js_1 = require("../middleware/auth.js");
+const asyncHandler_js_1 = require("../middleware/asyncHandler.js");
 const router = (0, express_1.Router)();
 const upload = (0, multer_1.default)({ storage: multer_1.default.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
 function todayStr() {
@@ -17,10 +18,10 @@ function todayStr() {
 function nowTimeStr() {
     return new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
-router.get("/clients", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("employee"), async (req, res) => {
+router.get("/clients", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("employee"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
     const clients = await (0, authStore_js_1.listUsersByRole)("client", req.user.id);
     return res.json(clients.map((c) => ({ id: c.id, name: c.name, email: c.email, company: c.company, status: c.status })));
-});
+}));
 router.post("/clients", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("employee"), async (req, res) => {
     if (!req.user.canCreateClients)
         return res.status(403).json({ error: "You don't have permission to create clients. Ask an admin to enable it." });

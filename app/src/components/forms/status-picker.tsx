@@ -24,7 +24,7 @@ export function StatusPicker({
             key={opt}
             disabled={disabled}
             onPress={() => onChange(opt)}
-            className={active ? 'rounded-full bg-black px-3 py-1.5' : 'rounded-full border border-surface-selected px-3 py-1.5 dark:border-surface-selected-dark'}
+            className={active ? 'rounded-full bg-brand px-3 py-1.5' : 'rounded-full border border-surface-selected px-3 py-1.5 dark:border-surface-selected-dark'}
           >
             <Text className={active ? 'text-xs font-medium text-white' : 'text-xs font-medium text-text dark:text-text-dark'}>{opt}</Text>
           </Pressable>

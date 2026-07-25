@@ -79,7 +79,7 @@ export default function EmployeeHomeScreen() {
                 <Pressable
                   onPress={handleCheckOut}
                   disabled={!canCheckOut || checkOutMutation.isPending}
-                  className="flex-1 items-center rounded-lg bg-black py-3 disabled:opacity-40"
+                  className="flex-1 items-center rounded-lg bg-brand py-3 disabled:opacity-40"
                 >
                   <Text className="text-sm font-semibold text-white">
                     {checkOutMutation.isPending ? 'Checking Out…' : 'Check Out'}

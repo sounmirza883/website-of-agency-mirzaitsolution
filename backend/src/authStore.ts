@@ -194,14 +194,57 @@ export async function updateUserDetails(id: number, input: UpdateUserDetailsInpu
   return data ? rowToUser(data) : null;
 }
 
+/**
+ * Every table/column that points at users(id). Deleting a user detaches their
+ * history (sets these to NULL) rather than deleting it, so past projects,
+ * invoices and messages survive with no owner.
+ *
+ * Done explicitly in application code rather than relying solely on the
+ * ON DELETE SET NULL constraints in migrate.sql: if that migration hasn't been
+ * applied to a given database, the raw DELETE fails with a foreign key
+ * violation, and a user with any history becomes undeletable.
+ */
+const USER_REFERENCES: Array<[table: string, column: string]> = [
+  ["admin_projects", "client_id"],
+  ["admin_projects", "employee_id"],
+  ["employee_tasks", "employee_id"],
+  ["employee_status_updates", "employee_id"],
+  ["employee_attendance", "employee_id"],
+  ["employee_leave_requests", "employee_id"],
+  ["client_milestones", "client_id"],
+  ["client_invoices", "client_id"],
+  ["client_tickets", "client_id"],
+  ["project_messages", "client_id"],
+  ["project_messages", "sender_id"],
+  ["project_files", "uploaded_by"],
+  ["project_files", "client_id"],
+  ["notifications", "created_by"],
+  ["notifications", "target_user_id"],
+  ["users", "created_by"],
+];
+
 export async function deleteUser(id: number): Promise<boolean> {
   if (!supabase) {
     const idx = memoryUsers.findIndex((u) => u.id === id);
     if (idx === -1) return false;
     memoryUsers.splice(idx, 1);
+    for (const u of memoryUsers) if (u.createdBy === id) u.createdBy = null;
     return true;
   }
-  const { error, count } = await supabase.from("users").delete({ count: "exact" }).eq("id", id);
+
+  const existing = await supabase.from("users").select("id").eq("id", id).maybeSingle();
+  if (!existing.data) return false;
+
+  for (const [table, column] of USER_REFERENCES) {
+    const { error } = await supabase.from(table).update({ [column]: null }).eq(column, id);
+    // A missing table/column just means that feature isn't provisioned in this
+    // database — skip it rather than blocking the delete.
+    if (error && !/does not exist|schema cache/i.test(error.message)) {
+      throw new Error(`Failed detaching ${table}.${column}: ${error.message}`);
+    }
+  }
+
+  const { error } = await supabase.from("users").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  return (count ?? 0) > 0;
+  return true;
 }

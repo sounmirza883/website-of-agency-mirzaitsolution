@@ -5,6 +5,7 @@ const supabase_js_1 = require("../supabase.js");
 const supabaseAdmin_js_1 = require("../supabaseAdmin.js");
 const authStore_js_1 = require("../authStore.js");
 const auth_js_1 = require("../middleware/auth.js");
+const asyncHandler_js_1 = require("../middleware/asyncHandler.js");
 const router = (0, express_1.Router)();
 function toEmployeeProfile(u) {
     return { id: u.id, name: u.name, email: u.email, dept: u.dept, position: u.position, status: u.status, canCreateClients: u.canCreateClients };
@@ -12,10 +13,15 @@ function toEmployeeProfile(u) {
 function toClientProfile(u) {
     return { id: u.id, name: u.name, email: u.email, company: u.company, status: u.status };
 }
-router.get("/employees", auth_js_1.requireAuth, async (_req, res) => {
+// A plain select("*") on admin_projects returns raw snake_case columns, but every
+// client reads `clientId`/`employeeId` — the same names /employee/assigned-projects
+// and /client/projects already alias to — so an assigned employee silently read as
+// undefined. Every admin_projects read/write goes through these aliases.
+const PROJECT_COLUMNS = "id,name,client,clientId:client_id,employeeId:employee_id,status,deadline,progress";
+router.get("/employees", auth_js_1.requireAuth, (0, asyncHandler_js_1.asyncHandler)(async (_req, res) => {
     const employees = await (0, authStore_js_1.listUsersByRole)("employee");
     return res.json(employees.map(toEmployeeProfile));
-});
+}));
 router.post("/employees", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
     const { name, email, password, dept, position, canCreateClients } = req.body ?? {};
     if (!name || !email || !password || !dept || !position) {
@@ -41,10 +47,10 @@ router.patch("/employees/:id/permission", auth_js_1.requireAuth, (0, auth_js_1.r
         return res.status(404).json({ error: "Employee not found" });
     return res.json(toEmployeeProfile(user));
 });
-router.get("/clients", auth_js_1.requireAuth, async (_req, res) => {
+router.get("/clients", auth_js_1.requireAuth, (0, asyncHandler_js_1.asyncHandler)(async (_req, res) => {
     const clients = await (0, authStore_js_1.listUsersByRole)("client");
     return res.json(clients.map(toClientProfile));
-});
+}));
 router.post("/clients", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
     const { name, email, password, company } = req.body ?? {};
     if (!name || !email || !password || !company) {
@@ -60,10 +66,10 @@ router.post("/clients", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin
         return res.status(500).json({ error: err.message });
     }
 });
-router.get("/users", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (_req, res) => {
+router.get("/users", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), (0, asyncHandler_js_1.asyncHandler)(async (_req, res) => {
     const users = await (0, authStore_js_1.listAllUsers)();
     return res.json(users.map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role, status: u.status })));
-});
+}));
 router.patch("/users/:id/status", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
     const id = Number(req.params.id);
     const { status } = req.body ?? {};
@@ -74,24 +80,31 @@ router.patch("/users/:id/status", auth_js_1.requireAuth, (0, auth_js_1.requireRo
         return res.status(404).json({ error: "User not found" });
     return res.json({ id: user.id, name: user.name, email: user.email, role: user.role, status: user.status });
 });
-router.patch("/users/:id", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
+router.patch("/users/:id", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
     const id = Number(req.params.id);
     const { name, email, dept, position, company } = req.body ?? {};
     if (!name && !email && dept === undefined && position === undefined && company === undefined) {
         return res.status(400).json({ error: "At least one field to update is required" });
     }
-    const user = await (0, authStore_js_1.updateUserDetails)(id, { name, email, dept, position, company });
-    if (!user)
-        return res.status(404).json({ error: "User not found" });
-    return res.json({ id: user.id, name: user.name, email: user.email, role: user.role, status: user.status, dept: user.dept, position: user.position, company: user.company });
-});
-router.delete("/users/:id", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
+    try {
+        const user = await (0, authStore_js_1.updateUserDetails)(id, { name, email, dept, position, company });
+        if (!user)
+            return res.status(404).json({ error: "User not found" });
+        return res.json({ id: user.id, name: user.name, email: user.email, role: user.role, status: user.status, dept: user.dept, position: user.position, company: user.company });
+    }
+    catch (err) {
+        if (err instanceof authStore_js_1.EmailTakenError)
+            return res.status(409).json({ error: err.message });
+        throw err;
+    }
+}));
+router.delete("/users/:id", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
     const id = Number(req.params.id);
     const ok = await (0, authStore_js_1.deleteUser)(id);
     if (!ok)
         return res.status(404).json({ error: "User not found" });
     return res.status(204).send();
-});
+}));
 router.get("/contact-submissions", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (_req, res) => {
     if (!supabase_js_1.supabase)
         return res.json([]);
@@ -119,7 +132,7 @@ router.post("/projects", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admi
         return res.status(503).json({ error: "Database not configured" });
     const { data, error } = await supabase_js_1.supabase.from("admin_projects").insert({
         name, client, status, deadline, client_id: clientId ? Number(clientId) : null, employee_id: employeeId ? Number(employeeId) : null,
-    }).select().single();
+    }).select(PROJECT_COLUMNS).single();
     if (error)
         return res.status(500).json({ error: error.message });
     return res.status(201).json(data);
@@ -131,7 +144,7 @@ router.patch("/projects/:id/status", auth_js_1.requireAuth, (0, auth_js_1.requir
         return res.status(400).json({ error: "status is required" });
     if (!supabase_js_1.supabase)
         return res.status(503).json({ error: "Database not configured" });
-    const { data, error } = await supabase_js_1.supabase.from("admin_projects").update({ status }).eq("id", id).select().maybeSingle();
+    const { data, error } = await supabase_js_1.supabase.from("admin_projects").update({ status }).eq("id", id).select(PROJECT_COLUMNS).maybeSingle();
     if (error)
         return res.status(500).json({ error: error.message });
     if (!data)
@@ -143,7 +156,7 @@ router.patch("/projects/:id/assign", auth_js_1.requireAuth, (0, auth_js_1.requir
     const { employeeId } = req.body ?? {};
     if (!supabase_js_1.supabase)
         return res.status(503).json({ error: "Database not configured" });
-    const { data, error } = await supabase_js_1.supabase.from("admin_projects").update({ employee_id: employeeId ? Number(employeeId) : null }).eq("id", id).select().maybeSingle();
+    const { data, error } = await supabase_js_1.supabase.from("admin_projects").update({ employee_id: employeeId ? Number(employeeId) : null }).eq("id", id).select(PROJECT_COLUMNS).maybeSingle();
     if (error)
         return res.status(500).json({ error: error.message });
     if (!data)
@@ -257,9 +270,18 @@ router.post("/portfolio", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("adm
         return res.status(500).json({ error: error.message });
     return res.status(201).json(data);
 });
+// Projects are deliberately not in the generic tableMap below — they need the
+// PROJECT_COLUMNS aliasing declared at the top of this file.
+router.get("/projects", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (_req, res) => {
+    if (!supabase_js_1.supabase)
+        return res.json([]);
+    const { data, error } = await supabase_js_1.supabase.from("admin_projects").select(PROJECT_COLUMNS);
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.json(data);
+});
 const tableMap = {
     services: "admin_services",
-    projects: "admin_projects",
     notifications: "notifications",
     blog: "admin_blog",
     portfolio: "admin_portfolio",

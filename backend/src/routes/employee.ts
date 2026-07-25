@@ -4,6 +4,7 @@ import { supabase } from "../supabase.js";
 import { supabaseAdmin, FILES_BUCKET } from "../supabaseAdmin.js";
 import { createUser, EmailTakenError, listUsersByRole } from "../authStore.js";
 import { type AuthedRequest, requireAuth, requireRole } from "../middleware/auth.js";
+import { asyncHandler } from "../middleware/asyncHandler.js";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
@@ -15,10 +16,10 @@ function nowTimeStr(): string {
   return new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
-router.get("/clients", requireAuth, requireRole("employee"), async (req: AuthedRequest, res) => {
-  const clients = await listUsersByRole("client", req.user!.id);
+router.get("/clients", requireAuth, requireRole("employee"), asyncHandler(async (req, res) => {
+  const clients = await listUsersByRole("client", (req as AuthedRequest).user!.id);
   return res.json(clients.map((c) => ({ id: c.id, name: c.name, email: c.email, company: c.company, status: c.status })));
-});
+}));
 
 router.post("/clients", requireAuth, requireRole("employee"), async (req: AuthedRequest, res) => {
   if (!req.user!.canCreateClients) return res.status(403).json({ error: "You don't have permission to create clients. Ask an admin to enable it." });
