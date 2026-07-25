@@ -2,6 +2,7 @@
   "expo": {
     "name": "Zephtrix",
     "slug": "zephtrix-app",
+    "owner": "sonu883",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -42,7 +43,11 @@
       "reactCompiler": true
     },
     "extra": {
-      "apiUrl": "https://backend.vesseldrop.com/api"
+      "apiUrl": "https://backend.vesseldrop.com/api",
+      "router": {},
+      "eas": {
+        "projectId": "9b9d8879-ff83-4a25-9109-1e292a826462"
+      }
     }
   }
 }
