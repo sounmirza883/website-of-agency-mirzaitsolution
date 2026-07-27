@@ -123,7 +123,20 @@ DROP TABLE IF EXISTS employee_assigned_projects, client_projects;
 -- Chat, scoped to a project. client_messages only ever held client->nowhere
 -- messages (sender was always hardcoded "client"); repurposed as a real
 -- project-scoped thread any of admin/employee/client can read/write.
-ALTER TABLE IF EXISTS client_messages RENAME TO project_messages;
+--
+-- Guarded so the script stays re-runnable: the CREATE IF NOT EXISTS earlier in
+-- this file resurrects an empty client_messages on every subsequent run (the
+-- original having been renamed away), and a bare RENAME would then fail with
+-- "relation project_messages already exists".
+DO $$
+BEGIN
+  IF to_regclass('public.project_messages') IS NULL THEN
+    ALTER TABLE IF EXISTS client_messages RENAME TO project_messages;
+  ELSE
+    DROP TABLE IF EXISTS client_messages;
+  END IF;
+END $$;
+CREATE TABLE IF NOT EXISTS project_messages (id SERIAL PRIMARY KEY, text TEXT NOT NULL, time TEXT NOT NULL, client_id INTEGER REFERENCES users(id));
 ALTER TABLE project_messages ADD COLUMN IF NOT EXISTS project_id INTEGER REFERENCES admin_projects(id);
 ALTER TABLE project_messages ADD COLUMN IF NOT EXISTS sender_id INTEGER REFERENCES users(id);
 ALTER TABLE project_messages ADD COLUMN IF NOT EXISTS sender_role TEXT NOT NULL DEFAULT 'client';
@@ -134,7 +147,16 @@ ALTER TABLE client_invoices ADD COLUMN IF NOT EXISTS proof_path TEXT;
 ALTER TABLE admin_invoices ADD COLUMN IF NOT EXISTS proof_path TEXT;
 
 -- Notifications gain a target audience; no longer admin-only.
-ALTER TABLE IF EXISTS admin_notifications RENAME TO notifications;
+-- Same re-runnability guard as project_messages above.
+DO $$
+BEGIN
+  IF to_regclass('public.notifications') IS NULL THEN
+    ALTER TABLE IF EXISTS admin_notifications RENAME TO notifications;
+  ELSE
+    DROP TABLE IF EXISTS admin_notifications;
+  END IF;
+END $$;
+CREATE TABLE IF NOT EXISTS notifications (id SERIAL PRIMARY KEY, title TEXT NOT NULL, msg TEXT NOT NULL, date TEXT NOT NULL);
 ALTER TABLE notifications ADD COLUMN IF NOT EXISTS created_by INTEGER REFERENCES users(id);
 ALTER TABLE notifications ADD COLUMN IF NOT EXISTS creator_role TEXT NOT NULL DEFAULT 'admin';
 ALTER TABLE notifications ADD COLUMN IF NOT EXISTS target_role TEXT NOT NULL DEFAULT 'all';
