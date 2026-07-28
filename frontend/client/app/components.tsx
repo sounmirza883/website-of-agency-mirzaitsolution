@@ -65,11 +65,16 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
   const isLoginPage = path === "/login";
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (loading || isLoginPage) return;
     if (!user || user.role !== "client") router.replace("/login");
   }, [loading, isLoginPage, user, router]);
+
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [path]);
 
   if (isLoginPage) return <>{children}</>;
   if (loading || !user || user.role !== "client") return null;
@@ -77,19 +82,28 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex flex-col min-h-screen" style={{background:"var(--soft)"}}>
       <header className="sticky top-0 z-50" style={{background:"rgba(245,234,216,.92)",borderBottom:"1px solid var(--line)",backdropFilter:"blur(10px)"}}>
-        <div className="flex items-center justify-between h-16 px-6" style={{maxWidth:"1440px",margin:"0 auto",width:"100%"}}>
-          <Link href="/" className="logo" style={{fontSize:"20px"}}>Mirza IT <strong>Solution</strong> <span style={{fontFamily:"var(--mono)",fontSize:"11px",color:"var(--ink-soft)",marginLeft:"4px"}}>Client</span></Link>
-          <div className="flex items-center gap-4">
-            <Link href="/" style={{fontSize:"13px",color:"var(--ink-soft)",transition:"color .2s"}} onMouseEnter={e => e.currentTarget.style.color = "var(--ink)"} onMouseLeave={e => e.currentTarget.style.color = "var(--ink-soft)"}><Icon name="fa-arrow-left" /> Back to site</Link>
-            <button onClick={() => setShowChangePassword(true)} style={{fontSize:"13px",color:"var(--ink-soft)",background:"none",border:"none",cursor:"pointer"}}>Change Password</button>
+        <div className="flex items-center justify-between h-16 px-4 md:px-6" style={{maxWidth:"1440px",margin:"0 auto",width:"100%"}}>
+          <div className="flex items-center gap-3 min-w-0">
+            <button onClick={() => setSidebarOpen(true)} className="md:hidden shrink-0" style={{color:"var(--ink-soft)",background:"none",border:"none",cursor:"pointer"}} aria-label="Open menu">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </button>
+            <Link href="/" className="logo truncate" style={{fontSize:"20px"}}>Mirza IT <strong>Solution</strong> <span className="hidden sm:inline" style={{fontFamily:"var(--mono)",fontSize:"11px",color:"var(--ink-soft)",marginLeft:"4px"}}>Client</span></Link>
+          </div>
+          <div className="flex items-center gap-2 md:gap-4 shrink-0">
+            <Link href="/" className="hidden md:inline-flex" style={{fontSize:"13px",color:"var(--ink-soft)",transition:"color .2s"}} onMouseEnter={e => e.currentTarget.style.color = "var(--ink)"} onMouseLeave={e => e.currentTarget.style.color = "var(--ink-soft)"}><Icon name="fa-arrow-left" /> Back to site</Link>
+            <button onClick={() => setShowChangePassword(true)} className="whitespace-nowrap" style={{fontSize:"13px",color:"var(--ink-soft)",background:"none",border:"none",cursor:"pointer"}}>Change Password</button>
             <button onClick={logout} style={{fontSize:"13px",color:"var(--ink-soft)",background:"none",border:"none",cursor:"pointer"}}>Logout</button>
-            <div title={user.email} style={{width:"36px",height:"36px",borderRadius:"50%",background:"var(--accent)",color:"var(--canvas)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:"700"}}>{user.name.charAt(0).toUpperCase()}</div>
+            <div title={user.email} style={{width:"36px",height:"36px",borderRadius:"50%",background:"var(--accent)",color:"var(--canvas)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:"700",flexShrink:0}}>{user.name.charAt(0).toUpperCase()}</div>
           </div>
         </div>
       </header>
       {showChangePassword && <ChangePasswordModal onClose={() => setShowChangePassword(false)} />}
+      {sidebarOpen && <div className="fixed inset-0 md:hidden" style={{background:"rgba(0,0,0,.3)",zIndex:40}} onClick={() => setSidebarOpen(false)} />}
       <div className="flex flex-1" style={{maxWidth:"1440px",margin:"0 auto",width:"100%"}}>
-        <aside style={{width:"240px",background:"var(--canvas)",borderRight:"1px solid var(--line)",flexShrink:0,display:"flex",flexDirection:"column"}}>
+        <aside
+          className={`fixed inset-y-0 left-0 md:static transform transition-transform duration-200 md:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+          style={{width:"240px",background:"var(--canvas)",borderRight:"1px solid var(--line)",flexShrink:0,display:"flex",flexDirection:"column",zIndex:50}}
+        >
           <nav style={{flex:1,padding:"16px",display:"flex",flexDirection:"column",gap:"4px"}}>
             {nav.map((item) => {
               const active = item.href === "/" ? path === "/" : path.startsWith(item.href);
@@ -109,7 +123,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
         </aside>
-        <main className="flex-1 p-6 overflow-auto">{children}</main>
+        <main className="flex-1 p-4 md:p-6 overflow-auto min-w-0">{children}</main>
       </div>
       <footer style={{background:"var(--dark)",color:"var(--canvas)",padding:"20px 0",marginTop:"auto"}}>
         <div style={{maxWidth:"1440px",margin:"0 auto",padding:"0 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>

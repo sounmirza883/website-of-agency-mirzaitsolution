@@ -19,7 +19,7 @@ export default function ClientDashboard() {
     <div>
       <h1 className="text-2xl font-bold mb-1" style={{color:"var(--ink)"}}>Dashboard</h1>
       <p className="text-sm mb-6" style={{color:"var(--ink-soft)"}}>Welcome back to your client portal</p>
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {stats.map((s) => (
           <div key={s.label} style={{background:"var(--canvas)",borderRadius:"var(--radius)",border:"1px solid var(--line)",padding:"20px"}}>
             <div className="flex items-center gap-3">
@@ -29,7 +29,7 @@ export default function ClientDashboard() {
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div style={{background:"var(--canvas)",borderRadius:"var(--radius)",border:"1px solid var(--line)",padding:"20px"}}>
           <h2 className="font-semibold mb-3" style={{color:"var(--ink)"}}>Your Projects</h2>
           {projects?.map((p) => (

@@ -61,7 +61,7 @@ export default function InvoicesPage() {
       <h1 className="text-2xl font-bold mb-1" style={{color:"var(--ink)"}}>Invoices</h1>
       <p className="text-sm mb-6" style={{color:"var(--ink-soft)"}}>View your invoices and submit proof of payment</p>
       <PaymentDetailsCard />
-      <div style={{background:"var(--canvas)",borderRadius:"var(--radius)",border:"1px solid var(--line)",overflow:"hidden"}}>
+      <div style={{background:"var(--canvas)",borderRadius:"var(--radius)",border:"1px solid var(--line)",overflow:"auto"}}>
         <table className="w-full text-sm">
           <thead><tr style={{background:"var(--soft)",textAlign:"left"}}>{["Invoice", "Project", "Amount", "Status", "Due Date", ""].map((h) => <th key={h} style={{padding:"12px 20px",fontWeight:"500",color:"var(--ink-soft)"}}>{h}</th>)}</tr></thead>
           <tbody>
