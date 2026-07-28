@@ -92,7 +92,7 @@ export default function ClientInvoiceDetailScreen() {
               onPress={handlePickImage}
               className="flex-1 items-center rounded-lg bg-brand py-3 disabled:opacity-50"
             >
-              <Text className="text-sm font-semibold text-white">Upload Photo</Text>
+              <Text className="text-sm font-semibold text-[#f5ead8]">Upload Photo</Text>
             </Pressable>
             <Pressable
               disabled={submitPayment.isPending}

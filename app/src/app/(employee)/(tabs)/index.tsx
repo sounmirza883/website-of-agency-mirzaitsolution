@@ -72,7 +72,7 @@ export default function EmployeeHomeScreen() {
                   disabled={!canCheckIn || checkInMutation.isPending}
                   className="flex-1 items-center rounded-lg bg-green-600 py-3 disabled:opacity-40"
                 >
-                  <Text className="text-sm font-semibold text-white">
+                  <Text className="text-sm font-semibold text-[#f5ead8]">
                     {checkInMutation.isPending ? 'Checking In…' : 'Check In'}
                   </Text>
                 </Pressable>
@@ -81,7 +81,7 @@ export default function EmployeeHomeScreen() {
                   disabled={!canCheckOut || checkOutMutation.isPending}
                   className="flex-1 items-center rounded-lg bg-brand py-3 disabled:opacity-40"
                 >
-                  <Text className="text-sm font-semibold text-white">
+                  <Text className="text-sm font-semibold text-[#f5ead8]">
                     {checkOutMutation.isPending ? 'Checking Out…' : 'Check Out'}
                   </Text>
                 </Pressable>

@@ -33,7 +33,7 @@ function InvoiceRow({ invoice }: { invoice: AdminInvoice }) {
               onPress={() => verify.mutate({ id: invoice.id, approve: true })}
               className="rounded-lg bg-brand px-3 py-1.5 disabled:opacity-50"
             >
-              <Text className="text-xs font-medium text-white">Verify</Text>
+              <Text className="text-xs font-medium text-[#f5ead8]">Verify</Text>
             </Pressable>
             <Pressable
               disabled={verify.isPending}

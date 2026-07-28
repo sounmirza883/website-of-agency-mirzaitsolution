@@ -29,7 +29,7 @@ function LeaveRequestRow({ request }: { request: AdminLeaveRequest }) {
             onPress={() => setStatus.mutate({ id: request.id, status: 'Approved' })}
             className="rounded-lg bg-brand px-3 py-1.5 disabled:opacity-50"
           >
-            <Text className="text-xs font-medium text-white">Approve</Text>
+            <Text className="text-xs font-medium text-[#f5ead8]">Approve</Text>
           </Pressable>
           <Pressable
             disabled={setStatus.isPending}

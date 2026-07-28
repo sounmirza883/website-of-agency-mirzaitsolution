@@ -56,7 +56,7 @@ export default function LoginScreen() {
         disabled={submitting || !email || !password}
         className="items-center rounded-lg bg-brand py-3 disabled:opacity-50"
       >
-        {submitting ? <ActivityIndicator color="#fff" /> : <Text className="text-base font-semibold text-white">Sign In</Text>}
+        {submitting ? <ActivityIndicator color="#f5ead8" /> : <Text className="text-base font-semibold text-[#f5ead8]">Sign In</Text>}
       </Pressable>
     </KeyboardAvoidingView>
   );

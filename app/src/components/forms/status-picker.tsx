@@ -26,7 +26,7 @@ export function StatusPicker({
             onPress={() => onChange(opt)}
             className={active ? 'rounded-full bg-brand px-3 py-1.5' : 'rounded-full border border-surface-selected px-3 py-1.5 dark:border-surface-selected-dark'}
           >
-            <Text className={active ? 'text-xs font-medium text-white' : 'text-xs font-medium text-text dark:text-text-dark'}>{opt}</Text>
+            <Text className={active ? 'text-xs font-medium text-[#f5ead8]' : 'text-xs font-medium text-text dark:text-text-dark'}>{opt}</Text>
           </Pressable>
         );
       })}

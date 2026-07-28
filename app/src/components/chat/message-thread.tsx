@@ -61,11 +61,11 @@ export function MessageThread({
                       : 'max-w-[80%] rounded-2xl rounded-bl-sm bg-surface-element px-3 py-2 dark:bg-surface-element-dark'
                   }
                 >
-                  <Text className={mine ? 'text-[10px] uppercase tracking-wide text-white/60' : 'text-[10px] uppercase tracking-wide text-text-secondary dark:text-text-secondary-dark'}>
+                  <Text className={mine ? 'text-[10px] uppercase tracking-wide text-[#f5ead8]/60' : 'text-[10px] uppercase tracking-wide text-text-secondary dark:text-text-secondary-dark'}>
                     {item.senderRole}
                   </Text>
-                  <Text className={mine ? 'text-sm text-white' : 'text-sm text-text dark:text-text-dark'}>{item.text}</Text>
-                  <Text className={mine ? 'mt-0.5 text-[10px] text-white/50' : 'mt-0.5 text-[10px] text-text-secondary dark:text-text-secondary-dark'}>
+                  <Text className={mine ? 'text-sm text-[#f5ead8]' : 'text-sm text-text dark:text-text-dark'}>{item.text}</Text>
+                  <Text className={mine ? 'mt-0.5 text-[10px] text-[#f5ead8]/50' : 'mt-0.5 text-[10px] text-text-secondary dark:text-text-secondary-dark'}>
                     {item.time}
                   </Text>
                 </View>
@@ -82,7 +82,7 @@ export function MessageThread({
           className="flex-1 rounded-full border border-surface-selected px-4 py-2 text-sm text-text dark:border-surface-selected-dark dark:text-text-dark"
         />
         <Pressable onPress={handleSend} disabled={sending || !text.trim()} className="h-10 w-10 items-center justify-center rounded-full bg-brand disabled:opacity-50">
-          <Ionicons name="send" size={16} color="#fff" />
+          <Ionicons name="send" size={16} color="#f5ead8" />
         </Pressable>
       </View>
     </View>

@@ -43,7 +43,7 @@ export default function LeaveRequestsScreen() {
         <View className="mb-4 flex-row items-center justify-between">
           <Text className="text-xl font-bold text-text dark:text-text-dark">Leave Requests</Text>
           <Pressable onPress={() => setShowForm((s) => !s)} className="rounded-lg bg-brand px-3 py-1.5">
-            <Text className="text-sm font-medium text-white">{showForm ? 'Cancel' : '+ New Request'}</Text>
+            <Text className="text-sm font-medium text-[#f5ead8]">{showForm ? 'Cancel' : '+ New Request'}</Text>
           </Pressable>
         </View>
 
@@ -83,7 +83,7 @@ export default function LeaveRequestsScreen() {
               disabled={createLeave.isPending}
               className="items-center rounded-lg bg-brand py-2.5 disabled:opacity-50"
             >
-              <Text className="text-sm font-semibold text-white">
+              <Text className="text-sm font-semibold text-[#f5ead8]">
                 {createLeave.isPending ? 'Submitting…' : 'Submit Request'}
               </Text>
             </Pressable>
