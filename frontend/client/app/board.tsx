@@ -48,7 +48,7 @@ function NewTicketModal({ open, onClose }: { open: boolean; onClose: () => void 
         </div>
         <div style={{display:"flex",justifyContent:"flex-end",gap:"8px",marginTop:"20px"}}>
           <button type="button" onClick={onClose} style={{padding:"10px 20px",background:"none",border:0,fontSize:"14px",color:"var(--ink-soft)",cursor:"pointer"}}>Cancel</button>
-          <button type="submit" disabled={createTicket.isPending} style={{padding:"10px 20px",background:"var(--red)",color:"#fff",fontSize:"14px",fontWeight:"500",borderRadius:"50px",border:0,cursor:"pointer",opacity:createTicket.isPending?.6:1}}>{createTicket.isPending ? "Creating…" : "Create"}</button>
+          <button type="submit" disabled={createTicket.isPending} style={{padding:"10px 20px",background:"var(--accent)",color:"var(--canvas)",fontSize:"14px",fontWeight:"500",borderRadius:"50px",border:0,cursor:"pointer",opacity:createTicket.isPending?.6:1}}>{createTicket.isPending ? "Creating…" : "Create"}</button>
         </div>
       </form>
     </div>
@@ -82,8 +82,8 @@ function TicketColumn({ status, tickets, onNew }: { status: string; tickets: any
       </div>
       <div ref={ref} style={{
         flex:1,minHeight:"120px",borderRadius:"16px",padding:"4px",
-        border: isDropTarget ? "2px solid var(--red)" : "2px solid transparent",
-        background: isDropTarget ? "var(--red-light)" : "transparent",
+        border: isDropTarget ? "2px solid var(--accent)" : "2px solid transparent",
+        background: isDropTarget ? "var(--accent-light)" : "transparent",
         transition:"all .15s",
       }}>
         {tickets.map((t) => <TicketCard key={t.id} ticket={t} />)}

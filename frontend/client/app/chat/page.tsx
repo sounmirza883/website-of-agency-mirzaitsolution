@@ -34,8 +34,8 @@ export default function ChatPage() {
               {projects.map((p) => (
                 <button key={p.id} onClick={() => setSelectedId(String(p.id))} style={{
                   padding:"8px 18px",borderRadius:"50px",border:0,fontSize:"13px",fontWeight:"500",cursor:"pointer",
-                  background: projectId === String(p.id) ? "var(--red)" : "var(--soft)",
-                  color: projectId === String(p.id) ? "#fff" : "var(--ink-soft)",
+                  background: projectId === String(p.id) ? "var(--accent)" : "var(--soft)",
+                  color: projectId === String(p.id) ? "var(--canvas)" : "var(--ink-soft)",
                 }}>{p.name}</button>
               ))}
             </div>
@@ -44,16 +44,16 @@ export default function ChatPage() {
             <div className="space-y-4 mb-4" style={{maxHeight:"384px",overflow:"auto"}}>
               {messages?.map((m) => (
                 <div key={m.id} className={`flex ${m.senderRole === "client" ? "justify-end" : "justify-start"}`}>
-                  <div style={{maxWidth:"300px",borderRadius:"12px",padding:"10px 16px",background:m.senderRole==="client"?"var(--red)":"var(--soft)",color:m.senderRole==="client"?"#fff":"var(--ink)"}}>
+                  <div style={{maxWidth:"300px",borderRadius:"12px",padding:"10px 16px",background:m.senderRole==="client"?"var(--accent)":"var(--soft)",color:m.senderRole==="client"?"var(--canvas)":"var(--ink)"}}>
                     <div className="text-sm">{m.text}</div>
-                    <div className="text-xs mt-1" style={{color:m.senderRole==="client"?"rgba(255,255,255,.7)":"var(--ink-soft)"}}>{m.time}</div>
+                    <div className="text-xs mt-1" style={{color:m.senderRole==="client"?"rgba(245,234,216,.7)":"var(--ink-soft)"}}>{m.time}</div>
                   </div>
                 </div>
               ))}
             </div>
             <div className="flex gap-2" style={{borderTop:"1px solid var(--line)",paddingTop:"16px"}}>
               <input type="text" placeholder="Type your message..." value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") handleSend(); }} style={{flex:1,padding:"10px 16px",border:"1px solid var(--line)",borderRadius:"12px",fontSize:"14px",outline:"none",background:"var(--canvas)",color:"var(--ink)"}} />
-              <button onClick={handleSend} disabled={sendMessage.isPending || !draft.trim()} style={{padding:"10px 20px",background:"var(--red)",color:"#fff",fontSize:"14px",fontWeight:"500",borderRadius:"12px",border:0,cursor:"pointer",opacity:sendMessage.isPending || !draft.trim()?.6:1}}>Send</button>
+              <button onClick={handleSend} disabled={sendMessage.isPending || !draft.trim()} style={{padding:"10px 20px",background:"var(--accent)",color:"var(--canvas)",fontSize:"14px",fontWeight:"500",borderRadius:"12px",border:0,cursor:"pointer",opacity:sendMessage.isPending || !draft.trim()?.6:1}}>Send</button>
             </div>
           </div>
         </div>

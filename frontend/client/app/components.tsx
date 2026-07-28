@@ -34,13 +34,13 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex flex-col min-h-screen" style={{background:"var(--soft)"}}>
-      <header className="sticky top-0 z-50" style={{background:"rgba(255,255,255,.96)",borderBottom:"1px solid var(--line)",backdropFilter:"blur(10px)"}}>
+      <header className="sticky top-0 z-50" style={{background:"rgba(245,234,216,.92)",borderBottom:"1px solid var(--line)",backdropFilter:"blur(10px)"}}>
         <div className="flex items-center justify-between h-16 px-6" style={{maxWidth:"1440px",margin:"0 auto",width:"100%"}}>
           <Link href="/" className="logo" style={{fontSize:"20px"}}>Mirza IT <strong>Solution</strong> <span style={{fontFamily:"var(--mono)",fontSize:"11px",color:"var(--ink-soft)",marginLeft:"4px"}}>Client</span></Link>
           <div className="flex items-center gap-4">
             <Link href="/" style={{fontSize:"13px",color:"var(--ink-soft)",transition:"color .2s"}} onMouseEnter={e => e.currentTarget.style.color = "var(--ink)"} onMouseLeave={e => e.currentTarget.style.color = "var(--ink-soft)"}><Icon name="fa-arrow-left" /> Back to site</Link>
             <button onClick={logout} style={{fontSize:"13px",color:"var(--ink-soft)",background:"none",border:"none",cursor:"pointer"}}>Logout</button>
-            <div title={user.email} style={{width:"36px",height:"36px",borderRadius:"50%",background:"var(--red)",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:"700"}}>{user.name.charAt(0).toUpperCase()}</div>
+            <div title={user.email} style={{width:"36px",height:"36px",borderRadius:"50%",background:"var(--accent)",color:"var(--canvas)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:"700"}}>{user.name.charAt(0).toUpperCase()}</div>
           </div>
         </div>
       </header>
@@ -53,8 +53,8 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
                 <Link key={item.href} href={item.href} style={{
                   display:"flex",alignItems:"center",gap:"12px",padding:"10px 16px",borderRadius:active ? "var(--radius)" : "12px",
                   fontSize:"14px",fontWeight:active ? "600" : "500",transition:"all .2s",
-                  background: active ? "var(--red)" : "transparent",
-                  color: active ? "#fff" : "var(--ink-soft)",
+                  background: active ? "var(--accent)" : "transparent",
+                  color: active ? "var(--canvas)" : "var(--ink-soft)",
                 }}
                   onMouseEnter={e => { if (!active) { e.currentTarget.style.background = "var(--soft)"; e.currentTarget.style.color = "var(--ink)"; }}}
                   onMouseLeave={e => { if (!active) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "var(--ink-soft)"; }}}
@@ -67,10 +67,10 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
         </aside>
         <main className="flex-1 p-6 overflow-auto">{children}</main>
       </div>
-      <footer style={{background:"var(--ink)",color:"#fff",padding:"20px 0",marginTop:"auto"}}>
+      <footer style={{background:"var(--dark)",color:"var(--canvas)",padding:"20px 0",marginTop:"auto"}}>
         <div style={{maxWidth:"1440px",margin:"0 auto",padding:"0 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <Link href="/" className="logo" style={{fontSize:"16px"}}>Mirza IT <strong>Solution</strong></Link>
-          <p style={{fontSize:"13px",color:"rgba(255,255,255,.6)",margin:0}}>© 2026 Mirza IT Solution. All rights reserved.</p>
+          <p style={{fontSize:"13px",color:"rgba(245,234,216,.6)",margin:0}}>© 2026 Mirza IT Solution. All rights reserved.</p>
         </div>
       </footer>
     </div>

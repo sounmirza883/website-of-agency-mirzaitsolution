@@ -6,7 +6,7 @@ import { useInvoices, useSubmitInvoicePayment } from "../hooks";
 const STATUS_STYLE: Record<string, { background: string; color: string }> = {
   Paid: { background: "#dcfce7", color: "#166534" },
   Unpaid: { background: "#fef3c7", color: "#92400e" },
-  PendingVerification: { background: "var(--red-light)", color: "var(--red)" },
+  PendingVerification: { background: "var(--accent-light)", color: "var(--accent)" },
 };
 
 export default function InvoicesPage() {
@@ -52,14 +52,14 @@ export default function InvoicesPage() {
                         <button
                           onClick={() => handleSubmit(inv.id)}
                           disabled={submitPayment.isPending || !selectedFiles[inv.id]}
-                          style={{padding:"6px 16px",background:"var(--red)",color:"#fff",fontSize:"12px",fontWeight:"500",borderRadius:"50px",border:0,cursor:"pointer",opacity:submitPayment.isPending || !selectedFiles[inv.id]?.6:1,whiteSpace:"nowrap"}}
+                          style={{padding:"6px 16px",background:"var(--accent)",color:"var(--canvas)",fontSize:"12px",fontWeight:"500",borderRadius:"50px",border:0,cursor:"pointer",opacity:submitPayment.isPending || !selectedFiles[inv.id]?.6:1,whiteSpace:"nowrap"}}
                         >
                           {submitPayment.isPending && submitPayment.variables?.id === inv.id ? "Submitting…" : "Submit Payment Proof"}
                         </button>
                       </div>
                     )}
                     {inv.status === "PendingVerification" && inv.proofUrl && (
-                      <a href={inv.proofUrl} target="_blank" rel="noreferrer" style={{fontSize:"12px",fontWeight:"500",color:"var(--red)"}}>View submitted proof</a>
+                      <a href={inv.proofUrl} target="_blank" rel="noreferrer" style={{fontSize:"12px",fontWeight:"500",color:"var(--accent)"}}>View submitted proof</a>
                     )}
                   </td>
                 </tr>

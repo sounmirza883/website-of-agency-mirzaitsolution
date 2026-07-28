@@ -23,7 +23,7 @@ export default function ClientDashboard() {
         {stats.map((s) => (
           <div key={s.label} style={{background:"var(--canvas)",borderRadius:"var(--radius)",border:"1px solid var(--line)",padding:"20px"}}>
             <div className="flex items-center gap-3">
-              <div style={{width:"40px",height:"40px",borderRadius:"12px",background:"var(--red-light)",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--red)"}}><Icon name={s.icon} /></div>
+              <div style={{width:"40px",height:"40px",borderRadius:"12px",background:"var(--accent-light)",display:"flex",alignItems:"center",justifyContent:"center",color:"var(--accent)"}}><Icon name={s.icon} /></div>
               <div><div className="text-2xl font-bold" style={{color:"var(--ink)"}}>{s.value}</div><div className="text-sm" style={{color:"var(--ink-soft)"}}>{s.label}</div></div>
             </div>
           </div>
@@ -35,7 +35,7 @@ export default function ClientDashboard() {
           {projects?.map((p) => (
             <div key={p.id} className="flex items-center justify-between py-2" style={{borderBottom:"1px solid var(--line)"}}>
               <div className="flex-1"><div className="text-sm font-medium" style={{color:"var(--ink)"}}>{p.name}</div><div className="text-xs" style={{color:"var(--ink-soft)"}}>Deadline: {p.deadline}</div></div>
-              <span style={{fontSize:"12px",fontWeight:"500",padding:"2px 8px",borderRadius:"4px",background:p.status==="Completed"?"#dcfce7":"var(--red-light)",color:p.status==="Completed"?"#166534":"var(--red)"}}>{p.status}</span>
+              <span style={{fontSize:"12px",fontWeight:"500",padding:"2px 8px",borderRadius:"4px",background:p.status==="Completed"?"#dcfce7":"var(--accent-light)",color:p.status==="Completed"?"#166534":"var(--accent)"}}>{p.status}</span>
             </div>
           ))}
         </div>
