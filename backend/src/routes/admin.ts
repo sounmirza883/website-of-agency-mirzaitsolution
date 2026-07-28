@@ -111,6 +111,13 @@ router.get("/contact-submissions", requireAuth, requireRole("admin"), async (_re
   return res.json(data);
 });
 
+router.delete("/contact-submissions/:id", requireAuth, requireRole("admin"), asyncHandler(async (req, res) => {
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+  const { error } = await supabase.from("website_contact_submissions").delete().eq("id", Number(req.params.id));
+  if (error) return res.status(500).json({ error: error.message });
+  return res.status(204).send();
+}));
+
 router.post("/services", requireAuth, requireRole("admin"), async (req, res) => {
   const { name, price, duration } = req.body ?? {};
   if (!name || !price || !duration) return res.status(400).json({ error: "name, price, duration are required" });

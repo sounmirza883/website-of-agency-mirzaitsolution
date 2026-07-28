@@ -57,6 +57,7 @@ export function fetchNotifications(token: string) { return apiGet<any[]>("/admin
 export function fetchBlogPosts(token: string) { return apiGet<any[]>("/admin/blog", token); }
 export function fetchPortfolioList(token: string) { return apiGet<any[]>("/admin/portfolio", token); }
 export function fetchContactSubmissions(token: string) { return apiGet<any[]>("/admin/contact-submissions", token); }
+export function deleteLead(token: string, id: number) { return apiDelete(`/admin/contact-submissions/${id}`, token); }
 export function fetchPaymentSettings(token: string) { return apiGet<any>("/admin/payment-settings", token); }
 
 export function createService(token: string, payload: { name: string; price: string; duration: string }) {

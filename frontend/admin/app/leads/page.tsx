@@ -1,18 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { useContactSubmissions, useClientsList, useEmployees, useCreateProject } from "../hooks";
+import { useContactSubmissions, useClientsList, useEmployees, useCreateProject, useDeleteLead } from "../hooks";
 
 export default function LeadsPage() {
   const { data: leads } = useContactSubmissions();
   const { data: clients } = useClientsList();
   const { data: employees } = useEmployees();
   const createProject = useCreateProject();
+  const deleteLead = useDeleteLead();
 
   const [assigning, setAssigning] = useState<any | null>(null);
   const [form, setForm] = useState({ name: "", clientId: "", employeeId: "", status: "Pending", deadline: "" });
   const [error, setError] = useState("");
   const [createdFor, setCreatedFor] = useState<number | null>(null);
+
+  function handleDelete(lead: any) {
+    if (!confirm(`Delete lead from "${lead.name}"? This cannot be undone.`)) return;
+    deleteLead.mutate(lead.id);
+  }
 
   function openAssign(lead: any) {
     const matchedClient = clients?.find((c) => c.email?.toLowerCase() === lead.email?.toLowerCase());
@@ -64,11 +70,14 @@ export default function LeadsPage() {
               <td className="px-5 py-3 text-gray-600">{l.message}</td>
               <td className="px-5 py-3 text-gray-600">{new Date(l.created_at).toLocaleString()}</td>
               <td className="px-5 py-3">
-                {createdFor === l.id ? (
-                  <span className="text-xs text-green-600 font-medium">Project created</span>
-                ) : (
-                  <button onClick={() => openAssign(l)} className="text-xs text-gray-600 hover:text-gray-900 border border-gray-200 rounded-md px-2 py-1 whitespace-nowrap">Assign Project</button>
-                )}
+                <div className="flex items-center gap-2">
+                  {createdFor === l.id ? (
+                    <span className="text-xs text-green-600 font-medium">Project created</span>
+                  ) : (
+                    <button onClick={() => openAssign(l)} className="text-xs text-gray-600 hover:text-gray-900 border border-gray-200 rounded-md px-2 py-1 whitespace-nowrap">Assign Project</button>
+                  )}
+                  <button onClick={() => handleDelete(l)} className="text-xs text-red-600 hover:text-red-800 border border-red-200 rounded-md px-2 py-1 whitespace-nowrap">Delete</button>
+                </div>
               </td>
             </tr>
           ))}</tbody>
