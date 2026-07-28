@@ -62,7 +62,10 @@ export function fetchPaymentSettings(token: string) { return apiGet<any>("/admin
 export function createService(token: string, payload: { name: string; price: string; duration: string }) {
   return apiPost<any>("/admin/services", token, payload);
 }
-export function updatePaymentSettings(token: string, payload: { bankName?: string; accountTitle?: string; accountNumber?: string; iban?: string; branchCode?: string; swiftCode?: string; instructions?: string }) {
+export function updatePaymentSettings(token: string, payload: {
+  bankName?: string; accountTitle?: string; accountNumber?: string; iban?: string; branchCode?: string; swiftCode?: string; instructions?: string;
+  intlBankName?: string; intlAccountTitle?: string; intlAccountNumber?: string; intlIban?: string; intlSwiftCode?: string; intlInstructions?: string;
+}) {
   return apiPatch<any>("/admin/payment-settings", token, payload);
 }
 export function createProject(token: string, payload: { name: string; client: string; clientId?: number; employeeId?: number; status: string; deadline: string }) {

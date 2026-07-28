@@ -209,7 +209,10 @@ router.get("/payment-settings", requireAuth, requireRole("admin"), async (_req, 
 });
 
 router.patch("/payment-settings", requireAuth, requireRole("admin"), async (req, res) => {
-  const { bankName, accountTitle, accountNumber, iban, branchCode, swiftCode, instructions } = req.body ?? {};
+  const {
+    bankName, accountTitle, accountNumber, iban, branchCode, swiftCode, instructions,
+    intlBankName, intlAccountTitle, intlAccountNumber, intlIban, intlSwiftCode, intlInstructions,
+  } = req.body ?? {};
   if (!supabase) return res.status(503).json({ error: "Database not configured" });
   const { data, error } = await supabase.from("payment_settings").upsert({
     id: 1,
@@ -220,6 +223,12 @@ router.patch("/payment-settings", requireAuth, requireRole("admin"), async (req,
     branch_code: branchCode ?? null,
     swift_code: swiftCode ?? null,
     instructions: instructions ?? null,
+    intl_bank_name: intlBankName ?? null,
+    intl_account_title: intlAccountTitle ?? null,
+    intl_account_number: intlAccountNumber ?? null,
+    intl_iban: intlIban ?? null,
+    intl_swift_code: intlSwiftCode ?? null,
+    intl_instructions: intlInstructions ?? null,
   }).select().single();
   if (error) return res.status(500).json({ error: error.message });
   return res.json(data);

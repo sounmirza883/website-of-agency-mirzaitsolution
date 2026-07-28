@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useInvoices, usePaymentSettings, useSubmitInvoicePayment } from "../hooks";
 
-const PAYMENT_FIELDS: Array<[key: string, label: string]> = [
+const LOCAL_PAYMENT_FIELDS: Array<[key: string, label: string]> = [
   ["bank_name", "Bank Name"],
   ["account_title", "Account Title"],
   ["account_number", "Account Number"],
@@ -12,25 +12,47 @@ const PAYMENT_FIELDS: Array<[key: string, label: string]> = [
   ["swift_code", "SWIFT / BIC Code"],
 ];
 
-function PaymentDetailsCard() {
-  const { data: settings } = usePaymentSettings();
-  const hasDetails = settings && PAYMENT_FIELDS.some(([key]) => settings[key]);
-  if (!hasDetails) return null;
+const INTL_PAYMENT_FIELDS: Array<[key: string, label: string]> = [
+  ["intl_bank_name", "Bank Name"],
+  ["intl_account_title", "Account Title"],
+  ["intl_account_number", "Account Number"],
+  ["intl_iban", "IBAN"],
+  ["intl_swift_code", "SWIFT / BIC Code"],
+];
+
+function PaymentFieldSection({ title, fields, settings, instructionsKey }: { title: string; fields: Array<[string, string]>; settings: any; instructionsKey: string }) {
+  const present = fields.filter(([key]) => settings[key]);
+  if (present.length === 0) return null;
 
   return (
-    <div style={{background:"var(--canvas)",borderRadius:"var(--radius)",border:"1px solid var(--line)",padding:"20px",marginBottom:"20px"}}>
-      <h2 style={{fontSize:"15px",fontWeight:"700",color:"var(--ink)",marginBottom:"12px"}}>Payment Details</h2>
+    <div style={{marginBottom:"16px"}}>
+      <h3 style={{fontSize:"12px",fontWeight:"700",textTransform:"uppercase",letterSpacing:".04em",color:"var(--accent)",marginBottom:"10px"}}>{title}</h3>
       <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))",gap:"12px"}}>
-        {PAYMENT_FIELDS.filter(([key]) => settings[key]).map(([key, label]) => (
+        {present.map(([key, label]) => (
           <div key={key}>
             <div style={{fontSize:"11px",textTransform:"uppercase",letterSpacing:".04em",color:"var(--ink-soft)",marginBottom:"2px"}}>{label}</div>
             <div style={{fontSize:"14px",fontWeight:"500",color:"var(--ink)"}}>{settings[key]}</div>
           </div>
         ))}
       </div>
-      {settings.instructions && (
-        <p style={{fontSize:"13px",color:"var(--ink-soft)",marginTop:"14px",marginBottom:0,lineHeight:"1.5"}}>{settings.instructions}</p>
+      {settings[instructionsKey] && (
+        <p style={{fontSize:"13px",color:"var(--ink-soft)",marginTop:"10px",marginBottom:0,lineHeight:"1.5"}}>{settings[instructionsKey]}</p>
       )}
+    </div>
+  );
+}
+
+function PaymentDetailsCard() {
+  const { data: settings } = usePaymentSettings();
+  const hasLocal = settings && LOCAL_PAYMENT_FIELDS.some(([key]) => settings[key]);
+  const hasIntl = settings && INTL_PAYMENT_FIELDS.some(([key]) => settings[key]);
+  if (!hasLocal && !hasIntl) return null;
+
+  return (
+    <div style={{background:"var(--canvas)",borderRadius:"var(--radius)",border:"1px solid var(--line)",padding:"20px",marginBottom:"20px"}}>
+      <h2 style={{fontSize:"15px",fontWeight:"700",color:"var(--ink)",marginBottom:"14px"}}>Payment Details</h2>
+      {hasLocal && <PaymentFieldSection title="Local Bank Transfer" fields={LOCAL_PAYMENT_FIELDS} settings={settings} instructionsKey="instructions" />}
+      {hasIntl && <PaymentFieldSection title="International Payment" fields={INTL_PAYMENT_FIELDS} settings={settings} instructionsKey="intl_instructions" />}
     </div>
   );
 }

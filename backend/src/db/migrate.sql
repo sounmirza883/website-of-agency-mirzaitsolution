@@ -51,6 +51,13 @@ CREATE TABLE IF NOT EXISTS payment_settings (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   CONSTRAINT payment_settings_singleton CHECK (id = 1)
 );
+-- International payment details, alongside the local fields above.
+ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS intl_bank_name TEXT;
+ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS intl_account_title TEXT;
+ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS intl_account_number TEXT;
+ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS intl_iban TEXT;
+ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS intl_swift_code TEXT;
+ALTER TABLE payment_settings ADD COLUMN IF NOT EXISTS intl_instructions TEXT;
 
 -- Employee (each row now owned by a real employee account; unowned legacy demo rows are purged below)
 CREATE TABLE IF NOT EXISTS employee_assigned_projects (id SERIAL PRIMARY KEY, name TEXT NOT NULL, role TEXT NOT NULL, status TEXT NOT NULL, deadline TEXT NOT NULL, employee_id INTEGER REFERENCES users(id));
