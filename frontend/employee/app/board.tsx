@@ -32,9 +32,9 @@ function Column({ status, tasks, onAdd }: { status: string; tasks: any[]; onAdd:
           <h3 className="font-semibold text-sm text-gray-900">{status}</h3>
           <span className="text-xs font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{tasks.length}</span>
         </div>
-        <button onClick={onAdd} className="text-xs font-medium text-emerald-600">+ New</button>
+        <button onClick={onAdd} className="text-xs font-medium text-accent-2">+ New</button>
       </div>
-      <div ref={ref} className={`bg-gray-50 rounded-xl p-2 min-h-[200px] border-2 ${isDropTarget ? "border-emerald-400 bg-emerald-50" : "border-transparent"}`}>
+      <div ref={ref} className={`bg-gray-50 rounded-xl p-2 min-h-[200px] border-2 ${isDropTarget ? "border-accent-2-400 bg-accent-2-100" : "border-transparent"}`}>
         {tasks.map((t) => <Card key={t.id} task={t} />)}
       </div>
     </div>
@@ -104,7 +104,7 @@ export function TaskBoard() {
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
-              <button type="submit" disabled={createTask.isPending} className="bg-emerald-600 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{createTask.isPending ? "Creating…" : "Create"}</button>
+              <button type="submit" disabled={createTask.isPending} className="bg-accent-2 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{createTask.isPending ? "Creating…" : "Create"}</button>
             </div>
           </form>
         </div>

@@ -1,1 +1,40 @@
+@import url('https://fonts.googleapis.com/css2?family=Caprasimo:wght@400&family=Figtree:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
+@theme {
+  --color-white: #f5ead8;
+  --color-gray-50: #fdf9f2;
+  --color-gray-100: #f9f4ed;
+  --color-gray-200: #eee7db;
+  --color-gray-300: #dcd3c4;
+  --color-gray-400: #c0b6a5;
+  --color-gray-500: #a19786;
+  --color-gray-600: #82796a;
+  --color-gray-700: #645c50;
+  --color-gray-800: #474238;
+  --color-gray-900: #2e2b25;
+  --color-accent: #c67139;
+  --color-accent-100: #fff2eb;
+  --color-accent-200: #ffe1d0;
+  --color-accent-300: #ffc6a5;
+  --color-accent-400: #f6a06b;
+  --color-accent-500: #d67f48;
+  --color-accent-600: #b2622d;
+  --color-accent-700: #8c491a;
+  --color-accent-800: #643312;
+  --color-accent-900: #402310;
+  --color-accent-2: #7a8a5e;
+  --color-accent-2-100: #f0fae1;
+  --color-accent-2-200: #e1eecc;
+  --color-accent-2-300: #ccdbb2;
+  --color-accent-2-400: #aebf92;
+  --color-accent-2-500: #8fa073;
+  --color-accent-2-600: #728157;
+  --color-accent-2-700: #56633f;
+  --color-accent-2-800: #3d472b;
+  --color-accent-2-900: #272e1b;
+  --font-sans: 'Figtree', system-ui, sans-serif;
+  --font-heading: 'Caprasimo', serif;
+}
+body {
+  font-family: var(--font-sans);
+}
