@@ -25,7 +25,7 @@ export default function AdminDashboard() {
     <div>
       <h1 className="text-2xl font-bold mb-1">Dashboard</h1>
       <p className="text-sm text-gray-500 mb-6">Overview of your admin panel</p>
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
         {stats.map((s) => (
           <Link key={s.label} href={s.href} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-sm transition-shadow">
             <div className="text-2xl font-bold text-gray-900">{s.value}</div>
@@ -33,7 +33,7 @@ export default function AdminDashboard() {
           </Link>
         ))}
       </div>
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h2 className="font-semibold text-gray-900 mb-3">Recent Projects</h2>
           {projects?.slice(0, 3).map((p) => (

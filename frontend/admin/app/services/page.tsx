@@ -32,7 +32,7 @@ export default function ServicesPage() {
         <button onClick={() => setOpen(true)} className="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg">+ Add Service</button>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
         <table className="w-full text-sm">
           <thead><tr className="bg-gray-50 text-left">{["Name", "Price", "Duration"].map((h) => <th key={h} className="px-5 py-3 font-medium text-gray-600">{h}</th>)}</tr></thead>
           <tbody>{services?.map((s) => <tr key={s.id} className="border-t border-gray-100 hover:bg-gray-50"><td className="px-5 py-3 font-medium">{s.name}</td><td className="px-5 py-3 text-gray-600">{s.price}</td><td className="px-5 py-3 text-gray-600">{s.duration}</td></tr>)}</tbody>

@@ -69,18 +69,24 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const { user, loading, logout } = useAuth();
   const isLoginPage = path === "/login";
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (loading || isLoginPage) return;
     if (!user || user.role !== "admin") router.replace("/login");
   }, [loading, isLoginPage, user, router]);
 
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [path]);
+
   if (isLoginPage) return <>{children}</>;
   if (loading || !user || user.role !== "admin") return null;
 
   return (
     <div className="flex h-screen bg-gray-50 text-gray-900">
-      <aside className="w-64 bg-white border-r border-gray-200 flex flex-col shrink-0">
+      {sidebarOpen && <div className="fixed inset-0 bg-black/30 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />}
+      <aside className={`w-64 bg-white border-r border-gray-200 flex flex-col shrink-0 fixed inset-y-0 left-0 z-50 transform transition-transform duration-200 md:static md:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="h-16 flex items-center px-6 border-b border-gray-200">
           <Link href="/" className="text-lg font-bold tracking-tight">Mirza IT Solution <span className="text-accent">Admin</span></Link>
         </div>
@@ -95,16 +101,21 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shrink-0">
-          <div className="text-sm text-gray-500">Welcome, {user.name}</div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-600">{user.email}</span>
-            <div className="w-8 h-8 bg-gray-800 text-white rounded-full flex items-center justify-center text-xs font-bold">{user.name.charAt(0).toUpperCase()}</div>
-            <button onClick={() => setShowChangePassword(true)} className="text-sm text-gray-500 hover:text-gray-900">Change Password</button>
-            <button onClick={logout} className="text-sm text-gray-500 hover:text-gray-900">Logout</button>
+        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <button onClick={() => setSidebarOpen(true)} className="md:hidden text-gray-500 hover:text-gray-900 shrink-0" aria-label="Open menu">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </button>
+            <div className="text-sm text-gray-500 truncate hidden sm:block">Welcome, {user.name}</div>
+          </div>
+          <div className="flex items-center gap-2 md:gap-3 shrink-0">
+            <span className="text-sm text-gray-600 hidden lg:inline">{user.email}</span>
+            <div className="w-8 h-8 bg-gray-800 text-white rounded-full flex items-center justify-center text-xs font-bold shrink-0">{user.name.charAt(0).toUpperCase()}</div>
+            <button onClick={() => setShowChangePassword(true)} className="text-xs md:text-sm text-gray-500 hover:text-gray-900 whitespace-nowrap">Change Password</button>
+            <button onClick={logout} className="text-xs md:text-sm text-gray-500 hover:text-gray-900">Logout</button>
           </div>
         </header>
-        <div className="flex-1 p-6 overflow-auto">{children}</div>
+        <div className="flex-1 p-4 md:p-6 overflow-auto">{children}</div>
       </div>
       {showChangePassword && <ChangePasswordModal onClose={() => setShowChangePassword(false)} />}
     </div>

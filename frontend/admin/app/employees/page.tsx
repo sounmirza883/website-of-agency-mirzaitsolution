@@ -65,7 +65,7 @@ export default function EmployeesPage() {
         <button onClick={() => setOpen(true)} className="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg">+ Add Employee</button>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
         <table className="w-full text-sm">
           <thead><tr className="bg-gray-50 text-left">{["Name", "Email", "Department", "Position", "Status", "Can create clients", ""].map((h) => <th key={h} className="px-5 py-3 font-medium text-gray-600">{h}</th>)}</tr></thead>
           <tbody>{employees?.map((e) => (

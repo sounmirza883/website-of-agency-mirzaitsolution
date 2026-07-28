@@ -15,7 +15,7 @@ export default function AdminLeavePage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
         <table className="w-full text-sm">
           <thead><tr className="bg-gray-50 text-left">{["Employee", "Type", "Reason", "From", "To", "Status", ""].map((h) => <th key={h} className="px-5 py-3 font-medium text-gray-600">{h}</th>)}</tr></thead>
           <tbody>{requests?.map((l: any) => (

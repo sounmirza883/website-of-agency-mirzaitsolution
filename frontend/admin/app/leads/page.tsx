@@ -52,7 +52,7 @@ export default function LeadsPage() {
     <div>
       <h1 className="text-2xl font-bold mb-1">Leads</h1>
       <p className="text-sm text-gray-500 mb-6">Contact form submissions from the public website</p>
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
         <table className="w-full text-sm">
           <thead><tr className="bg-gray-50 text-left">{["Name", "Email", "Phone", "Service", "Message", "Submitted", ""].map((h) => <th key={h} className="px-5 py-3 font-medium text-gray-600">{h}</th>)}</tr></thead>
           <tbody>{leads?.map((l) => (
