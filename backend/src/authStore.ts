@@ -154,6 +154,18 @@ export async function setCanCreateClients(id: number, canCreateClients: boolean)
   return data ? rowToUser(data) : null;
 }
 
+export async function updatePassword(id: number, passwordHash: string): Promise<boolean> {
+  if (!supabase) {
+    const user = memoryUsers.find((u) => u.id === id);
+    if (!user) return false;
+    user.passwordHash = passwordHash;
+    return true;
+  }
+  const { error } = await supabase.from("users").update({ password_hash: passwordHash }).eq("id", id);
+  if (error) throw new Error(error.message);
+  return true;
+}
+
 export async function setUserStatus(id: number, status: string): Promise<AuthUser | null> {
   if (!supabase) {
     const user = memoryUsers.find((u) => u.id === id);

@@ -2,8 +2,49 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "./auth";
+import { useChangePassword } from "./hooks";
+
+function ChangePasswordModal({ onClose }: { onClose: () => void }) {
+  const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [error, setError] = useState("");
+  const changePassword = useChangePassword();
+
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setError("");
+    if (form.newPassword !== form.confirmPassword) return setError("New passwords do not match");
+    changePassword.mutate(
+      { currentPassword: form.currentPassword, newPassword: form.newPassword },
+      { onError: (err) => setError((err as Error).message) }
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <form onSubmit={handleSubmit} onClick={(e) => e.stopPropagation()} className="w-full max-w-md bg-white rounded-xl p-6">
+        <h2 className="text-lg font-bold mb-4">Change Password</h2>
+        {changePassword.isSuccess ? (
+          <p className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">Password updated successfully.</p>
+        ) : (
+          <>
+            {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</div>}
+            <div className="space-y-3">
+              <input required type="password" placeholder="Current password" value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <input required type="password" placeholder="New password" minLength={8} value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <input required type="password" placeholder="Confirm new password" minLength={8} value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+            </div>
+          </>
+        )}
+        <div className="flex justify-end gap-2 mt-6">
+          <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">{changePassword.isSuccess ? "Close" : "Cancel"}</button>
+          {!changePassword.isSuccess && <button type="submit" disabled={changePassword.isPending} className="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{changePassword.isPending ? "Updating…" : "Update Password"}</button>}
+        </div>
+      </form>
+    </div>
+  );
+}
 
 const nav = [
   { label: "Dashboard", href: "/" },
@@ -26,6 +67,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, loading, logout } = useAuth();
   const isLoginPage = path === "/login";
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   useEffect(() => {
     if (loading || isLoginPage) return;
@@ -57,11 +99,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-600">{user.email}</span>
             <div className="w-8 h-8 bg-gray-800 text-white rounded-full flex items-center justify-center text-xs font-bold">{user.name.charAt(0).toUpperCase()}</div>
+            <button onClick={() => setShowChangePassword(true)} className="text-sm text-gray-500 hover:text-gray-900">Change Password</button>
             <button onClick={logout} className="text-sm text-gray-500 hover:text-gray-900">Logout</button>
           </div>
         </header>
         <div className="flex-1 p-6 overflow-auto">{children}</div>
       </div>
+      {showChangePassword && <ChangePasswordModal onClose={() => setShowChangePassword(false)} />}
     </div>
   );
 }

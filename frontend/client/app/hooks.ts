@@ -2,7 +2,14 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
-import { fetchProjects, fetchMilestones, fetchFiles, fetchInvoices, fetchTickets, fetchMessages, submitInvoicePayment, createTicket, updateTicketStatus, sendMessage, fetchClientNotifications } from "./queries";
+import { fetchProjects, fetchMilestones, fetchFiles, fetchInvoices, fetchTickets, fetchMessages, submitInvoicePayment, createTicket, updateTicketStatus, sendMessage, fetchClientNotifications, changePassword } from "./queries";
+
+export function useChangePassword() {
+  const { token } = useAuth();
+  return useMutation({
+    mutationFn: (payload: Parameters<typeof changePassword>[1]) => changePassword(token!, payload),
+  });
+}
 
 export function useProjects() {
   const { token } = useAuth();

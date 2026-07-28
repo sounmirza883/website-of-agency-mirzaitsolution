@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import { Router } from "express";
-import { findUserByEmail, findUserById } from "../authStore.js";
+import { findUserByEmail, findUserById, updatePassword } from "../authStore.js";
 import { type AuthedRequest, requireAuth, signToken } from "../middleware/auth.js";
 
 const router = Router();
@@ -30,6 +30,20 @@ router.post("/login", async (req, res) => {
 
   const token = signToken({ id: user.id, role: user.role, canCreateClients: user.canCreateClients });
   return res.json({ token, user: toProfile(user) });
+});
+
+router.post("/change-password", requireAuth, async (req: AuthedRequest, res) => {
+  const { currentPassword, newPassword } = req.body ?? {};
+  if (!currentPassword || !newPassword) return res.status(400).json({ error: "Current and new password are required" });
+  if (newPassword.length < 8) return res.status(400).json({ error: "New password must be at least 8 characters" });
+
+  const user = await findUserById(req.user!.id);
+  if (!user || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
+    return res.status(401).json({ error: "Current password is incorrect" });
+  }
+  const passwordHash = await bcrypt.hash(newPassword, 10);
+  await updatePassword(user.id, passwordHash);
+  return res.json({ success: true });
 });
 
 router.get("/me", requireAuth, async (req: AuthedRequest, res) => {

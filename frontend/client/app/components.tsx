@@ -2,8 +2,49 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "./auth";
+import { useChangePassword } from "./hooks";
+
+function ChangePasswordModal({ onClose }: { onClose: () => void }) {
+  const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [error, setError] = useState("");
+  const changePassword = useChangePassword();
+
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    setError("");
+    if (form.newPassword !== form.confirmPassword) return setError("New passwords do not match");
+    changePassword.mutate(
+      { currentPassword: form.currentPassword, newPassword: form.newPassword },
+      { onError: (err) => setError((err as Error).message) }
+    );
+  }
+
+  return (
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,.3)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:50,padding:"16px"}}>
+      <form onSubmit={handleSubmit} onClick={(e) => e.stopPropagation()} style={{width:"100%",maxWidth:"420px",background:"var(--canvas)",borderRadius:"var(--radius)",border:"1px solid var(--line)",padding:"24px"}}>
+        <h2 style={{fontSize:"18px",fontWeight:"700",color:"var(--ink)",marginBottom:"16px"}}>Change Password</h2>
+        {changePassword.isSuccess ? (
+          <p style={{fontSize:"13px",color:"#166534",background:"#dcfce7",padding:"8px 12px",borderRadius:"12px"}}>Password updated successfully.</p>
+        ) : (
+          <>
+            {error && <div style={{marginBottom:"16px",fontSize:"13px",color:"#b91c1c",background:"#fef2f2",padding:"8px 12px",borderRadius:"12px"}}>{error}</div>}
+            <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+              <input required type="password" placeholder="Current password" value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} style={{width:"100%",padding:"10px 14px",border:"1px solid var(--line)",borderRadius:"12px",fontSize:"14px",outline:"none",background:"var(--canvas)",color:"var(--ink)"}} />
+              <input required type="password" placeholder="New password" minLength={8} value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} style={{width:"100%",padding:"10px 14px",border:"1px solid var(--line)",borderRadius:"12px",fontSize:"14px",outline:"none",background:"var(--canvas)",color:"var(--ink)"}} />
+              <input required type="password" placeholder="Confirm new password" minLength={8} value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} style={{width:"100%",padding:"10px 14px",border:"1px solid var(--line)",borderRadius:"12px",fontSize:"14px",outline:"none",background:"var(--canvas)",color:"var(--ink)"}} />
+            </div>
+          </>
+        )}
+        <div style={{display:"flex",justifyContent:"flex-end",gap:"8px",marginTop:"20px"}}>
+          <button type="button" onClick={onClose} style={{padding:"10px 20px",background:"none",border:0,fontSize:"14px",color:"var(--ink-soft)",cursor:"pointer"}}>{changePassword.isSuccess ? "Close" : "Cancel"}</button>
+          {!changePassword.isSuccess && <button type="submit" disabled={changePassword.isPending} style={{padding:"10px 20px",background:"var(--accent)",color:"var(--canvas)",fontSize:"14px",fontWeight:"500",borderRadius:"50px",border:0,cursor:"pointer",opacity:changePassword.isPending?.6:1}}>{changePassword.isPending ? "Updating…" : "Update Password"}</button>}
+        </div>
+      </form>
+    </div>
+  );
+}
 
 const nav = [
   { label: "Dashboard", icon: "fa-chart-pie", href: "/" },
@@ -23,6 +64,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, loading, logout } = useAuth();
   const isLoginPage = path === "/login";
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   useEffect(() => {
     if (loading || isLoginPage) return;
@@ -39,11 +81,13 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
           <Link href="/" className="logo" style={{fontSize:"20px"}}>Mirza IT <strong>Solution</strong> <span style={{fontFamily:"var(--mono)",fontSize:"11px",color:"var(--ink-soft)",marginLeft:"4px"}}>Client</span></Link>
           <div className="flex items-center gap-4">
             <Link href="/" style={{fontSize:"13px",color:"var(--ink-soft)",transition:"color .2s"}} onMouseEnter={e => e.currentTarget.style.color = "var(--ink)"} onMouseLeave={e => e.currentTarget.style.color = "var(--ink-soft)"}><Icon name="fa-arrow-left" /> Back to site</Link>
+            <button onClick={() => setShowChangePassword(true)} style={{fontSize:"13px",color:"var(--ink-soft)",background:"none",border:"none",cursor:"pointer"}}>Change Password</button>
             <button onClick={logout} style={{fontSize:"13px",color:"var(--ink-soft)",background:"none",border:"none",cursor:"pointer"}}>Logout</button>
             <div title={user.email} style={{width:"36px",height:"36px",borderRadius:"50%",background:"var(--accent)",color:"var(--canvas)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"13px",fontWeight:"700"}}>{user.name.charAt(0).toUpperCase()}</div>
           </div>
         </div>
       </header>
+      {showChangePassword && <ChangePasswordModal onClose={() => setShowChangePassword(false)} />}
       <div className="flex flex-1" style={{maxWidth:"1440px",margin:"0 auto",width:"100%"}}>
         <aside style={{width:"240px",background:"var(--canvas)",borderRight:"1px solid var(--line)",flexShrink:0,display:"flex",flexDirection:"column"}}>
           <nav style={{flex:1,padding:"16px",display:"flex",flexDirection:"column",gap:"4px"}}>

@@ -13,6 +13,10 @@ async function apiPost<T>(path: string, token: string, body: unknown): Promise<T
   return data;
 }
 
+export function changePassword(token: string, payload: { currentPassword: string; newPassword: string }) {
+  return apiPost<{ success: boolean }>("/auth/change-password", token, payload);
+}
+
 async function apiPatch<T>(path: string, token: string, body: unknown): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, { method: "PATCH", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
   const data = await res.json();
