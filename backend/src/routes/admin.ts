@@ -201,6 +201,30 @@ router.patch("/invoices/:id/verify", requireAuth, requireRole("admin"), async (r
   return res.json((await attachProofUrl([data]))[0]);
 });
 
+router.get("/payment-settings", requireAuth, requireRole("admin"), async (_req, res) => {
+  if (!supabase) return res.json(null);
+  const { data, error } = await supabase.from("payment_settings").select("*").eq("id", 1).maybeSingle();
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json(data);
+});
+
+router.patch("/payment-settings", requireAuth, requireRole("admin"), async (req, res) => {
+  const { bankName, accountTitle, accountNumber, iban, branchCode, swiftCode, instructions } = req.body ?? {};
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+  const { data, error } = await supabase.from("payment_settings").upsert({
+    id: 1,
+    bank_name: bankName ?? null,
+    account_title: accountTitle ?? null,
+    account_number: accountNumber ?? null,
+    iban: iban ?? null,
+    branch_code: branchCode ?? null,
+    swift_code: swiftCode ?? null,
+    instructions: instructions ?? null,
+  }).select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json(data);
+});
+
 router.post("/notifications", requireAuth, requireRole("admin"), async (req: AuthedRequest, res) => {
   const { title, msg, targetRole, targetUserId } = req.body ?? {};
   if (!title || !msg) return res.status(400).json({ error: "title, msg are required" });

@@ -57,9 +57,13 @@ export function fetchNotifications(token: string) { return apiGet<any[]>("/admin
 export function fetchBlogPosts(token: string) { return apiGet<any[]>("/admin/blog", token); }
 export function fetchPortfolioList(token: string) { return apiGet<any[]>("/admin/portfolio", token); }
 export function fetchContactSubmissions(token: string) { return apiGet<any[]>("/admin/contact-submissions", token); }
+export function fetchPaymentSettings(token: string) { return apiGet<any>("/admin/payment-settings", token); }
 
 export function createService(token: string, payload: { name: string; price: string; duration: string }) {
   return apiPost<any>("/admin/services", token, payload);
+}
+export function updatePaymentSettings(token: string, payload: { bankName?: string; accountTitle?: string; accountNumber?: string; iban?: string; branchCode?: string; swiftCode?: string; instructions?: string }) {
+  return apiPatch<any>("/admin/payment-settings", token, payload);
 }
 export function createProject(token: string, payload: { name: string; client: string; clientId?: number; employeeId?: number; status: string; deadline: string }) {
   return apiPost<any>("/admin/projects", token, payload);

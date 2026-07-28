@@ -35,6 +35,7 @@ export function fetchProjects(token: string) { return apiGet<any[]>("/client/pro
 export function fetchMilestones(token: string) { return apiGet<any[]>("/client/milestones", token); }
 export function fetchFiles(token: string) { return apiGet<any[]>("/client/files", token); }
 export function fetchInvoices(token: string) { return apiGet<any[]>("/client/invoices", token); }
+export function fetchPaymentSettings(token: string) { return apiGet<any>("/client/payment-settings", token); }
 export function fetchTickets(token: string) { return apiGet<any[]>("/client/tickets", token); }
 export function fetchMessages(token: string, projectId: string) { return apiGet<any[]>(`/client/messages?projectId=${projectId}`, token); }
 export function submitInvoicePayment(token: string, id: string, formData: FormData) {

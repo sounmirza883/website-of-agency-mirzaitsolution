@@ -52,6 +52,13 @@ router.get("/invoices", requireAuth, requireRole("client"), async (req: AuthedRe
   return res.json(withUrls);
 });
 
+router.get("/payment-settings", requireAuth, requireRole("client"), async (_req, res) => {
+  if (!supabase) return res.json(null);
+  const { data, error } = await supabase.from("payment_settings").select("*").eq("id", 1).maybeSingle();
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json(data);
+});
+
 router.post("/invoices/:id/submit-payment", requireAuth, requireRole("client"), upload.single("file"), async (req: AuthedRequest, res) => {
   const id = req.params.id;
   const file = req.file;

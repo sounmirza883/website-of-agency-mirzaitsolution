@@ -37,6 +37,21 @@ CREATE TABLE IF NOT EXISTS admin_portfolio (id SERIAL PRIMARY KEY, title TEXT NO
 ALTER TABLE admin_blog ADD COLUMN IF NOT EXISTS content TEXT NOT NULL DEFAULT '';
 ALTER TABLE admin_portfolio ADD COLUMN IF NOT EXISTS description TEXT;
 
+-- Company bank details, admin-managed, shown to clients on the Invoices page.
+-- Singleton table: exactly one row, always id=1.
+CREATE TABLE IF NOT EXISTS payment_settings (
+  id INTEGER PRIMARY KEY DEFAULT 1,
+  bank_name TEXT,
+  account_title TEXT,
+  account_number TEXT,
+  iban TEXT,
+  branch_code TEXT,
+  swift_code TEXT,
+  instructions TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  CONSTRAINT payment_settings_singleton CHECK (id = 1)
+);
+
 -- Employee (each row now owned by a real employee account; unowned legacy demo rows are purged below)
 CREATE TABLE IF NOT EXISTS employee_assigned_projects (id SERIAL PRIMARY KEY, name TEXT NOT NULL, role TEXT NOT NULL, status TEXT NOT NULL, deadline TEXT NOT NULL, employee_id INTEGER REFERENCES users(id));
 CREATE TABLE IF NOT EXISTS employee_tasks (id SERIAL PRIMARY KEY, project TEXT NOT NULL, task TEXT NOT NULL, priority TEXT NOT NULL, due TEXT NOT NULL, status TEXT NOT NULL, employee_id INTEGER REFERENCES users(id));

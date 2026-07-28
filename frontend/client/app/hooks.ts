@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
-import { fetchProjects, fetchMilestones, fetchFiles, fetchInvoices, fetchTickets, fetchMessages, submitInvoicePayment, createTicket, updateTicketStatus, sendMessage, fetchClientNotifications, changePassword } from "./queries";
+import { fetchProjects, fetchMilestones, fetchFiles, fetchInvoices, fetchPaymentSettings, fetchTickets, fetchMessages, submitInvoicePayment, createTicket, updateTicketStatus, sendMessage, fetchClientNotifications, changePassword } from "./queries";
 
 export function useChangePassword() {
   const { token } = useAuth();
@@ -29,6 +29,11 @@ export function useFiles() {
 export function useInvoices() {
   const { token } = useAuth();
   return useQuery({ queryKey: ["invoices"], queryFn: () => fetchInvoices(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
+}
+
+export function usePaymentSettings() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["paymentSettings"], queryFn: () => fetchPaymentSettings(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
 }
 
 export function useTickets() {
