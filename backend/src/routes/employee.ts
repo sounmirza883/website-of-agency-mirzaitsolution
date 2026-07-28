@@ -188,6 +188,23 @@ router.post("/messages", requireAuth, requireRole("employee"), async (req: Authe
   return res.status(201).json(data);
 });
 
+router.get("/tickets", requireAuth, requireRole("employee"), async (_req, res) => {
+  if (!supabase) return res.json([]);
+  const { data, error } = await supabase.from("client_tickets").select("id,subject,status,priority,updated,description,client_id,users(name,company)");
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json(data);
+});
+
+router.patch("/tickets/:id/status", requireAuth, requireRole("employee"), async (req: AuthedRequest, res) => {
+  const { status } = req.body ?? {};
+  if (!status) return res.status(400).json({ error: "status is required" });
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+  const { data, error } = await supabase.from("client_tickets").update({ status, updated: "Just now" }).eq("id", req.params.id).select().maybeSingle();
+  if (error) return res.status(500).json({ error: error.message });
+  if (!data) return res.status(404).json({ error: "Ticket not found" });
+  return res.json(data);
+});
+
 router.get("/notifications", requireAuth, requireRole("employee"), async (req: AuthedRequest, res) => {
   if (!supabase) return res.json([]);
   const { data, error } = await supabase.from("notifications").select("*").in("target_role", ["employee", "all"]).order("id", { ascending: false });

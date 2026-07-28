@@ -67,6 +67,10 @@ export function sendProjectMessage(token: string, projectId: number, text: strin
 }
 
 export function fetchEmpNotifications(token: string) { return apiGet<any[]>("/employee/notifications", token); }
+export function fetchEmpTickets(token: string) { return apiGet<any[]>("/employee/tickets", token); }
+export function setEmpTicketStatus(token: string, id: string, status: string) {
+  return apiPatch<any>(`/employee/tickets/${id}/status`, token, { status });
+}
 export function createEmpNotification(token: string, payload: { title: string; msg: string; targetRole: "employee" | "client" | "all"; targetClientId?: number }) {
   return apiPost<any>("/employee/notifications", token, payload);
 }

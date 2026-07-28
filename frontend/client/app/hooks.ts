@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
-import { fetchProjects, fetchMilestones, fetchFiles, fetchInvoices, fetchPaymentSettings, fetchTickets, fetchMessages, submitInvoicePayment, createTicket, updateTicketStatus, sendMessage, fetchClientNotifications, changePassword } from "./queries";
+import { fetchProjects, fetchMilestones, fetchFiles, fetchInvoices, fetchPaymentSettings, fetchTickets, fetchMessages, submitInvoicePayment, createTicket, sendMessage, fetchClientNotifications, changePassword } from "./queries";
 
 export function useChangePassword() {
   const { token } = useAuth();
@@ -66,24 +66,6 @@ export function useCreateTicket() {
   return useMutation({
     mutationFn: (payload: Parameters<typeof createTicket>[1]) => createTicket(token!, payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["tickets"] }),
-  });
-}
-
-export function useUpdateTicketStatus() {
-  const { token } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (vars: { id: string; status: string }) => updateTicketStatus(token!, vars.id, vars.status),
-    onMutate: async (vars) => {
-      await qc.cancelQueries({ queryKey: ["tickets"] });
-      const prev = qc.getQueryData<any[]>(["tickets"]);
-      qc.setQueryData<any[]>(["tickets"], (old) => old?.map((t) => (t.id === vars.id ? { ...t, status: vars.status } : t)));
-      return { prev };
-    },
-    onError: (_e, _v, ctx) => {
-      if (ctx?.prev) qc.setQueryData(["tickets"], ctx.prev);
-    },
-    onSettled: () => qc.invalidateQueries({ queryKey: ["tickets"] }),
   });
 }
 

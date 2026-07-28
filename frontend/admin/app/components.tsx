@@ -54,6 +54,7 @@ const nav = [
   { label: "Services", href: "/services" },
   { label: "Projects", href: "/projects" },
   { label: "Invoices", href: "/invoices" },
+  { label: "Tickets", href: "/tickets" },
   { label: "Payment Settings", href: "/payment-settings" },
   { label: "Attendance", href: "/attendance" },
   { label: "Leave", href: "/leave" },

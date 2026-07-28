@@ -101,17 +101,6 @@ router.post("/tickets", requireAuth, requireRole("client"), async (req: AuthedRe
   return res.status(201).json(data);
 });
 
-router.patch("/tickets/:id/status", requireAuth, requireRole("client"), async (req: AuthedRequest, res) => {
-  const id = req.params.id;
-  const { status } = req.body ?? {};
-  if (!status) return res.status(400).json({ error: "status is required" });
-  if (!supabase) return res.status(503).json({ error: "Database not configured" });
-  const { data, error } = await supabase.from("client_tickets").update({ status, updated: "Just now" }).eq("id", id).eq("client_id", req.user!.id).select().maybeSingle();
-  if (error) return res.status(500).json({ error: error.message });
-  if (!data) return res.status(404).json({ error: "Ticket not found" });
-  return res.json(data);
-});
-
 router.get("/messages", requireAuth, requireRole("client"), async (req: AuthedRequest, res) => {
   const projectId = Number(req.query.projectId);
   if (!projectId) return res.status(400).json({ error: "projectId query param is required" });

@@ -44,8 +44,5 @@ export function submitInvoicePayment(token: string, id: string, formData: FormDa
 export function createTicket(token: string, payload: { subject: string; priority: string; description: string }) {
   return apiPost<any>("/client/tickets", token, payload);
 }
-export function updateTicketStatus(token: string, id: string, status: string) {
-  return apiPatch<any>(`/client/tickets/${id}/status`, token, { status });
-}
 export function sendMessage(token: string, projectId: string, text: string) { return apiPost<any>("/client/messages", token, { projectId, text }); }
 export function fetchClientNotifications(token: string) { return apiGet<any[]>("/client/notifications", token); }

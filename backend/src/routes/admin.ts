@@ -118,6 +118,23 @@ router.delete("/contact-submissions/:id", requireAuth, requireRole("admin"), asy
   return res.status(204).send();
 }));
 
+router.get("/tickets", requireAuth, requireRole("admin"), async (_req, res) => {
+  if (!supabase) return res.json([]);
+  const { data, error } = await supabase.from("client_tickets").select("id,subject,status,priority,updated,description,client_id,users(name,company)");
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json(data);
+});
+
+router.patch("/tickets/:id/status", requireAuth, requireRole("admin"), async (req, res) => {
+  const { status } = req.body ?? {};
+  if (!status) return res.status(400).json({ error: "status is required" });
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+  const { data, error } = await supabase.from("client_tickets").update({ status, updated: "Just now" }).eq("id", req.params.id).select().maybeSingle();
+  if (error) return res.status(500).json({ error: error.message });
+  if (!data) return res.status(404).json({ error: "Ticket not found" });
+  return res.json(data);
+});
+
 router.post("/services", requireAuth, requireRole("admin"), async (req, res) => {
   const { name, price, duration } = req.body ?? {};
   if (!name || !price || !duration) return res.status(400).json({ error: "name, price, duration are required" });

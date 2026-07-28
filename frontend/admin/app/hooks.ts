@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
-import { fetchUsers, fetchEmployees, fetchClientsList, createEmployee, createClient, setEmployeePermission, fetchServices, fetchProjects, fetchInvoices, fetchNotifications, fetchBlogPosts, fetchPortfolioList, fetchContactSubmissions, deleteLead, fetchPaymentSettings, createService, createProject, updateProjectStatus, assignProjectEmployee, createInvoice, verifyInvoice, createNotification, createBlogPost, setBlogPostStatus, createPortfolioItem, setUserStatus, updateUserDetails, deleteUserAccount, fetchAdminAttendance, fetchAdminLeaveRequests, setLeaveRequestStatus, fetchProjectMessages, sendProjectMessage, changePassword, updatePaymentSettings } from "./queries";
+import { fetchUsers, fetchEmployees, fetchClientsList, createEmployee, createClient, setEmployeePermission, fetchServices, fetchProjects, fetchInvoices, fetchNotifications, fetchBlogPosts, fetchPortfolioList, fetchContactSubmissions, deleteLead, fetchPaymentSettings, fetchAdminTickets, setTicketStatus, createService, createProject, updateProjectStatus, assignProjectEmployee, createInvoice, verifyInvoice, createNotification, createBlogPost, setBlogPostStatus, createPortfolioItem, setUserStatus, updateUserDetails, deleteUserAccount, fetchAdminAttendance, fetchAdminLeaveRequests, setLeaveRequestStatus, fetchProjectMessages, sendProjectMessage, changePassword, updatePaymentSettings } from "./queries";
 
 export function useChangePassword() {
   const { token } = useAuth();
@@ -86,6 +86,20 @@ export function usePortfolioList() {
 export function useContactSubmissions() {
   const { token } = useAuth();
   return useQuery({ queryKey: ["contactSubmissions"], queryFn: () => fetchContactSubmissions(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
+}
+
+export function useAdminTickets() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["adminTickets"], queryFn: () => fetchAdminTickets(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
+}
+
+export function useSetTicketStatus() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { id: string; status: string }) => setTicketStatus(token!, vars.id, vars.status),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminTickets"] }),
+  });
 }
 
 export function useDeleteLead() {

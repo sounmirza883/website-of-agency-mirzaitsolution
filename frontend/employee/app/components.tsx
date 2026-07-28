@@ -56,6 +56,7 @@ const baseNav = [
   { label: "Leave", href: "/leave" },
   { label: "Chat", href: "/chat" },
   { label: "Notifications", href: "/notifications" },
+  { label: "Tickets", href: "/tickets" },
 ];
 
 export function EmployeeShell({ children }: { children: React.ReactNode }) {

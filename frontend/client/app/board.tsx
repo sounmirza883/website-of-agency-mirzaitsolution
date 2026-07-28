@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { DragDropProvider, useDraggable, useDroppable } from "@dnd-kit/react";
 import { Icon } from "./components";
-import { useTickets, useCreateTicket, useUpdateTicketStatus } from "./hooks";
+import { useTickets, useCreateTicket } from "./hooks";
 
 const STATUSES = ["Open", "Closed"];
 
@@ -56,13 +55,12 @@ function NewTicketModal({ open, onClose }: { open: boolean; onClose: () => void 
 }
 
 function TicketCard({ ticket }: { ticket: any }) {
-  const { ref, isDragging } = useDraggable({ id: ticket.id });
   const badge = priorityColor(ticket.priority);
 
   return (
-    <div ref={ref} style={{
+    <div style={{
       background:"var(--canvas)",border:"1px solid var(--line)",borderRadius:"16px",padding:"14px",
-      marginBottom:"10px",cursor:"grab",opacity:isDragging?.4:1,transition:"opacity .15s",
+      marginBottom:"10px",
     }}>
       <div style={{fontSize:"12px",fontFamily:"var(--mono)",color:"var(--ink-soft)",marginBottom:"6px"}}>{ticket.id}</div>
       <div style={{fontSize:"14px",fontWeight:"700",color:"var(--ink)",marginBottom:"8px"}}>{ticket.subject}</div>
@@ -72,20 +70,13 @@ function TicketCard({ ticket }: { ticket: any }) {
 }
 
 function TicketColumn({ status, tickets, onNew }: { status: string; tickets: any[]; onNew?: () => void }) {
-  const { ref, isDropTarget } = useDroppable({ id: status });
-
   return (
     <div style={{flex:1,minWidth:"260px",background:"var(--soft)",borderRadius:"var(--radius)",padding:"16px",display:"flex",flexDirection:"column"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"12px"}}>
         <span style={{fontSize:"14px",fontWeight:"700",color:"var(--ink)"}}>{status}</span>
         <span style={{fontSize:"12px",fontWeight:"500",color:"var(--ink-soft)",background:"var(--canvas)",borderRadius:"50px",padding:"2px 10px",border:"1px solid var(--line)"}}>{tickets.length}</span>
       </div>
-      <div ref={ref} style={{
-        flex:1,minHeight:"120px",borderRadius:"16px",padding:"4px",
-        border: isDropTarget ? "2px solid var(--accent)" : "2px solid transparent",
-        background: isDropTarget ? "var(--accent-light)" : "transparent",
-        transition:"all .15s",
-      }}>
+      <div style={{flex:1,minHeight:"120px",borderRadius:"16px",padding:"4px"}}>
         {tickets.map((t) => <TicketCard key={t.id} ticket={t} />)}
       </div>
       {onNew && <button onClick={onNew} style={{marginTop:"8px",padding:"8px 12px",background:"none",border:"1px dashed var(--line)",borderRadius:"12px",fontSize:"13px",color:"var(--ink-soft)",cursor:"pointer",textAlign:"left"}}><Icon name="fa-plus" /> New</button>}
@@ -95,7 +86,6 @@ function TicketColumn({ status, tickets, onNew }: { status: string; tickets: any
 
 export function TicketBoard() {
   const { data: tickets } = useTickets();
-  const updateStatus = useUpdateTicketStatus();
   const [modalOpen, setModalOpen] = useState(false);
 
   const byStatus = (status: string) => (tickets ?? []).filter((t) => t.status === status);
@@ -104,22 +94,12 @@ export function TicketBoard() {
 
   return (
     <div>
-      <DragDropProvider
-        onDragEnd={(event) => {
-          if (event.canceled) return;
-          const id = event.operation.source?.id;
-          const status = event.operation.target?.id;
-          if (id == null || status == null) return;
-          updateStatus.mutate({ id: String(id), status: String(status) });
-        }}
-      >
-        <div style={{display:"flex",gap:"16px",overflowX:"auto",paddingBottom:"8px"}}>
-          {STATUSES.map((status) => (
-            <TicketColumn key={status} status={status} tickets={byStatus(status)} onNew={status === "Open" ? () => setModalOpen(true) : undefined} />
-          ))}
-          {other.length > 0 && <TicketColumn status="Other" tickets={other} />}
-        </div>
-      </DragDropProvider>
+      <div style={{display:"flex",gap:"16px",overflowX:"auto",paddingBottom:"8px"}}>
+        {STATUSES.map((status) => (
+          <TicketColumn key={status} status={status} tickets={byStatus(status)} onNew={status === "Open" ? () => setModalOpen(true) : undefined} />
+        ))}
+        {other.length > 0 && <TicketColumn status="Other" tickets={other} />}
+      </div>
       <NewTicketModal open={modalOpen} onClose={() => setModalOpen(false)} />
     </div>
   );
