@@ -14,6 +14,6 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en"><body><Providers><BodyWrapper>{children}</BodyWrapper></Providers></body></html>
+    <html lang="en"><body suppressHydrationWarning><Providers><BodyWrapper>{children}</BodyWrapper></Providers></body></html>
   );
 }
