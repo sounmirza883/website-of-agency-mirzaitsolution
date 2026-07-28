@@ -171,7 +171,7 @@ export function LoadingScreen({ visible }: { visible: boolean }) {
     const draw = () => {
       ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "rgba(230, 57, 70, 0.12)";
+      ctx.fillStyle = "rgba(198, 113, 57, 0.12)";
       ctx.font = `${fontSize}px monospace`;
 
       for (let i = 0; i < drops.length; i++) {
@@ -259,7 +259,7 @@ export function MatrixRain({ className = "" }: { className?: string }) {
     const draw = () => {
       ctx.fillStyle = "rgba(255, 255, 255, 0.02)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "rgba(230, 57, 70, 0.08)";
+      ctx.fillStyle = "rgba(198, 113, 57, 0.08)";
       ctx.font = `${fontSize}px monospace`;
 
       for (let i = 0; i < drops.length; i++) {
