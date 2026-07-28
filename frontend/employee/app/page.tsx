@@ -15,13 +15,13 @@ export default function EmployeeDashboard() {
     <div>
       <h1 className="text-2xl font-bold mb-1">Dashboard</h1>
       <p className="text-sm text-gray-500 mb-6">Welcome back{user?.name ? `, ${user.name}` : ""}</p>
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-white rounded-xl border border-gray-200 p-5"><div className="text-2xl font-bold text-gray-900">{projects?.filter(p => p.status === "In Progress").length ?? "—"}</div><div className="text-sm text-gray-500 mt-1">Active Projects</div></div>
         <div className="bg-white rounded-xl border border-gray-200 p-5"><div className="text-2xl font-bold text-gray-900">{tasks?.filter(t => t.status === "Pending" || t.status === "In Progress").length ?? "—"}</div><div className="text-sm text-gray-500 mt-1">Pending Tasks</div></div>
         <div className="bg-white rounded-xl border border-gray-200 p-5"><div className="text-2xl font-bold text-gray-900">{today?.status === "Present" ? "✓" : "—"}</div><div className="text-sm text-gray-500 mt-1">Today: {today?.status ?? "..."}</div></div>
         <div className="bg-white rounded-xl border border-gray-200 p-5"><div className="text-2xl font-bold text-gray-900">{leaveRequests?.filter(l => l.status === "Pending").length ?? "—"}</div><div className="text-sm text-gray-500 mt-1">Pending Leave</div></div>
       </div>
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h2 className="font-semibold text-gray-900 mb-3">My Projects</h2>
           {projects?.map((p) => (
