@@ -196,7 +196,7 @@ export function LoadingScreen({ visible }: { visible: boolean }) {
     <div className="loading-screen">
       <canvas ref={canvasRef} className="loading-matrix" aria-hidden="true" />
       <div className="loading-content">
-        <div className="loading-logo" data-text="ZEPHTRIX STUDIO">ZEPHTRIX STUDIO</div>
+        <div className="loading-logo" data-text="MIRZA IT SOLUTION">MIRZA IT SOLUTION</div>
         <div className="loading-terminal">
           {bootLines.map((line, i) => (
             <p key={i} className="loading-line" style={{ animationDelay: `${i * 0.1}s` }}>{line}</p>

@@ -1,4 +1,4 @@
-# Zephtrix Studio Website
+# Mirza IT Solution Website
 
 ## Commands
 

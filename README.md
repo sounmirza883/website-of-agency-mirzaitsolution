@@ -1,4 +1,4 @@
-# Zephtrix Studio — Agency Management Platform
+# Mirza IT Solution — Agency Management Platform
 
 A full-stack platform for a creative digital agency: a public marketing site, three role-based web portals, a cross-platform mobile app, and a single API backing all of them.
 
@@ -59,7 +59,7 @@ npm run dev               # → http://localhost:4000
 | `JWT_SECRET` | yes in prod | Token signing. Falls back to a random per-boot secret, which invalidates all sessions on restart. |
 | `PORT` | no | Defaults to `4000` |
 
-With no Supabase credentials, auth falls back to an in-memory store with a bootstrap admin (`admin@zephtrix.com` / `ChangeMe123!`), but **all data routes return empty arrays** — the app runs without crashing, it does not run with sample data.
+With no Supabase credentials, auth falls back to an in-memory store with a bootstrap admin (`admin@mirzaitsolution.com` / `ChangeMe123!`), but **all data routes return empty arrays** — the app runs without crashing, it does not run with sample data.
 
 ### 3. Web apps
 

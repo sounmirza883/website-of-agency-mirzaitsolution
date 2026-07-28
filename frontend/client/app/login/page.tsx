@@ -26,7 +26,7 @@ export default function LoginPage() {
   return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--soft)" }}>
       <form onSubmit={handleSubmit} style={{ width: "100%", maxWidth: "380px", background: "var(--canvas)", border: "1px solid var(--line)", borderRadius: "var(--radius)", padding: "32px" }}>
-        <div className="logo" style={{ fontSize: "20px", marginBottom: "4px" }}>Zephtrix <strong>Studio</strong></div>
+        <div className="logo" style={{ fontSize: "20px", marginBottom: "4px" }}>Mirza IT <strong>Solution</strong></div>
         <p style={{ fontSize: "13px", color: "var(--ink-soft)", marginBottom: "24px" }}>Sign in to your client portal</p>
         {error && <div style={{ marginBottom: "16px", fontSize: "13px", color: "#b91c1c", background: "#fef2f2", padding: "8px 12px", borderRadius: "10px" }}>{error}</div>}
         <label style={{ display: "block", fontSize: "13px", fontWeight: 600, marginBottom: "4px" }} htmlFor="email">Email</label>

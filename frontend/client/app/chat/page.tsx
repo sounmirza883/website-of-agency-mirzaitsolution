@@ -21,7 +21,7 @@ export default function ChatPage() {
   return (
     <div>
       <h1 className="text-2xl font-bold mb-1" style={{color:"var(--ink)"}}>Chat with Your Team</h1>
-      <p className="text-sm mb-6" style={{color:"var(--ink-soft)"}}>Communicate directly with the Zephtrix team</p>
+      <p className="text-sm mb-6" style={{color:"var(--ink-soft)"}}>Communicate directly with the Mirza IT Solution team</p>
 
       {!projects || projects.length === 0 ? (
         <div style={{background:"var(--canvas)",borderRadius:"var(--radius)",border:"1px solid var(--line)",padding:"32px",maxWidth:"640px",textAlign:"center"}}>

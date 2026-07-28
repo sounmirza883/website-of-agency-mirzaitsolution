@@ -229,7 +229,7 @@ ON CONFLICT DO NOTHING;
 
 -- Bootstrap admin login (password: ChangeMe123! — change after first login)
 INSERT INTO users (name, email, password_hash, role, status) VALUES
-('Admin', 'admin@zephtrix.com', '$2b$10$Mr475kmRIDt6XsF493/TwuySS16fmGtWgGBaQ9xDs1U5NboD8s6gm', 'admin', 'Active')
+('Admin', 'admin@mirzaitsolution.com', '$2b$10$Mr475kmRIDt6XsF493/TwuySS16fmGtWgGBaQ9xDs1U5NboD8s6gm', 'admin', 'Active')
 ON CONFLICT (email) DO NOTHING;
 
 -- Admin Services/Projects/Invoices/Notifications/Blog/Portfolio are no longer seeded —

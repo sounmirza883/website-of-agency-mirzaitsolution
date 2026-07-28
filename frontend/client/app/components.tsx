@@ -36,7 +36,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
     <div className="flex flex-col min-h-screen" style={{background:"var(--soft)"}}>
       <header className="sticky top-0 z-50" style={{background:"rgba(255,255,255,.96)",borderBottom:"1px solid var(--line)",backdropFilter:"blur(10px)"}}>
         <div className="flex items-center justify-between h-16 px-6" style={{maxWidth:"1440px",margin:"0 auto",width:"100%"}}>
-          <Link href="/" className="logo" style={{fontSize:"20px"}}>Zephtrix <strong>Studio</strong> <span style={{fontFamily:"var(--mono)",fontSize:"11px",color:"var(--ink-soft)",marginLeft:"4px"}}>Client</span></Link>
+          <Link href="/" className="logo" style={{fontSize:"20px"}}>Mirza IT <strong>Solution</strong> <span style={{fontFamily:"var(--mono)",fontSize:"11px",color:"var(--ink-soft)",marginLeft:"4px"}}>Client</span></Link>
           <div className="flex items-center gap-4">
             <Link href="/" style={{fontSize:"13px",color:"var(--ink-soft)",transition:"color .2s"}} onMouseEnter={e => e.currentTarget.style.color = "var(--ink)"} onMouseLeave={e => e.currentTarget.style.color = "var(--ink-soft)"}><Icon name="fa-arrow-left" /> Back to site</Link>
             <button onClick={logout} style={{fontSize:"13px",color:"var(--ink-soft)",background:"none",border:"none",cursor:"pointer"}}>Logout</button>
@@ -69,8 +69,8 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
       </div>
       <footer style={{background:"var(--ink)",color:"#fff",padding:"20px 0",marginTop:"auto"}}>
         <div style={{maxWidth:"1440px",margin:"0 auto",padding:"0 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <Link href="/" className="logo" style={{fontSize:"16px"}}>Zephtrix <strong>Studio</strong></Link>
-          <p style={{fontSize:"13px",color:"rgba(255,255,255,.6)",margin:0}}>© 2026 Zephtrix Studio. All rights reserved.</p>
+          <Link href="/" className="logo" style={{fontSize:"16px"}}>Mirza IT <strong>Solution</strong></Link>
+          <p style={{fontSize:"13px",color:"rgba(255,255,255,.6)",margin:0}}>© 2026 Mirza IT Solution. All rights reserved.</p>
         </div>
       </footer>
     </div>

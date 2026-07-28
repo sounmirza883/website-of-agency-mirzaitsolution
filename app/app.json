@@ -1,15 +1,15 @@
 {
   "expo": {
-    "name": "Zephtrix",
-    "slug": "zephtrix-app",
+    "name": "Mirza IT Solution",
+    "slug": "mirza-it-solution",
     "owner": "sonu883",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "zephtrix",
+    "scheme": "mirzaitsolution",
     "userInterfaceStyle": "automatic",
     "android": {
-      "package": "com.zephtrix.app",
+      "package": "com.mirzaitsolution.app",
       "adaptiveIcon": {
         "backgroundColor": "#FA0202",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -42,7 +42,7 @@
       "apiUrl": "https://backend.vesseldrop.com/api",
       "router": {},
       "eas": {
-        "projectId": "9b9d8879-ff83-4a25-9109-1e292a826462"
+        "projectId": "4298fb42-16cf-4587-99be-171f5792f662"
       }
     }
   }

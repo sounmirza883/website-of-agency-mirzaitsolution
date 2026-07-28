@@ -24,7 +24,7 @@ if (!supabase) {
   memoryUsers.push({
     id: nextId++,
     name: "Admin",
-    email: "admin@zephtrix.com",
+    email: "admin@mirzaitsolution.com",
     passwordHash: bcrypt.hashSync("ChangeMe123!", 10),
     role: "admin",
     status: "Active",
@@ -34,7 +34,7 @@ if (!supabase) {
     canCreateClients: false,
     createdBy: null,
   });
-  console.warn("No Supabase credentials — using in-memory auth. Bootstrap admin: admin@zephtrix.com / ChangeMe123!");
+  console.warn("No Supabase credentials — using in-memory auth. Bootstrap admin: admin@mirzaitsolution.com / ChangeMe123!");
 }
 
 function rowToUser(row: any): AuthUser {

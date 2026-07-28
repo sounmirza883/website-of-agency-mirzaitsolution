@@ -4,7 +4,7 @@ import { BodyWrapper } from "./animations";
 import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "Zephtrix Studio | Creative Digital Studio",
+  title: "Mirza IT Solution | Creative Digital Studio",
   description: "Creative design, motion, websites, and digital growth solutions.",
 };
 

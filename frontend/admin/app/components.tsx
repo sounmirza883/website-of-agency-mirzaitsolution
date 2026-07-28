@@ -39,7 +39,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
     <div className="flex h-screen bg-gray-50 text-gray-900">
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col shrink-0">
         <div className="h-16 flex items-center px-6 border-b border-gray-200">
-          <Link href="/" className="text-lg font-bold tracking-tight">Zephtrix <span className="text-red-500">Admin</span></Link>
+          <Link href="/" className="text-lg font-bold tracking-tight">Mirza IT Solution <span className="text-red-500">Admin</span></Link>
         </div>
         <nav className="flex-1 p-4 space-y-1 overflow-auto">
           {nav.map((item) => {

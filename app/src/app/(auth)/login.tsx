@@ -26,7 +26,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       className="flex-1 justify-center bg-surface px-6 dark:bg-surface-dark"
     >
-      <Text className="mb-1 text-3xl font-bold text-text dark:text-text-dark">Zephtrix</Text>
+      <Text className="mb-1 text-3xl font-bold text-text dark:text-text-dark">Mirza IT Solution</Text>
       <Text className="mb-8 text-base text-text-secondary dark:text-text-secondary-dark">Sign in to continue</Text>
 
       {error ? (

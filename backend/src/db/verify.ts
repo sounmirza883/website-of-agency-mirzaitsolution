@@ -105,7 +105,7 @@ async function main() {
   console.log("\nSeed data");
   const { data: admins, error: adminErr } = await db.from("users").select("email,role").eq("role", "admin");
   if (adminErr) bad(`could not read users — ${adminErr.message}`);
-  else if (!admins?.length) bad("no admin user", "migrate.sql seeds admin@zephtrix.com / ChangeMe123!");
+  else if (!admins?.length) bad("no admin user", "migrate.sql seeds admin@mirzaitsolution.com / ChangeMe123!");
   else ok(`${admins.length} admin account(s): ${admins.map((a) => a.email).join(", ")}`);
 
   if (serviceKey) {

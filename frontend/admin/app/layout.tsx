@@ -5,8 +5,8 @@ import { Provider } from "./provider";
 import { AuthProvider } from "./auth";
 
 export const metadata: Metadata = {
-  title: "Admin Panel – Zephtrix Studio",
-  description: "Admin panel for Zephtrix Studio",
+  title: "Admin Panel – Mirza IT Solution",
+  description: "Admin panel for Mirza IT Solution",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

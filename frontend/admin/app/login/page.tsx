@@ -26,7 +26,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <form onSubmit={handleSubmit} className="w-full max-w-sm bg-white rounded-xl border border-gray-200 p-8">
-        <h1 className="text-xl font-bold mb-1 tracking-tight">Zephtrix <span className="text-red-500">Admin</span></h1>
+        <h1 className="text-xl font-bold mb-1 tracking-tight">Mirza IT Solution <span className="text-red-500">Admin</span></h1>
         <p className="text-sm text-gray-500 mb-6">Sign in to continue</p>
         {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</div>}
         <label className="block text-sm font-medium mb-1" htmlFor="email">Email</label>

@@ -5,8 +5,8 @@ import { Provider } from "./provider";
 import { AuthProvider } from "./auth";
 
 export const metadata: Metadata = {
-  title: "Client Portal – Zephtrix Studio",
-  description: "Client portal for Zephtrix Studio",
+  title: "Client Portal – Mirza IT Solution",
+  description: "Client portal for Mirza IT Solution",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

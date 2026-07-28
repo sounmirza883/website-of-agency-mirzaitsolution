@@ -1,4 +1,4 @@
-# Backend — Zephtrix API Server
+# Backend — Mirza IT Solution API Server
 
 Express.js + TypeScript API server that connects all four frontend apps to Supabase.
 

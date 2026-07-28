@@ -4,7 +4,7 @@ Six subprojects in this repo:
 
 | Directory | Type | Status |
 |-----------|------|--------|
-| `frontend/website/` | Next.js 16 App Router site (Zephtrix Studio public site) | Built out. See `frontend/website/AGENTS.md`. |
+| `frontend/website/` | Next.js 16 App Router site (Mirza IT Solution public site) | Built out. See `frontend/website/AGENTS.md`. |
 | `frontend/admin/` | Next.js 16 App Router app (admin portal) | Built out. See `frontend/admin/AGENTS.md`. |
 | `frontend/client/` | Next.js 16 App Router app (client portal) | Built out. See `frontend/client/AGENTS.md`. |
 | `frontend/employee/` | Next.js 16 App Router app (employee portal) | Built out. See `frontend/employee/AGENTS.md`. |
