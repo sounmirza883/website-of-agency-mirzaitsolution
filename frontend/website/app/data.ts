@@ -10,18 +10,18 @@ export const services = [
 ];
 
 export const portfolioItems = [
-  ["Modern Brand Identity Design", "Graphic Design", "graphic", "fa-paint-brush"],
-  ["YouTube Thumbnail Design Pack", "Graphic Design", "graphic", "fa-image"],
-  ["Social Media Campaign Design", "Social Media", "social", "fa-hashtag"],
-  ["Business Website Development", "WordPress", "wordpress", "fa-wordpress"],
-  ["Creative Motion Logo Animation", "Motion Graphics", "motion", "fa-film"],
-  ["Promotional Video Editing", "Video Editing", "video", "fa-video"],
-  ["Mobile App UI Design", "UI/UX Design", "uiux", "fa-mobile-alt"],
-  ["Real Estate WordPress Website", "WordPress", "wordpress", "fa-home"],
-  ["Instagram Growth Campaign", "Social Media", "social", "fa-chart-line"],
-  ["Product Advertisement Video", "Video Editing", "video", "fa-ad"],
-  ["Corporate Poster Design", "Graphic Design", "graphic", "fa-palette"],
-  ["Landing Page UI/UX Design", "UI/UX Design", "uiux", "fa-laptop"],
+  ["Enterprise Task Management App", "App Development", "app", "fa-mobile-alt"],
+  ["Fitness Tracking Mobile App", "App Development", "app", "fa-mobile-alt"],
+  ["SaaS Analytics Platform Website", "SaaS Website", "saas", "fa-cloud"],
+  ["Subscription Billing SaaS Site", "SaaS Website", "saas", "fa-cloud"],
+  ["Developer Platform Portal", "PaaS Website", "paas", "fa-cubes"],
+  ["Corporate Business Website", "Web Development", "web", "fa-code"],
+  ["E-commerce Web Application", "Web Development", "web", "fa-code"],
+  ["Real Estate WordPress Website", "WordPress Development", "wordpress", "fa-wordpress"],
+  ["Restaurant WordPress Website", "WordPress Development", "wordpress", "fa-home"],
+  ["Custom Inventory Management System", "Custom Software", "software", "fa-laptop-code"],
+  ["Client Portal Web Application", "Custom Web Software", "websoftware", "fa-globe"],
+  ["Business Analytics Dashboard", "Custom Dashboard", "dashboard", "fa-tachometer-alt"],
 ] as const;
 
 export const serviceDetails = [

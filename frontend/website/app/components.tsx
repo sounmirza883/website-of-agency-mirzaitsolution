@@ -42,7 +42,7 @@ export function Reveal({ children, className = "" }: { children: React.ReactNode
 
 export function PortfolioFilter({ items }: { items: readonly (readonly [string, string, string, string])[] }) {
   const [filter, setFilter] = useState("all");
-  const filters = [["all", "All"], ["graphic", "Graphic Design"], ["video", "Video Editing"], ["motion", "Motion Graphics"], ["uiux", "UI/UX Design"], ["wordpress", "WordPress"], ["social", "Social Media"]];
+  const filters = [["all", "All"], ["app", "App Development"], ["saas", "SaaS Website"], ["paas", "PaaS Website"], ["web", "Web Development"], ["wordpress", "WordPress Development"], ["software", "Custom Software"], ["websoftware", "Custom Web Software"], ["dashboard", "Custom Dashboard"]];
   return <><div className="portfolio-filters">{filters.map(([id, label]) => <button key={id} className={`filter-btn ${filter === id ? "active" : ""}`} onClick={() => setFilter(id)}>{label}</button>)}</div><div className="grid-3">{items.filter(([, , category]) => filter === "all" || category === filter).map(([title, category, , icon]) => <div className="portfolio-card" key={title}><div className="thumb"><Icon name={icon} /></div><div className="info"><h4>{title}</h4><span>{category}</span></div></div>)}</div></>;
 }
 
