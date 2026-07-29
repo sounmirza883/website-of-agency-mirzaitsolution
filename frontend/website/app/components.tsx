@@ -7,7 +7,7 @@ import { useSubmitContact } from "./hooks";
 const nav = [["Home", "/"], ["About", "/about"], ["Services", "/services"], ["Portfolio", "/portfolio"], ["Contact", "/contact"]];
 const serviceLinks = ["App Development", "SaaS Website", "PaaS Website", "Web Development", "WordPress Development", "Custom Software", "Custom Web Software", "Custom Dashboard"];
 
-export function Icon({ name }: { name: string }) { return <i className={`fas ${name}`} aria-hidden="true" />; }
+export function Icon({ name, brand }: { name: string; brand?: boolean }) { return <i className={`${brand ? "fab" : "fas"} ${name}`} aria-hidden="true" />; }
 
 export function Header({ active }: { active?: string }) {
   const [open, setOpen] = useState(false);

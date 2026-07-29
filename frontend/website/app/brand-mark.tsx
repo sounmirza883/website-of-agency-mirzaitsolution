@@ -4,10 +4,10 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 
 const SEED_DEFS = [
-  { r: 0.16, color: 0xf6a06b, x: 1.15, y: 0.45, z: 0.35 },
-  { r: 0.11, color: 0xccdbb2, x: -0.95, y: -0.35, z: 0.6 },
-  { r: 0.13, color: 0xffc6a5, x: 0.55, y: -0.75, z: -0.85 },
-  { r: 0.09, color: 0xaebf92, x: -0.6, y: 0.85, z: -0.55 },
+  { r: 0.16, color: 0xfcd34d, x: 1.15, y: 0.45, z: 0.35 },
+  { r: 0.11, color: 0x94a3b8, x: -0.95, y: -0.35, z: 0.6 },
+  { r: 0.13, color: 0xf59e0b, x: 0.55, y: -0.75, z: -0.85 },
+  { r: 0.09, color: 0xe2e8f0, x: -0.6, y: 0.85, z: -0.55 },
 ];
 
 export function BrandMark() {
@@ -26,11 +26,11 @@ export function BrandMark() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     mount.appendChild(renderer.domElement);
 
-    scene.add(new THREE.HemisphereLight(0xffffff, 0xd8d2c4, 1.0));
-    const key = new THREE.DirectionalLight(0xffffff, 2.2);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x1e293b, 1.0));
+    const key = new THREE.DirectionalLight(0xfff4d6, 2.4);
     key.position.set(4, 7, 5);
     scene.add(key);
-    const fill = new THREE.DirectionalLight(0xfff4e6, 0.5);
+    const fill = new THREE.DirectionalLight(0x93c5fd, 0.4);
     fill.position.set(-5, 3, -4);
     scene.add(fill);
 
@@ -38,14 +38,14 @@ export function BrandMark() {
 
     const core = new THREE.Mesh(
       new THREE.SphereGeometry(0.62, 64, 64),
-      new THREE.MeshStandardMaterial({ color: 0xc67139, roughness: 0.75, metalness: 0.05 })
+      new THREE.MeshStandardMaterial({ color: 0xfbbf24, roughness: 0.35, metalness: 0.6 })
     );
     core.scale.set(1, 0.86, 1);
     group.add(core);
 
     const ring = new THREE.Mesh(
       new THREE.TorusGeometry(1.05, 0.16, 32, 128),
-      new THREE.MeshStandardMaterial({ color: 0x7a8a5e, roughness: 0.7, metalness: 0.05 })
+      new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3, metalness: 0.7 })
     );
     ring.rotation.x = Math.PI / 2.4;
     ring.rotation.y = Math.PI / 10;
