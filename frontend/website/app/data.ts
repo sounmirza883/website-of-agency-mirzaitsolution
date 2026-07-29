@@ -10,33 +10,6 @@ export const services = [
   { title: "AI Automation", icon: "fa-brain", description: "AI-powered workflows, chatbots, and process automation that cut manual work and scale with your business." },
 ];
 
-export const pricingPlans = [
-  {
-    name: "Starter",
-    price: "$999",
-    period: "starting at",
-    description: "A focused website or landing page to get your business online fast.",
-    features: ["Custom website (up to 5 pages)", "Mobile responsive design", "Basic SEO setup", "Contact form integration", "2 rounds of revisions", "2 weeks delivery"],
-    featured: false,
-  },
-  {
-    name: "Professional",
-    price: "$2,999",
-    period: "starting at",
-    description: "A full web application or SaaS platform built around your business logic.",
-    features: ["Custom web app or SaaS platform", "Database & backend architecture", "User authentication & roles", "API integrations", "Admin dashboard included", "4 weeks delivery", "30 days post-launch support"],
-    featured: true,
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    period: "let's talk",
-    description: "Complex custom software, platforms, or multi-system integrations.",
-    features: ["Custom software from the ground up", "Dedicated engineering team", "Advanced integrations & APIs", "Custom dashboards & analytics", "Ongoing maintenance & support", "Priority delivery timeline"],
-    featured: false,
-  },
-] as const;
-
 export const portfolioItems = [
   ["Enterprise Task Management App", "App Development", "app", "fa-mobile-alt"],
   ["Fitness Tracking Mobile App", "App Development", "app", "fa-mobile-alt"],
