@@ -30,7 +30,7 @@ export default function StatusPage() {
           <h1 className="text-2xl font-bold mb-1">Update Project Status</h1>
           <p className="text-sm text-gray-500">Report progress on your assigned projects</p>
         </div>
-        <button onClick={() => setOpen(true)} className="bg-accent-2 text-white text-sm font-medium px-4 py-2 rounded-lg">+ Post Update</button>
+        <button onClick={() => setOpen(true)} className="bg-accent-2 text-gray-50 text-sm font-medium px-4 py-2 rounded-lg">+ Post Update</button>
       </div>
 
       <div className="grid gap-4">
@@ -65,7 +65,7 @@ export default function StatusPage() {
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
-              <button type="submit" disabled={postUpdate.isPending} className="bg-accent-2 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{postUpdate.isPending ? "Posting…" : "Post"}</button>
+              <button type="submit" disabled={postUpdate.isPending} className="bg-accent-2 text-gray-50 text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{postUpdate.isPending ? "Posting…" : "Post"}</button>
             </div>
           </form>
         </div>

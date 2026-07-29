@@ -67,7 +67,7 @@ export default function ChatPage() {
               return (
                 <div key={m.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
                   <span className="text-xs text-gray-400 mb-1">{isMe ? "You" : m.senderRole === "client" ? "Client" : "Admin"} · {m.time}</span>
-                  <div className={`max-w-[70%] px-4 py-2 rounded-2xl text-sm ${isMe ? "bg-accent-2 text-white rounded-br-sm" : "bg-gray-100 text-gray-900 rounded-bl-sm"}`}>
+                  <div className={`max-w-[70%] px-4 py-2 rounded-2xl text-sm ${isMe ? "bg-accent-2 text-gray-50 rounded-br-sm" : "bg-gray-100 text-gray-900 rounded-bl-sm"}`}>
                     {m.text}
                   </div>
                 </div>
@@ -86,7 +86,7 @@ export default function ChatPage() {
             <button
               type="submit"
               disabled={sendMessage.isPending || !text.trim()}
-              className="bg-accent-2 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50"
+              className="bg-accent-2 text-gray-50 text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50"
             >
               {sendMessage.isPending ? "Sending…" : "Send"}
             </button>

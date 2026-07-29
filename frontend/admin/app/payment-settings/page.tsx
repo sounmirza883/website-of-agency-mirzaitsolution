@@ -115,7 +115,7 @@ export default function PaymentSettingsPage() {
         </div>
 
         <div className="flex justify-end">
-          <button type="submit" disabled={updatePaymentSettings.isPending} className="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">
+          <button type="submit" disabled={updatePaymentSettings.isPending} className="bg-accent text-gray-50 text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">
             {updatePaymentSettings.isPending ? "Saving…" : "Save Payment Settings"}
           </button>
         </div>

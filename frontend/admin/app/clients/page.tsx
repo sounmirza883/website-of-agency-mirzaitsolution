@@ -61,7 +61,7 @@ export default function ClientsPage() {
           <h1 className="text-2xl font-bold mb-1">Clients</h1>
           <p className="text-sm text-gray-500">Manage all clients</p>
         </div>
-        <button onClick={() => setOpen(true)} className="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg">+ Add Client</button>
+        <button onClick={() => setOpen(true)} className="bg-accent text-gray-50 text-sm font-medium px-4 py-2 rounded-lg">+ Add Client</button>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
@@ -98,7 +98,7 @@ export default function ClientsPage() {
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
-              <button type="submit" disabled={createClient.isPending} className="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{createClient.isPending ? "Creating…" : "Create"}</button>
+              <button type="submit" disabled={createClient.isPending} className="bg-accent text-gray-50 text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{createClient.isPending ? "Creating…" : "Create"}</button>
             </div>
           </form>
         </div>
@@ -116,7 +116,7 @@ export default function ClientsPage() {
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setEditing(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
-              <button type="submit" disabled={updateDetails.isPending} className="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{updateDetails.isPending ? "Saving…" : "Save"}</button>
+              <button type="submit" disabled={updateDetails.isPending} className="bg-accent text-gray-50 text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{updateDetails.isPending ? "Saving…" : "Save"}</button>
             </div>
           </form>
         </div>

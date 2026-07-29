@@ -39,7 +39,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
         )}
         <div className="flex justify-end gap-2 mt-6">
           <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">{changePassword.isSuccess ? "Close" : "Cancel"}</button>
-          {!changePassword.isSuccess && <button type="submit" disabled={changePassword.isPending} className="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{changePassword.isPending ? "Updating…" : "Update Password"}</button>}
+          {!changePassword.isSuccess && <button type="submit" disabled={changePassword.isPending} className="bg-accent text-gray-50 text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{changePassword.isPending ? "Updating…" : "Update Password"}</button>}
         </div>
       </form>
     </div>
@@ -111,7 +111,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </div>
           <div className="flex items-center gap-2 md:gap-3 shrink-0">
             <span className="text-sm text-gray-600 hidden lg:inline">{user.email}</span>
-            <div className="w-8 h-8 bg-gray-800 text-white rounded-full flex items-center justify-center text-xs font-bold shrink-0">{user.name.charAt(0).toUpperCase()}</div>
+            <div className="w-8 h-8 bg-gray-100 text-gray-900 rounded-full flex items-center justify-center text-xs font-bold shrink-0">{user.name.charAt(0).toUpperCase()}</div>
             <button onClick={() => setShowChangePassword(true)} className="text-xs md:text-sm text-gray-500 hover:text-gray-900 whitespace-nowrap">Change Password</button>
             <button onClick={logout} className="text-xs md:text-sm text-gray-500 hover:text-gray-900">Logout</button>
           </div>

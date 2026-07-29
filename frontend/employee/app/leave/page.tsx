@@ -29,7 +29,7 @@ export default function LeavePage() {
           <h1 className="text-2xl font-bold mb-1">Leave Requests</h1>
           <p className="text-sm text-gray-500">Request leave and view your leave history</p>
         </div>
-        <button onClick={() => setOpen(true)} className="bg-accent-2 text-white text-sm font-medium px-4 py-2 rounded-lg">+ Request Leave</button>
+        <button onClick={() => setOpen(true)} className="bg-accent-2 text-gray-50 text-sm font-medium px-4 py-2 rounded-lg">+ Request Leave</button>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
@@ -56,7 +56,7 @@ export default function LeavePage() {
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
-              <button type="submit" disabled={requestLeave.isPending} className="bg-accent-2 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{requestLeave.isPending ? "Submitting…" : "Submit"}</button>
+              <button type="submit" disabled={requestLeave.isPending} className="bg-accent-2 text-gray-50 text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{requestLeave.isPending ? "Submitting…" : "Submit"}</button>
             </div>
           </form>
         </div>

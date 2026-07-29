@@ -43,7 +43,7 @@ export default function FilesPage() {
           <h1 className="text-2xl font-bold mb-1">Files</h1>
           <p className="text-sm text-gray-500">Upload and manage your project files</p>
         </div>
-        <button onClick={() => setOpen(true)} className="bg-accent-2 text-white text-sm font-medium px-4 py-2 rounded-lg">+ Upload File</button>
+        <button onClick={() => setOpen(true)} className="bg-accent-2 text-gray-50 text-sm font-medium px-4 py-2 rounded-lg">+ Upload File</button>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
@@ -69,7 +69,7 @@ export default function FilesPage() {
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
-              <button type="submit" disabled={uploadFile.isPending} className="bg-accent-2 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{uploadFile.isPending ? "Uploading…" : "Upload"}</button>
+              <button type="submit" disabled={uploadFile.isPending} className="bg-accent-2 text-gray-50 text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{uploadFile.isPending ? "Uploading…" : "Upload"}</button>
             </div>
           </form>
         </div>

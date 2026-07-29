@@ -112,7 +112,7 @@ export function TaskBoard() {
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
-              <button type="submit" disabled={createTask.isPending} className="bg-accent-2 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{createTask.isPending ? "Creating…" : "Create"}</button>
+              <button type="submit" disabled={createTask.isPending} className="bg-accent-2 text-gray-50 text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{createTask.isPending ? "Creating…" : "Create"}</button>
             </div>
           </form>
         </div>

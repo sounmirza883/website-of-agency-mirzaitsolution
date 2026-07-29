@@ -29,7 +29,7 @@ export default function ServicesPage() {
           <h1 className="text-2xl font-bold mb-1">Services</h1>
           <p className="text-sm text-gray-500">Manage your service offerings</p>
         </div>
-        <button onClick={() => setOpen(true)} className="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg">+ Add Service</button>
+        <button onClick={() => setOpen(true)} className="bg-accent text-gray-50 text-sm font-medium px-4 py-2 rounded-lg">+ Add Service</button>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
@@ -52,7 +52,7 @@ export default function ServicesPage() {
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
-              <button type="submit" disabled={createService.isPending} className="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{createService.isPending ? "Creating…" : "Create"}</button>
+              <button type="submit" disabled={createService.isPending} className="bg-accent text-gray-50 text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{createService.isPending ? "Creating…" : "Create"}</button>
             </div>
           </form>
         </div>

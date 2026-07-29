@@ -35,7 +35,7 @@ export default function NotificationsPage() {
           <h1 className="text-2xl font-bold mb-1">Notifications</h1>
           <p className="text-sm text-gray-500">Send and view notifications</p>
         </div>
-        <button onClick={() => setOpen(true)} className="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg">+ Send Notification</button>
+        <button onClick={() => setOpen(true)} className="bg-accent text-gray-50 text-sm font-medium px-4 py-2 rounded-lg">+ Send Notification</button>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
@@ -68,7 +68,7 @@ export default function NotificationsPage() {
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
-              <button type="submit" disabled={createNotification.isPending} className="bg-gray-900 text-white text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{createNotification.isPending ? "Sending…" : "Send"}</button>
+              <button type="submit" disabled={createNotification.isPending} className="bg-accent text-gray-50 text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">{createNotification.isPending ? "Sending…" : "Send"}</button>
             </div>
           </form>
         </div>

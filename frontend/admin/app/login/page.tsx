@@ -33,7 +33,7 @@ export default function LoginPage() {
         <input id="email" type="email" required autoFocus value={email} onChange={(e) => setEmail(e.target.value)} className="w-full mb-4 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-400" />
         <label className="block text-sm font-medium mb-1" htmlFor="password">Password</label>
         <input id="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} className="w-full mb-6 px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:border-gray-400" />
-        <button type="submit" disabled={submitting} className="w-full bg-gray-900 text-white rounded-lg py-2.5 text-sm font-medium disabled:opacity-50">{submitting ? "Signing in…" : "Sign in"}</button>
+        <button type="submit" disabled={submitting} className="w-full bg-accent text-gray-50 rounded-lg py-2.5 text-sm font-medium disabled:opacity-50">{submitting ? "Signing in…" : "Sign in"}</button>
       </form>
     </div>
   );
