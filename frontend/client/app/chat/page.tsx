@@ -46,7 +46,7 @@ export default function ChatPage() {
                 <div key={m.id} className={`flex ${m.senderRole === "client" ? "justify-end" : "justify-start"}`}>
                   <div style={{maxWidth:"300px",borderRadius:"12px",padding:"10px 16px",background:m.senderRole==="client"?"var(--accent)":"var(--soft)",color:m.senderRole==="client"?"var(--canvas)":"var(--ink)"}}>
                     <div className="text-sm">{m.text}</div>
-                    <div className="text-xs mt-1" style={{color:m.senderRole==="client"?"rgba(245,234,216,.7)":"var(--ink-soft)"}}>{m.time}</div>
+                    <div className="text-xs mt-1" style={{color:m.senderRole==="client"?"rgba(15,23,42,.7)":"var(--ink-soft)"}}>{m.time}</div>
                   </div>
                 </div>
               ))}

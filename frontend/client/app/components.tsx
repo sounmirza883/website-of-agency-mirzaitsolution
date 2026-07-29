@@ -81,7 +81,7 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex flex-col min-h-screen" style={{background:"var(--soft)"}}>
-      <header className="sticky top-0 z-50" style={{background:"rgba(245,234,216,.92)",borderBottom:"1px solid var(--line)",backdropFilter:"blur(10px)"}}>
+      <header className="sticky top-0 z-50" style={{background:"rgba(15,23,42,.85)",borderBottom:"1px solid var(--line)",backdropFilter:"blur(10px)"}}>
         <div className="flex items-center justify-between h-16 px-4 md:px-6" style={{maxWidth:"1440px",margin:"0 auto",width:"100%"}}>
           <div className="flex items-center gap-3 min-w-0">
             <button onClick={() => setSidebarOpen(true)} className="md:hidden shrink-0" style={{color:"var(--ink-soft)",background:"none",border:"none",cursor:"pointer"}} aria-label="Open menu">
@@ -125,10 +125,10 @@ export function ClientShell({ children }: { children: React.ReactNode }) {
         </aside>
         <main className="flex-1 p-4 md:p-6 overflow-auto min-w-0">{children}</main>
       </div>
-      <footer style={{background:"var(--dark)",color:"var(--canvas)",padding:"20px 0",marginTop:"auto"}}>
+      <footer style={{background:"var(--dark)",color:"var(--ink)",padding:"20px 0",marginTop:"auto"}}>
         <div style={{maxWidth:"1440px",margin:"0 auto",padding:"0 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
           <Link href="/" className="logo" style={{fontSize:"16px"}}>Mirza IT <strong>Solution</strong></Link>
-          <p style={{fontSize:"13px",color:"rgba(245,234,216,.6)",margin:0}}>© 2026 Mirza IT Solution. All rights reserved.</p>
+          <p style={{fontSize:"13px",color:"rgba(255,255,255,.6)",margin:0}}>© 2026 Mirza IT Solution. All rights reserved.</p>
         </div>
       </footer>
     </div>
