@@ -1,8 +1,54 @@
 "use client";
 
-import { motion, useInView } from "framer-motion";
+import { motion, useInView, useMotionValue, useSpring, animate } from "framer-motion";
 import { useRef, useState, useEffect, useLayoutEffect } from "react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
+
+const MotionLink = motion.create(Link);
+
+export function MagneticLink({ href, className, children }: { href: string; className?: string; children: React.ReactNode }) {
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const springX = useSpring(x, { stiffness: 300, damping: 20 });
+  const springY = useSpring(y, { stiffness: 300, damping: 20 });
+
+  function onMouseMove(e: React.MouseEvent<HTMLAnchorElement>) {
+    const rect = e.currentTarget.getBoundingClientRect();
+    x.set((e.clientX - rect.left - rect.width / 2) * 0.25);
+    y.set((e.clientY - rect.top - rect.height / 2) * 0.25);
+  }
+  function onMouseLeave() {
+    x.set(0);
+    y.set(0);
+  }
+
+  return (
+    <MotionLink href={href} className={className} style={{ x: springX, y: springY }} onMouseMove={onMouseMove} onMouseLeave={onMouseLeave}>
+      {children}
+    </MotionLink>
+  );
+}
+
+export function Counter({ value, className = "" }: { value: string; className?: string }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const isInView = useInView(ref, { once: true, margin: "-40px" });
+  const match = value.match(/\d+/);
+  const numeric = match ? parseInt(match[0], 10) : null;
+
+  useEffect(() => {
+    if (!isInView || numeric == null || !ref.current) return;
+    const node = ref.current;
+    const controls = animate(0, numeric, {
+      duration: 1.2,
+      ease: "easeOut",
+      onUpdate: (v) => { node.textContent = value.replace(/\d+/, String(Math.round(v))); },
+    });
+    return () => controls.stop();
+  }, [isInView, numeric, value]);
+
+  return <span ref={ref} className={className}>{numeric == null ? value : "0"}</span>;
+}
 
 export function GlitchText({
   text,
