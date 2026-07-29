@@ -7,6 +7,7 @@ export const services = [
   { title: "Custom Software", icon: "fa-laptop-code", description: "Bespoke software built end-to-end around your exact business processes and requirements." },
   { title: "Custom Web Software", icon: "fa-globe", description: "Custom web-based applications and internal tools, built and hosted entirely in the browser." },
   { title: "Custom Dashboard", icon: "fa-tachometer-alt", description: "Data-rich admin dashboards and analytics interfaces built for clarity and fast decision-making." },
+  { title: "AI Automation", icon: "fa-brain", description: "AI-powered workflows, chatbots, and process automation that cut manual work and scale with your business." },
 ];
 
 export const pricingPlans = [
@@ -60,4 +61,5 @@ export const serviceDetails = [
   ["Custom Software Development", "We build bespoke software end-to-end, engineered around your exact business processes rather than forcing your workflow to fit an off-the-shelf product.", ["Requirements and process mapping", "Custom backend systems", "Database design and architecture", "Third-party API integration", "Legacy system modernization", "Automated testing", "Deployment and DevOps setup", "Ongoing support and maintenance"], "service-dark"],
   ["Custom Web Software Development", "We build custom web-based applications and internal tools that run entirely in the browser — no installs, accessible from anywhere, built around your team's exact workflow.", ["Internal tools and admin panels", "Workflow and process automation", "Multi-user web applications", "Role-based access control", "Real-time data features", "Cloud deployment and hosting", "API and integration development", "Ongoing support and maintenance"], "service-light"],
   ["Custom Dashboard Development", "We design and build data-rich admin dashboards and analytics interfaces that turn raw data into clear, fast decisions for you and your team.", ["Admin dashboard design", "Analytics and reporting UI", "Role-based access views", "Real-time data visualization", "Custom widget development", "Dashboard performance optimization", "Integration with existing APIs", "Ongoing support and maintenance"], "service-dark"],
+  ["AI Automation", "We design and build AI-powered automation that removes manual work from your business — from customer-facing chatbots to internal workflows that run themselves.", ["AI chatbots and virtual assistants", "Workflow and task automation", "Custom AI integrations (LLM/API)", "Document and data processing automation", "AI-powered internal tools", "Third-party automation platform setup", "Automated reporting and alerts", "Ongoing support and maintenance"], "service-light"],
 ] as const;
