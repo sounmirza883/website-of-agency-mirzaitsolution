@@ -11,18 +11,18 @@ export const services = [
 ];
 
 export const portfolioItems = [
-  ["Enterprise Task Management App", "App Development", "app", "fa-mobile-alt", "A cross-platform mobile app for assigning, tracking, and reporting on team tasks in real time across large organizations."],
-  ["Fitness Tracking Mobile App", "App Development", "app", "fa-mobile-alt", "A native fitness app with workout logging, progress charts, and personalized plans built for daily engagement."],
-  ["SaaS Analytics Platform Website", "SaaS Website", "saas", "fa-cloud", "A conversion-focused marketing site and product tour for a data analytics SaaS, built to turn trial signups into subscribers."],
-  ["Subscription Billing SaaS Site", "SaaS Website", "saas", "fa-cloud", "A pricing-led SaaS website with plan comparison, billing FAQs, and a streamlined signup flow to reduce checkout drop-off."],
-  ["Developer Platform Portal", "PaaS Website", "paas", "fa-cubes", "A developer-facing PaaS portal with API docs, onboarding guides, and an integration marketplace to speed up adoption."],
-  ["Corporate Business Website", "Web Development", "web", "fa-code", "A fast, SEO-optimized corporate website with a custom CMS, built to represent the brand and generate qualified leads."],
-  ["E-commerce Web Application", "Web Development", "web", "fa-code", "A custom e-commerce platform with product catalog, cart, and checkout, built for performance at scale."],
-  ["Real Estate WordPress Website", "WordPress Development", "wordpress", "fa-wordpress", "A responsive WordPress site with property listings, search filters, and lead-capture forms for a real estate brand."],
-  ["Restaurant WordPress Website", "WordPress Development", "wordpress", "fa-home", "A WordPress website with online menu, reservation booking, and location pages for a multi-branch restaurant."],
-  ["Custom Inventory Management System", "Custom Software", "software", "fa-laptop-code", "A bespoke inventory system with stock tracking, supplier management, and automated low-stock alerts."],
-  ["Client Portal Web Application", "Custom Web Software", "websoftware", "fa-globe", "A browser-based client portal for project updates, file sharing, and invoicing, replacing scattered email threads."],
-  ["Business Analytics Dashboard", "Custom Dashboard", "dashboard", "fa-tachometer-alt", "A real-time analytics dashboard turning raw business data into clear charts and exportable reports for decision-makers."],
+  ["Enterprise Task Management App", "App Development", "app", "fa-mobile-alt", "A cross-platform mobile app for assigning, tracking, and reporting on team tasks in real time across large organizations.", "/portfolio-task-management.png"],
+  ["Fitness Tracking Mobile App", "App Development", "app", "fa-mobile-alt", "A native fitness app with workout logging, progress charts, and personalized plans built for daily engagement.", "/portfolio-fitness-app.png"],
+  ["SaaS Analytics Platform Website", "SaaS Website", "saas", "fa-cloud", "A conversion-focused marketing site and product tour for a data analytics SaaS, built to turn trial signups into subscribers.", "/portfolio-saas-analytics.png"],
+  ["Subscription Billing SaaS Site", "SaaS Website", "saas", "fa-cloud", "A pricing-led SaaS website with plan comparison, billing FAQs, and a streamlined signup flow to reduce checkout drop-off.", "/portfolio-billing-saas.png"],
+  ["Developer Platform Portal", "PaaS Website", "paas", "fa-cubes", "A developer-facing PaaS portal with API docs, onboarding guides, and an integration marketplace to speed up adoption.", "/portfolio-dev-platform.png"],
+  ["Corporate Business Website", "Web Development", "web", "fa-code", "A fast, SEO-optimized corporate website with a custom CMS, built to represent the brand and generate qualified leads.", "/portfolio-corporate-website.png"],
+  ["E-commerce Web Application", "Web Development", "web", "fa-code", "A custom e-commerce platform with product catalog, cart, and checkout, built for performance at scale.", "/portfolio-ecommerce.png"],
+  ["Real Estate WordPress Website", "WordPress Development", "wordpress", "fa-wordpress", "A responsive WordPress site with property listings, search filters, and lead-capture forms for a real estate brand.", "/portfolio-real-estate.png"],
+  ["Restaurant WordPress Website", "WordPress Development", "wordpress", "fa-home", "A WordPress website with online menu, reservation booking, and location pages for a multi-branch restaurant.", "/portfolio-restaurant.png"],
+  ["Custom Inventory Management System", "Custom Software", "software", "fa-laptop-code", "A bespoke inventory system with stock tracking, supplier management, and automated low-stock alerts.", "/portfolio-inventory-system.png"],
+  ["Client Portal Web Application", "Custom Web Software", "websoftware", "fa-globe", "A browser-based client portal for project updates, file sharing, and invoicing, replacing scattered email threads.", "/portfolio-client-portal.png"],
+  ["Business Analytics Dashboard", "Custom Dashboard", "dashboard", "fa-tachometer-alt", "A real-time analytics dashboard turning raw business data into clear charts and exportable reports for decision-makers.", "/portfolio-business-dashboard.png"],
 ] as const;
 
 export const serviceDetails = [
