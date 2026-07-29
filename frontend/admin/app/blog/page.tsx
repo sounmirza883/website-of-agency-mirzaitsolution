@@ -8,7 +8,7 @@ export default function BlogPage() {
   const createBlogPost = useCreateBlogPost();
   const setStatus = useSetBlogPostStatus();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ title: "", author: "", content: "", status: "Draft" });
+  const [form, setForm] = useState({ title: "", author: "", content: "", status: "Draft", excerpt: "", featuredImage: "", category: "" });
   const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent) {
@@ -16,7 +16,7 @@ export default function BlogPage() {
     setError("");
     try {
       await createBlogPost.mutateAsync(form);
-      setForm({ title: "", author: "", content: "", status: "Draft" });
+      setForm({ title: "", author: "", content: "", status: "Draft", excerpt: "", featuredImage: "", category: "" });
       setOpen(false);
     } catch (err) {
       setError((err as Error).message);
@@ -63,6 +63,9 @@ export default function BlogPage() {
             <div className="space-y-3">
               <input required placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
               <input required placeholder="Author" value={form.author} onChange={(e) => setForm({ ...form, author: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <input placeholder="Category (e.g. Engineering, Product)" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <input placeholder="Featured image URL (optional)" value={form.featuredImage} onChange={(e) => setForm({ ...form, featuredImage: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <textarea placeholder="Short excerpt (shown on the blog listing card)" value={form.excerpt} onChange={(e) => setForm({ ...form, excerpt: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" rows={2} />
               <textarea required placeholder="Content" value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" rows={5} />
               <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
                 <option value="Draft">Draft</option>

@@ -91,7 +91,7 @@ export function verifyInvoice(token: string, id: number, approve: boolean) {
 export function createNotification(token: string, payload: { title: string; msg: string; targetRole?: "all" | "employee" | "client"; targetUserId?: number }) {
   return apiPost<any>("/admin/notifications", token, payload);
 }
-export function createBlogPost(token: string, payload: { title: string; author: string; content: string; status: string }) {
+export function createBlogPost(token: string, payload: { title: string; author: string; content: string; status: string; slug?: string; excerpt?: string; featuredImage?: string; category?: string }) {
   return apiPost<any>("/admin/blog", token, payload);
 }
 export function setBlogPostStatus(token: string, id: number, status: string) {

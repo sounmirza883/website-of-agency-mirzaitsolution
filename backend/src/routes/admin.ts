@@ -272,12 +272,20 @@ router.post("/notifications", requireAuth, requireRole("admin"), async (req: Aut
   return res.status(201).json(data);
 });
 
+function slugify(text: string): string {
+  return text.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+}
+
 router.post("/blog", requireAuth, requireRole("admin"), async (req, res) => {
-  const { title, author, content, status } = req.body ?? {};
+  const { title, author, content, status, excerpt, featuredImage, category, slug } = req.body ?? {};
   if (!title || !author || !content) return res.status(400).json({ error: "title, author, content are required" });
   if (!supabase) return res.status(503).json({ error: "Database not configured" });
   const date = new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  const { data, error } = await supabase.from("admin_blog").insert({ title, author, content, status: status === "Published" ? "Published" : "Draft", date }).select().single();
+  const { data, error } = await supabase.from("admin_blog").insert({
+    title, author, content, status: status === "Published" ? "Published" : "Draft", date,
+    slug: slug ? slugify(slug) : slugify(title),
+    excerpt: excerpt || null, featured_image: featuredImage || null, category: category || null,
+  }).select().single();
   if (error) return res.status(500).json({ error: error.message });
   return res.status(201).json(data);
 });

@@ -35,6 +35,12 @@ CREATE TABLE IF NOT EXISTS admin_notifications (id SERIAL PRIMARY KEY, title TEX
 CREATE TABLE IF NOT EXISTS admin_blog (id SERIAL PRIMARY KEY, title TEXT NOT NULL, author TEXT NOT NULL, date TEXT NOT NULL, status TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS admin_portfolio (id SERIAL PRIMARY KEY, title TEXT NOT NULL, client TEXT NOT NULL, category TEXT NOT NULL);
 ALTER TABLE admin_blog ADD COLUMN IF NOT EXISTS content TEXT NOT NULL DEFAULT '';
+-- Public blog fields: slug (URL), excerpt (card summary), featured_image (optional card/hero image URL).
+ALTER TABLE admin_blog ADD COLUMN IF NOT EXISTS slug TEXT;
+ALTER TABLE admin_blog ADD COLUMN IF NOT EXISTS excerpt TEXT;
+ALTER TABLE admin_blog ADD COLUMN IF NOT EXISTS featured_image TEXT;
+ALTER TABLE admin_blog ADD COLUMN IF NOT EXISTS category TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS admin_blog_slug_key ON admin_blog (slug) WHERE slug IS NOT NULL;
 ALTER TABLE admin_portfolio ADD COLUMN IF NOT EXISTS description TEXT;
 
 -- Company bank details, admin-managed, shown to clients on the Invoices page.
