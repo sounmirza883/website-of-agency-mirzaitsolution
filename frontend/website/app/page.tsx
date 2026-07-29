@@ -24,8 +24,8 @@ export default function Home() {
       <div className="hero-dash-card" style={{ bottom: "18%", right: "14%", width: 140 }}><div className="label">Uptime</div><div className="value">99.9%</div></div>
       <div className="container">
         <FadeIn direction="none">
-          <div className="section-eyebrow">Software & Web Development Studio</div>
           <GlitchText as="h1" text="Mirza IT Solution — Custom Software, SaaS &amp; Web Development Solutions" className="campaign-headline" />
+          <div className="section-eyebrow">Software & Web Development Studio</div>
           <p className="campaign-sub">We help businesses grow with custom software, SaaS and PaaS websites, web development, WordPress builds, and custom dashboards.</p>
           <div className="campaign-actions"><MagneticLink href="/portfolio" className="pill pill-primary"><Icon name="fa-eye" /> View Our Work</MagneticLink><MagneticLink href="/contact" className="pill pill-outline"><Icon name="fa-arrow-right" /> Start Your Project</MagneticLink></div>
           <div className="trust-badges"><span><Icon name="fa-shield-halved" /> Enterprise-grade delivery</span><span><Icon name="fa-users" /> 50+ businesses served</span><span><Icon name="fa-star" /> 4.9/5 client rating</span></div>
