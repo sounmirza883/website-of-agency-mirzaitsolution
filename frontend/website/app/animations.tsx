@@ -150,21 +150,33 @@ export function StaggerContainer({
 export function StaggerItem({
   children,
   className = "",
+  href,
 }: {
   children: React.ReactNode;
   className?: string;
+  href?: string;
 }) {
+  const variants = {
+    hidden: { opacity: 0, y: 16 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.3, ease: "easeOut" as const },
+    },
+  };
+
+  if (href) {
+    return (
+      <MotionLink href={href} className={className} variants={variants} style={{ willChange: "transform, opacity" }}>
+        {children}
+      </MotionLink>
+    );
+  }
+
   return (
     <motion.div
       className={className}
-      variants={{
-        hidden: { opacity: 0, y: 16 },
-        visible: {
-          opacity: 1,
-          y: 0,
-          transition: { duration: 0.3, ease: "easeOut" },
-        },
-      }}
+      variants={variants}
       style={{ willChange: "transform, opacity" }}
     >
       {children}
