@@ -34,7 +34,6 @@ const TABLES: Record<string, string[]> = {
   admin_projects: ["client_id", "employee_id", "progress"],
   admin_services: ["name"],
   admin_invoices: ["proof_path"],
-  admin_blog: ["content"],
   admin_portfolio: ["description"],
   notifications: ["target_role", "target_user_id", "creator_role"],
   project_messages: ["project_id", "sender_role", "sender_id"],

@@ -55,14 +55,6 @@ export const notifications = [
   { id: 5, title: "Support Ticket Opened", msg: "Urban Studio opened a new support ticket.", date: "3 days ago" },
 ];
 
-export const blogPosts = [
-  { id: 1, title: "Top Design Trends in 2026", author: "Ali Khan", date: "Jul 15, 2026", status: "Published" },
-  { id: 2, title: "Why Video Content Matters", author: "Fatima Ahmed", date: "Jul 10, 2026", status: "Published" },
-  { id: 3, title: "UI/UX Best Practices", author: "Hassan Raza", date: "Jul 5, 2026", status: "Draft" },
-  { id: 4, title: "Social Media Growth Tips", author: "Ayesha Malik", date: "Jun 28, 2026", status: "Published" },
-  { id: 5, title: "WordPress vs Custom Dev", author: "Usman Ali", date: "Jun 20, 2026", status: "Draft" },
-];
-
 export const portfolioList = [
   { id: 1, title: "Brand Identity Pack", client: "Bright Tech", category: "Graphic Design" },
   { id: 2, title: "Website Redesign", client: "Green Leaf Co", category: "Web Development" },

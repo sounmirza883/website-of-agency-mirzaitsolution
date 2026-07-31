@@ -16,8 +16,6 @@ async function apiPost<T>(path: string, body: unknown): Promise<T> {
 export function fetchServices() { return apiGet<any[]>("/website/services"); }
 export function fetchPortfolio() { return apiGet<any[]>("/website/portfolio"); }
 export function fetchServiceDetails() { return apiGet<any[]>("/website/service-details"); }
-export function fetchBlogPosts() { return apiGet<any[]>("/website/blog"); }
-export function fetchBlogPost(slug: string) { return apiGet<any>(`/website/blog/${slug}`); }
 export function submitContact(payload: { name: string; email: string; phone: string; service: string; message: string }) {
   return apiPost<any>("/website/contact", payload);
 }

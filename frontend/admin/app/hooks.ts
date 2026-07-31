@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
-import { fetchUsers, fetchEmployees, fetchClientsList, createEmployee, createClient, setEmployeePermission, fetchServices, fetchProjects, fetchInvoices, fetchNotifications, fetchBlogPosts, fetchPortfolioList, fetchContactSubmissions, deleteLead, fetchPaymentSettings, fetchAdminTickets, setTicketStatus, createService, createProject, updateProjectStatus, assignProjectEmployee, createInvoice, verifyInvoice, createNotification, createBlogPost, setBlogPostStatus, createPortfolioItem, setUserStatus, updateUserDetails, deleteUserAccount, fetchAdminAttendance, fetchAdminLeaveRequests, setLeaveRequestStatus, fetchProjectMessages, sendProjectMessage, changePassword, updatePaymentSettings } from "./queries";
+import { fetchUsers, fetchEmployees, fetchClientsList, createEmployee, createClient, setEmployeePermission, fetchServices, fetchProjects, fetchInvoices, fetchNotifications, fetchPortfolioList, fetchContactSubmissions, deleteLead, fetchPaymentSettings, fetchAdminTickets, setTicketStatus, createService, createProject, updateProjectStatus, assignProjectEmployee, createInvoice, verifyInvoice, createNotification, createPortfolioItem, setUserStatus, updateUserDetails, deleteUserAccount, fetchAdminAttendance, fetchAdminLeaveRequests, setLeaveRequestStatus, fetchProjectMessages, sendProjectMessage, changePassword, updatePaymentSettings } from "./queries";
 
 export function useChangePassword() {
   const { token } = useAuth();
@@ -71,11 +71,6 @@ export function useInvoices() {
 export function useNotifications() {
   const { token } = useAuth();
   return useQuery({ queryKey: ["notifications"], queryFn: () => fetchNotifications(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
-}
-
-export function useBlogPosts() {
-  const { token } = useAuth();
-  return useQuery({ queryKey: ["blogPosts"], queryFn: () => fetchBlogPosts(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
 }
 
 export function usePortfolioList() {
@@ -192,24 +187,6 @@ export function useCreateNotification() {
   return useMutation({
     mutationFn: (payload: Parameters<typeof createNotification>[1]) => createNotification(token!, payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["notifications"] }),
-  });
-}
-
-export function useCreateBlogPost() {
-  const { token } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (payload: Parameters<typeof createBlogPost>[1]) => createBlogPost(token!, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["blogPosts"] }),
-  });
-}
-
-export function useSetBlogPostStatus() {
-  const { token } = useAuth();
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, status }: { id: number; status: string }) => setBlogPostStatus(token!, id, status),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["blogPosts"] }),
   });
 }
 

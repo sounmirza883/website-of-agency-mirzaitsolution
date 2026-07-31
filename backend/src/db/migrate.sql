@@ -32,15 +32,7 @@ CREATE TABLE IF NOT EXISTS admin_services (id SERIAL PRIMARY KEY, name TEXT NOT 
 CREATE TABLE IF NOT EXISTS admin_projects (id SERIAL PRIMARY KEY, name TEXT NOT NULL, client TEXT NOT NULL, status TEXT NOT NULL, deadline TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS admin_invoices (id TEXT PRIMARY KEY, client TEXT NOT NULL, amount TEXT NOT NULL, status TEXT NOT NULL, date TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS admin_notifications (id SERIAL PRIMARY KEY, title TEXT NOT NULL, msg TEXT NOT NULL, date TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS admin_blog (id SERIAL PRIMARY KEY, title TEXT NOT NULL, author TEXT NOT NULL, date TEXT NOT NULL, status TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS admin_portfolio (id SERIAL PRIMARY KEY, title TEXT NOT NULL, client TEXT NOT NULL, category TEXT NOT NULL);
-ALTER TABLE admin_blog ADD COLUMN IF NOT EXISTS content TEXT NOT NULL DEFAULT '';
--- Public blog fields: slug (URL), excerpt (card summary), featured_image (optional card/hero image URL).
-ALTER TABLE admin_blog ADD COLUMN IF NOT EXISTS slug TEXT;
-ALTER TABLE admin_blog ADD COLUMN IF NOT EXISTS excerpt TEXT;
-ALTER TABLE admin_blog ADD COLUMN IF NOT EXISTS featured_image TEXT;
-ALTER TABLE admin_blog ADD COLUMN IF NOT EXISTS category TEXT;
-CREATE UNIQUE INDEX IF NOT EXISTS admin_blog_slug_key ON admin_blog (slug) WHERE slug IS NOT NULL;
 ALTER TABLE admin_portfolio ADD COLUMN IF NOT EXISTS description TEXT;
 
 -- Company bank details, admin-managed, shown to clients on the Invoices page.
@@ -129,7 +121,7 @@ CREATE TABLE IF NOT EXISTS project_files (
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = '_seed_cleanup_admin_v1') THEN
-    TRUNCATE admin_services, admin_projects, admin_notifications, admin_blog, admin_portfolio RESTART IDENTITY;
+    TRUNCATE admin_services, admin_projects, admin_notifications, admin_portfolio RESTART IDENTITY;
     DELETE FROM admin_invoices;
     CREATE TABLE _seed_cleanup_admin_v1 (done_at TIMESTAMPTZ NOT NULL DEFAULT now());
   END IF;
@@ -260,5 +252,5 @@ INSERT INTO users (name, email, password_hash, role, status) VALUES
 ('Admin', 'admin@mirzaitsolution.com', '$2b$10$Mr475kmRIDt6XsF493/TwuySS16fmGtWgGBaQ9xDs1U5NboD8s6gm', 'admin', 'Active')
 ON CONFLICT (email) DO NOTHING;
 
--- Admin Services/Projects/Invoices/Notifications/Blog/Portfolio are no longer seeded —
+-- Admin Services/Projects/Invoices/Notifications/Portfolio are no longer seeded —
 -- populated only through the admin CRUD UI from here on (see the one-time cleanup above).

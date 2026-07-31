@@ -101,7 +101,7 @@ Every list endpoint is scoped server-side by the caller's own id — cross-tenan
 
 ## Features
 
-**Admin** — dashboard · users/employees/clients (create, edit, delete) · services · projects (Kanban board with drag-and-drop, assign to employee) · invoices (create, verify/reject payment proofs) · notifications (targeted) · blog · portfolio · leads (convert a contact-form lead straight into a project) · attendance (all staff) · leave approval · read/join any project chat
+**Admin** — dashboard · users/employees/clients (create, edit, delete) · services · projects (Kanban board with drag-and-drop, assign to employee) · invoices (create, verify/reject payment proofs) · notifications (targeted) · portfolio · leads (convert a contact-form lead straight into a project) · attendance (all staff) · leave approval · read/join any project chat
 
 **Employee** — dashboard · assigned projects · tasks (Kanban) · attendance check-in/out · leave requests · file uploads · status updates · notifications (create, targeted) · chat with the client on assigned projects
 
@@ -124,7 +124,7 @@ All routes are under `/api`. Everything except `/auth/login` and `/website/*` re
 |---|---|---|
 | `/auth` | — | `POST login`, `GET me` |
 | `/website` | public | `services`, `portfolio`, `service-details`, `POST contact` |
-| `/admin` | admin | `users` (+`PATCH :id`, `DELETE :id`, `PATCH :id/status`), `employees`, `clients`, `services`, `projects` (+`PATCH :id/status`, `PATCH :id/assign`), `invoices` (+`PATCH :id/verify`), `notifications`, `blog`, `portfolio`, `contact-submissions`, `attendance`, `leave-requests` (+`PATCH :id/status`), `messages` |
+| `/admin` | admin | `users` (+`PATCH :id`, `DELETE :id`, `PATCH :id/status`), `employees`, `clients`, `services`, `projects` (+`PATCH :id/status`, `PATCH :id/assign`), `invoices` (+`PATCH :id/verify`), `notifications`, `portfolio`, `contact-submissions`, `attendance`, `leave-requests` (+`PATCH :id/status`), `messages` |
 | `/employee` | employee | `clients`, `tasks` (+`PATCH :id/status`), `assigned-projects`, `status-updates`, `attendance` (+`POST check-in`, `POST check-out`), `leave-requests`, `files`, `notifications`, `messages` |
 | `/client` | client | `projects`, `milestones`, `files`, `invoices` (+`POST :id/submit-payment`), `tickets` (+`PATCH :id/status`), `notifications`, `messages` |
 
@@ -183,7 +183,7 @@ Things that have actually cost debugging time here:
 5. **`backend/node_modules` is committed to git** (~1500 files). It bloats clones and was the original cause of the oversized EAS upload. Worth `git rm -r --cached backend/node_modules`.
 6. **Express 4 does not catch async route errors.** A throwing `async` handler becomes an unhandled rejection and **kills the process** — on serverless the caller just hangs with no response. Wrap anything that can throw in `asyncHandler` (`backend/src/middleware/asyncHandler.ts`).
 7. **Two Tailwind majors on purpose** — v4 for web, v3 for the mobile app (NativeWind 4 requirement).
-8. **No DELETE endpoints** for services, blog, portfolio, notifications, projects, or leads — removing those rows currently needs SQL.
+8. **No DELETE endpoints** for services, portfolio, notifications, projects, or leads — removing those rows currently needs SQL.
 
 ## License
 

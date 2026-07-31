@@ -13,9 +13,6 @@ export interface Invoice {
 export interface Notification {
   id: number; title: string; msg: string; date: string; createdBy: number | null; creatorRole: string; targetRole: string; targetUserId: number | null;
 }
-export interface BlogPost {
-  id: number; title: string; author: string; date: string; status: string; content: string;
-}
 export interface PortfolioItem {
   id: number; title: string; client: string; category: string; description: string | null;
 }

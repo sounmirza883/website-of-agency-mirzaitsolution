@@ -25,7 +25,6 @@ CREATE TABLE admin_services (id SERIAL PRIMARY KEY, name TEXT NOT NULL, price TE
 CREATE TABLE admin_projects (id SERIAL PRIMARY KEY, name TEXT NOT NULL, client TEXT NOT NULL, client_id INTEGER REFERENCES users(id) ON DELETE SET NULL, employee_id INTEGER REFERENCES users(id) ON DELETE SET NULL, status TEXT NOT NULL, deadline TEXT NOT NULL, progress INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE admin_invoices (id TEXT PRIMARY KEY, client TEXT NOT NULL, amount TEXT NOT NULL, status TEXT NOT NULL, date TEXT NOT NULL, proof_path TEXT);
 CREATE TABLE notifications (id SERIAL PRIMARY KEY, title TEXT NOT NULL, msg TEXT NOT NULL, date TEXT NOT NULL, created_by INTEGER REFERENCES users(id) ON DELETE SET NULL, creator_role TEXT NOT NULL DEFAULT 'admin', target_role TEXT NOT NULL DEFAULT 'all', target_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL);
-CREATE TABLE admin_blog (id SERIAL PRIMARY KEY, title TEXT NOT NULL, author TEXT NOT NULL, date TEXT NOT NULL, status TEXT NOT NULL, content TEXT NOT NULL DEFAULT '');
 CREATE TABLE admin_portfolio (id SERIAL PRIMARY KEY, title TEXT NOT NULL, client TEXT NOT NULL, category TEXT NOT NULL, description TEXT);
 
 -- Employee

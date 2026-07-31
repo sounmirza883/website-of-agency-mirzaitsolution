@@ -70,30 +70,6 @@ router.get("/service-details", async (_req, res) => {
   return res.json(data);
 });
 
-router.get("/blog", async (_req, res) => {
-  if (!supabase) return res.json([]);
-  const { data, error } = await supabase
-    .from("admin_blog")
-    .select("id,title,slug,author,date,excerpt,category,featured_image")
-    .eq("status", "Published")
-    .order("id", { ascending: false });
-  if (error) return res.status(500).json({ error: error.message });
-  return res.json(data);
-});
-
-router.get("/blog/:slug", async (req, res) => {
-  if (!supabase) return res.status(404).json({ error: "Not found" });
-  const { data, error } = await supabase
-    .from("admin_blog")
-    .select("id,title,slug,author,date,content,excerpt,category,featured_image")
-    .eq("slug", req.params.slug)
-    .eq("status", "Published")
-    .maybeSingle();
-  if (error) return res.status(500).json({ error: error.message });
-  if (!data) return res.status(404).json({ error: "Post not found" });
-  return res.json(data);
-});
-
 router.post("/contact", async (req, res) => {
   const { name, email, phone, service, message } = req.body ?? {};
   if (!name || !email || !message) {

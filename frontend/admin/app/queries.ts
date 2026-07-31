@@ -54,7 +54,6 @@ export function fetchServices(token: string) { return apiGet<any[]>("/admin/serv
 export function fetchProjects(token: string) { return apiGet<any[]>("/admin/projects", token); }
 export function fetchInvoices(token: string) { return apiGet<any[]>("/admin/invoices", token); }
 export function fetchNotifications(token: string) { return apiGet<any[]>("/admin/notifications", token); }
-export function fetchBlogPosts(token: string) { return apiGet<any[]>("/admin/blog", token); }
 export function fetchPortfolioList(token: string) { return apiGet<any[]>("/admin/portfolio", token); }
 export function fetchContactSubmissions(token: string) { return apiGet<any[]>("/admin/contact-submissions", token); }
 export function deleteLead(token: string, id: number) { return apiDelete(`/admin/contact-submissions/${id}`, token); }
@@ -90,12 +89,6 @@ export function verifyInvoice(token: string, id: number, approve: boolean) {
 }
 export function createNotification(token: string, payload: { title: string; msg: string; targetRole?: "all" | "employee" | "client"; targetUserId?: number }) {
   return apiPost<any>("/admin/notifications", token, payload);
-}
-export function createBlogPost(token: string, payload: { title: string; author: string; content: string; status: string; slug?: string; excerpt?: string; featuredImage?: string; category?: string }) {
-  return apiPost<any>("/admin/blog", token, payload);
-}
-export function setBlogPostStatus(token: string, id: number, status: string) {
-  return apiPatch<any>(`/admin/blog/${id}/status`, token, { status });
 }
 export function createPortfolioItem(token: string, payload: { title: string; client: string; category: string; description?: string }) {
   return apiPost<any>("/admin/portfolio", token, payload);
