@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { useSubmitContact } from "./hooks";
+import { PageAccentMark } from "./page-accent";
 
 const nav = [["Home", "/"], ["About", "/about"], ["Services", "/services"], ["Portfolio", "/portfolio"], ["Blog", "/blog"], ["Contact", "/contact"]];
 const serviceLinks = ["App Development", "SaaS Website", "PaaS Website", "Web Development", "WordPress Development", "Custom Software", "Custom Web Software", "Custom Dashboard", "AI Automation"];
@@ -37,7 +38,7 @@ export function Footer() {
 
 export function SiteShell({ children, active }: { children: React.ReactNode; active?: string }) { return <><Header active={active} /><a href="https://wa.me/923292745959" target="_blank" rel="noreferrer" className="whatsapp-float" aria-label="Chat on WhatsApp"><i className="fab fa-whatsapp" /></a>{children}<Footer /></>; }
 
-export function PageHero({ eyebrow, title, children }: { eyebrow: string; title: React.ReactNode; children: React.ReactNode }) { return <section className="page-hero"><div className="container text-center"><div className="section-eyebrow">{eyebrow}</div><h1 className="section-title">{title}</h1><p className="hero-copy">{children}</p></div></section>; }
+export function PageHero({ eyebrow, title, children }: { eyebrow: string; title: React.ReactNode; children: React.ReactNode }) { return <section className="page-hero"><PageAccentMark /><div className="container text-center"><div className="section-eyebrow">{eyebrow}</div><h1 className="section-title">{title}</h1><p className="hero-copy">{children}</p></div></section>; }
 
 export function Reveal({ children, className = "" }: { children: React.ReactNode; className?: string }) { return <div className={`reveal ${className}`}>{children}</div>; }
 
