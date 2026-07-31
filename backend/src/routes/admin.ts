@@ -272,35 +272,6 @@ router.post("/notifications", requireAuth, requireRole("admin"), async (req: Aut
   return res.status(201).json(data);
 });
 
-function slugify(text: string): string {
-  return text.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-}
-
-router.post("/blog", requireAuth, requireRole("admin"), async (req, res) => {
-  const { title, author, content, status, excerpt, featuredImage, category, slug } = req.body ?? {};
-  if (!title || !author || !content) return res.status(400).json({ error: "title, author, content are required" });
-  if (!supabase) return res.status(503).json({ error: "Database not configured" });
-  const date = new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric" });
-  const { data, error } = await supabase.from("admin_blog").insert({
-    title, author, content, status: status === "Published" ? "Published" : "Draft", date,
-    slug: slug ? slugify(slug) : slugify(title),
-    excerpt: excerpt || null, featured_image: featuredImage || null, category: category || null,
-  }).select().single();
-  if (error) return res.status(500).json({ error: error.message });
-  return res.status(201).json(data);
-});
-
-router.patch("/blog/:id/status", requireAuth, requireRole("admin"), async (req, res) => {
-  const id = Number(req.params.id);
-  const { status } = req.body ?? {};
-  if (status !== "Draft" && status !== "Published") return res.status(400).json({ error: "status must be Draft or Published" });
-  if (!supabase) return res.status(503).json({ error: "Database not configured" });
-  const { data, error } = await supabase.from("admin_blog").update({ status }).eq("id", id).select().maybeSingle();
-  if (error) return res.status(500).json({ error: error.message });
-  if (!data) return res.status(404).json({ error: "Blog post not found" });
-  return res.json(data);
-});
-
 router.post("/portfolio", requireAuth, requireRole("admin"), async (req, res) => {
   const { title, client, category, description } = req.body ?? {};
   if (!title || !client || !category) return res.status(400).json({ error: "title, client, category are required" });
@@ -322,7 +293,6 @@ router.get("/projects", requireAuth, requireRole("admin"), async (_req, res) => 
 const tableMap: Record<string, string> = {
   services: "admin_services",
   notifications: "notifications",
-  blog: "admin_blog",
   portfolio: "admin_portfolio",
 };
 

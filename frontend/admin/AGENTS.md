@@ -29,5 +29,4 @@ Admins can:
 - Manage projects
 - Generate invoices
 - Send notifications
-- Publish blog posts
 - Manage portfolio

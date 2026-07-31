@@ -36,7 +36,7 @@ Express.js + TypeScript API server that connects all four frontend apps to Supab
 - `GET /service-details` — detailed service pages
 
 ### Admin (`/api/admin`)
-- `GET /users`, `/employees`, `/clients`, `/services`, `/projects`, `/invoices`, `/notifications`, `/blog`, `/portfolio`
+- `GET /users`, `/employees`, `/clients`, `/services`, `/projects`, `/invoices`, `/notifications`, `/portfolio`
 
 ### Employee (`/api/employee`)
 - `GET /assigned-projects`, `/tasks`, `/files`, `/status-updates`, `/attendance`, `/leave-requests`

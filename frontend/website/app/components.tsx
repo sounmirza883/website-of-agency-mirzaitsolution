@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { useSubmitContact } from "./hooks";
 
-const nav = [["Home", "/"], ["About", "/about"], ["Services", "/services"], ["Portfolio", "/portfolio"], ["Blog", "/blog"], ["Contact", "/contact"]];
+const nav = [["Home", "/"], ["About", "/about"], ["Services", "/services"], ["Portfolio", "/portfolio"], ["Contact", "/contact"]];
 const serviceLinks = ["App Development", "SaaS Website", "PaaS Website", "Web Development", "WordPress Development", "Custom Software", "Custom Web Software", "Custom Dashboard", "AI Automation"];
 
 export function Icon({ name, brand }: { name: string; brand?: boolean }) { return <i className={`${brand ? "fab" : "fas"} ${name}`} aria-hidden="true" />; }
