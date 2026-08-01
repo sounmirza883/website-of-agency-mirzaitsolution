@@ -201,7 +201,8 @@ export function useSendChatMessage() {
   const { token } = useAuth();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ conversationId, text }: { conversationId: number; text: string }) => sendChatMessage(token!, conversationId, text),
+    mutationFn: ({ conversationId, text, mentionIds }: { conversationId: number; text: string; mentionIds?: number[] }) =>
+      sendChatMessage(token!, conversationId, text, mentionIds ?? []),
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ["chatMessages", vars.conversationId] });
       qc.invalidateQueries({ queryKey: ["chatConversations"] });
@@ -231,8 +232,8 @@ export function useSendChatAttachment() {
   const { token } = useAuth();
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ conversationId, file, text }: { conversationId: number; file: File; text: string }) =>
-      sendChatAttachment(token!, conversationId, file, text),
+    mutationFn: ({ conversationId, file, text, mentionIds }: { conversationId: number; file: File; text: string; mentionIds?: number[] }) =>
+      sendChatAttachment(token!, conversationId, file, text, mentionIds ?? []),
     onSuccess: (_d, vars) => {
       qc.invalidateQueries({ queryKey: ["chatMessages", vars.conversationId] });
       qc.invalidateQueries({ queryKey: ["chatConversations"] });

@@ -270,6 +270,9 @@ CREATE TABLE IF NOT EXISTS chat_members (
 ALTER TABLE chat_members ADD COLUMN IF NOT EXISTS last_read_message_id INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE chat_members DROP COLUMN IF EXISTS last_read_at;
 
+-- mentions holds the user ids @mentioned in the message. Stored as ids rather
+-- than parsed back out of the text at read time, so a rename or a display name
+-- that happens to contain an @ can't change who was mentioned after the fact.
 CREATE TABLE IF NOT EXISTS chat_messages (
   id SERIAL PRIMARY KEY,
   conversation_id INTEGER NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
@@ -278,8 +281,11 @@ CREATE TABLE IF NOT EXISTS chat_messages (
   attachment_path TEXT,
   attachment_name TEXT,
   attachment_type TEXT,
+  mentions INTEGER[] NOT NULL DEFAULT '{}',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- Re-runnable upgrade for databases created before mentions existed.
+ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS mentions INTEGER[] NOT NULL DEFAULT '{}';
 
 -- A thread is always read for one conversation at a time, oldest-first by id;
 -- the sidebar reads every conversation a single user belongs to.

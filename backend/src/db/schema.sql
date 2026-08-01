@@ -48,7 +48,8 @@ CREATE TABLE chat_conversations (id SERIAL PRIMARY KEY, kind TEXT NOT NULL DEFAU
 -- last_read_message_id is a message id, not a timestamp: app-server and database clocks drift,
 -- which would leave just-read messages permanently unread. Ids are DB-generated and monotonic.
 CREATE TABLE chat_members (conversation_id INTEGER NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, last_read_message_id INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (conversation_id, user_id));
-CREATE TABLE chat_messages (id SERIAL PRIMARY KEY, conversation_id INTEGER NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE, sender_id INTEGER REFERENCES users(id) ON DELETE SET NULL, text TEXT, attachment_path TEXT, attachment_name TEXT, attachment_type TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+-- mentions holds @mentioned user ids, so who was mentioned survives a rename.
+CREATE TABLE chat_messages (id SERIAL PRIMARY KEY, conversation_id INTEGER NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE, sender_id INTEGER REFERENCES users(id) ON DELETE SET NULL, text TEXT, attachment_path TEXT, attachment_name TEXT, attachment_type TEXT, mentions INTEGER[] NOT NULL DEFAULT '{}', created_at TIMESTAMPTZ NOT NULL DEFAULT now());
 CREATE INDEX chat_messages_conversation_idx ON chat_messages (conversation_id, id);
 CREATE INDEX chat_members_user_idx ON chat_members (user_id);
 

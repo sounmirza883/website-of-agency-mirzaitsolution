@@ -132,8 +132,8 @@ export function fetchChatConversations(token: string) { return apiGet<any[]>("/c
 export function fetchChatMessages(token: string, conversationId: number) {
   return apiGet<any[]>(`/chat/conversations/${conversationId}/messages`, token);
 }
-export function sendChatMessage(token: string, conversationId: number, text: string) {
-  return apiPost<any>(`/chat/conversations/${conversationId}/messages`, token, { text });
+export function sendChatMessage(token: string, conversationId: number, text: string, mentionIds: number[] = []) {
+  return apiPost<any>(`/chat/conversations/${conversationId}/messages`, token, { text, mentionIds });
 }
 export function openChatDm(token: string, userId: number) {
   return apiPost<any>("/chat/conversations/dm", token, { userId });
@@ -144,9 +144,11 @@ export function createChatChannel(token: string, payload: { name: string; member
 export function markChatRead(token: string, conversationId: number) {
   return apiPost<any>(`/chat/conversations/${conversationId}/read`, token, {});
 }
-export function sendChatAttachment(token: string, conversationId: number, file: File, text: string) {
+export function sendChatAttachment(token: string, conversationId: number, file: File, text: string, mentionIds: number[] = []) {
   const fd = new FormData();
   fd.append("file", file);
   if (text) fd.append("text", text);
+  // Multipart has no array type, so ids ride as JSON and are parsed server-side.
+  if (mentionIds.length) fd.append("mentionIds", JSON.stringify(mentionIds));
   return apiUpload<any>(`/chat/conversations/${conversationId}/attachments`, token, fd);
 }

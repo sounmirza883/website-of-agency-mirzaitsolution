@@ -23,7 +23,34 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 
 const staffOnly = [requireAuth, requireRole("admin", "employee")] as const;
 
 const MESSAGE_SELECT =
-  "id,conversationId:conversation_id,senderId:sender_id,text,attachmentPath:attachment_path,attachmentName:attachment_name,attachmentType:attachment_type,createdAt:created_at,sender:users(name,role)";
+  "id,conversationId:conversation_id,senderId:sender_id,text,mentions,attachmentPath:attachment_path,attachmentName:attachment_name,attachmentType:attachment_type,createdAt:created_at,sender:users(name,role)";
+
+/** Multipart fields arrive as strings, so mention ids come over as JSON there. */
+function safeParseIds(raw: unknown): unknown {
+  if (typeof raw !== "string") return raw;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Keep only ids that actually belong to the conversation. The client resolves
+ * @names itself, so this is what stops a crafted request from recording a
+ * mention of someone who isn't even in the thread.
+ */
+async function validMentionIds(conversationId: number, raw: unknown): Promise<number[]> {
+  if (!Array.isArray(raw) || raw.length === 0 || !supabase) return [];
+  const requested = [...new Set(raw.map(Number).filter((n) => Number.isInteger(n)))];
+  if (requested.length === 0) return [];
+  const { data } = await supabase
+    .from("chat_members")
+    .select("user_id")
+    .eq("conversation_id", conversationId)
+    .in("user_id", requested);
+  return (data ?? []).map((m) => m.user_id);
+}
 
 /**
  * Swap stored object paths for short-lived signed URLs. The bucket is private,
@@ -89,7 +116,7 @@ router.get("/conversations", ...staffOnly, async (req: AuthedRequest, res) => {
   const [conversations, allMembers, messages] = await Promise.all([
     supabase.from("chat_conversations").select("id,kind,name,createdAt:created_at,lastMessageAt:last_message_at").in("id", ids),
     supabase.from("chat_members").select("conversation_id,user_id,users(name,role)").in("conversation_id", ids),
-    supabase.from("chat_messages").select("id,conversation_id,sender_id,text,attachment_name,created_at").in("conversation_id", ids).order("id", { ascending: true }),
+    supabase.from("chat_messages").select("id,conversation_id,sender_id,text,attachment_name,mentions,created_at").in("conversation_id", ids).order("id", { ascending: true }),
   ]);
   for (const q of [conversations, allMembers, messages]) {
     if (q.error) return res.status(500).json({ error: q.error.message });
@@ -109,11 +136,17 @@ router.get("/conversations", ...staffOnly, async (req: AuthedRequest, res) => {
   const unread = new Map<number, number>();
   const preview = new Map<number, { text: string; createdAt: string }>();
   const newestId = new Map<number, number>();
+  const mentionsMe = new Set<number>();
   for (const m of (messages.data ?? []) as any[]) {
     preview.set(m.conversation_id, { text: m.text ?? m.attachment_name ?? "Attachment", createdAt: m.created_at });
     newestId.set(m.conversation_id, m.id);
     const isUnread = m.sender_id !== me && m.id > (lastReadBy.get(m.conversation_id) ?? 0);
-    if (isUnread) unread.set(m.conversation_id, (unread.get(m.conversation_id) ?? 0) + 1);
+    if (isUnread) {
+      unread.set(m.conversation_id, (unread.get(m.conversation_id) ?? 0) + 1);
+      // Only unread mentions matter — once you've read the thread the marker
+      // has done its job and shouldn't linger.
+      if (Array.isArray(m.mentions) && m.mentions.includes(me)) mentionsMe.add(m.conversation_id);
+    }
   }
 
   const payload = ((conversations.data ?? []) as any[]).map((c) => {
@@ -126,6 +159,7 @@ router.get("/conversations", ...staffOnly, async (req: AuthedRequest, res) => {
       otherUserId: c.kind === "dm" ? (members.find((m) => m.id !== me)?.id ?? null) : null,
       members,
       unreadCount: unread.get(c.id) ?? 0,
+      mentionsMe: mentionsMe.has(c.id),
       lastMessage: preview.get(c.id) ?? null,
       lastMessageAt: c.lastMessageAt,
       newestMessageId: newestId.get(c.id) ?? 0,
@@ -221,9 +255,10 @@ router.post("/conversations/:id/messages", ...staffOnly, async (req: AuthedReque
   if (!supabase) return res.status(503).json({ error: "Database not configured" });
   if (!(await isMember(conversationId, req.user!.id))) return res.status(403).json({ error: "You are not a member of this conversation" });
 
+  const mentions = await validMentionIds(conversationId, req.body?.mentionIds);
   const { data, error } = await supabase
     .from("chat_messages")
-    .insert({ conversation_id: conversationId, sender_id: req.user!.id, text })
+    .insert({ conversation_id: conversationId, sender_id: req.user!.id, text, mentions })
     .select(MESSAGE_SELECT)
     .single();
   if (error) return res.status(500).json({ error: error.message });
@@ -257,6 +292,7 @@ router.post("/conversations/:id/attachments", ...staffOnly, upload.single("file"
   const { error: uploadError } = await supabaseAdmin.storage.from(FILES_BUCKET).upload(path, file.buffer, { contentType: file.mimetype });
   if (uploadError) return res.status(500).json({ error: uploadError.message });
 
+  const mentions = await validMentionIds(conversationId, safeParseIds(req.body?.mentionIds));
   const { data, error } = await supabase
     .from("chat_messages")
     .insert({
@@ -266,6 +302,7 @@ router.post("/conversations/:id/attachments", ...staffOnly, upload.single("file"
       attachment_path: path,
       attachment_name: file.originalname,
       attachment_type: file.mimetype,
+      mentions,
     })
     .select(MESSAGE_SELECT)
     .single();

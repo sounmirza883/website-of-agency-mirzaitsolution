@@ -10,6 +10,7 @@ interface ChatMessage {
   id: number;
   senderId: number | null;
   text: string | null;
+  mentions: number[] | null;
   attachmentName: string | null;
   attachmentType: string | null;
   attachmentUrl: string | null;
@@ -31,6 +32,7 @@ interface Conversation {
   otherUserId: number | null;
   members: Array<{ id: number; name: string; role: string }>;
   unreadCount: number;
+  mentionsMe: boolean;
   lastMessage: { text: string; createdAt: string } | null;
 }
 
@@ -56,6 +58,10 @@ export default function MessagesPage() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  // The @ autocomplete only helps you type; who was actually mentioned is
+  // re-derived from the final text on send, so editing or deleting a name can't
+  // leave a stale id behind.
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
 
   const { data: conversations } = useChatConversations();
   const { data: contacts } = useChatContacts();
@@ -67,6 +73,11 @@ export default function MessagesPage() {
 
   const list: Conversation[] = conversations ?? [];
   const active = list.find((c) => c.id === activeId) ?? null;
+  const mentionableMembers = (active?.members ?? []).filter((m) => m.id !== user?.id);
+  const mentionMatches = mentionQuery === null
+    ? []
+    : mentionableMembers.filter((m) => m.name.toLowerCase().includes(mentionQuery.toLowerCase())).slice(0, 6);
+
   const channels = list.filter((c) => c.kind === "channel");
   const dms = list.filter((c) => c.kind === "dm");
 
@@ -93,20 +104,38 @@ export default function MessagesPage() {
 
   const sending = sendMessage.isPending || sendAttachment.isPending;
 
+  // Everyone whose name appears as @Name in the text, resolved at send time.
+  function resolveMentions(body: string): number[] {
+    return mentionableMembers.filter((m) => body.includes(`@${m.name}`)).map((m) => m.id);
+  }
+
+  function handleTextChange(value: string) {
+    setText(value);
+    // Open the picker only while typing the word directly after an @.
+    const trailing = value.match(/@([^@]*)$/);
+    setMentionQuery(trailing && !trailing[1].includes(" ") ? trailing[1] : null);
+  }
+
+  function insertMention(name: string) {
+    setText((prev) => prev.replace(/@[^@]*$/, `@${name} `));
+    setMentionQuery(null);
+  }
+
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     if (!activeId) return;
     // A file may ride with an optional caption; without one it's a plain message.
     if (pendingFile) {
-      await sendAttachment.mutateAsync({ conversationId: activeId, file: pendingFile, text: text.trim() });
+      await sendAttachment.mutateAsync({ conversationId: activeId, file: pendingFile, text: text.trim(), mentionIds: resolveMentions(text) });
       setPendingFile(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       setText("");
       return;
     }
     if (!text.trim()) return;
-    await sendMessage.mutateAsync({ conversationId: activeId, text: text.trim() });
+    await sendMessage.mutateAsync({ conversationId: activeId, text: text.trim(), mentionIds: resolveMentions(text) });
     setText("");
+    setMentionQuery(null);
   }
 
   async function handleStartDm(userId: number) {
@@ -169,7 +198,7 @@ export default function MessagesPage() {
                           {m.attachmentUrl && (
                             <Attachment url={m.attachmentUrl} name={m.attachmentName} type={m.attachmentType} />
                           )}
-                          {m.text}
+                          <MessageText text={m.text} members={active.members} me={user?.id} />
                         </div>
                       </div>
                     );
@@ -188,6 +217,16 @@ export default function MessagesPage() {
                       className="text-gray-500 hover:text-gray-900">Remove</button>
                   </div>
                 )}
+                {mentionMatches.length > 0 && (
+                  <div className="mb-2 border border-gray-200 rounded-lg overflow-hidden">
+                    {mentionMatches.map((m) => (
+                      <button key={m.id} type="button" onClick={() => insertMention(m.name)}
+                        className="w-full text-left px-3 py-2 text-sm text-gray-900 hover:bg-gray-100">
+                        @{m.name} <span className="text-xs text-gray-500">{m.role}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <div className="flex gap-2">
                   <input ref={fileInputRef} type="file" className="hidden"
                     onChange={(e) => setPendingFile(e.target.files?.[0] ?? null)} />
@@ -195,7 +234,7 @@ export default function MessagesPage() {
                     className="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:text-gray-900">+</button>
                 <input
                   value={text}
-                  onChange={(e) => setText(e.target.value)}
+                  onChange={(e) => handleTextChange(e.target.value)}
                   placeholder={pendingFile ? "Add a caption (optional)" : active.kind === "channel" ? `Message # ${active.name}` : `Message ${active.name}`}
                   className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm"
                 />
@@ -230,6 +269,42 @@ export default function MessagesPage() {
       )}
     </div>
   );
+}
+
+function MessageText({ text, members, me }: { text: string | null; members: Array<{ id: number; name: string }>; me?: number }) {
+  if (!text) return null;
+  // Scanned rather than regex-matched, so a display name containing regex
+  // punctuation can't corrupt the pattern. Longest names first, so "Ali Hassan"
+  // wins over a member also called "Ali".
+  const names = [...members].sort((a, b) => b.name.length - a.name.length);
+  const parts: React.ReactNode[] = [];
+  let rest = text;
+  let key = 0;
+
+  while (rest.length > 0) {
+    const at = rest.indexOf("@");
+    if (at === -1) {
+      parts.push(rest);
+      break;
+    }
+    const hit = names.find((m) => rest.startsWith(`@${m.name}`, at));
+    if (!hit) {
+      // A stray @ that isn't a member — keep it as plain text and move past it.
+      parts.push(rest.slice(0, at + 1));
+      rest = rest.slice(at + 1);
+      continue;
+    }
+    if (at > 0) parts.push(rest.slice(0, at));
+    parts.push(
+      // Your own mention is emphasised harder than someone else's.
+      <span key={`m${key++}`} className={`rounded px-1 font-medium ${hit.id === me ? "bg-amber-400 text-gray-50" : "bg-gray-200 text-gray-900"}`}>
+        @{hit.name}
+      </span>
+    );
+    rest = rest.slice(at + 1 + hit.name.length);
+  }
+
+  return <>{parts.map((p, i) => (typeof p === "string" ? <span key={`t${i}`}>{p}</span> : p))}</>;
 }
 
 function Attachment({ url, name, type }: { url: string; name?: string | null; type?: string | null }) {
@@ -289,6 +364,10 @@ function Section({ title, items, activeId, onSelect, prefix = "", onlineIds }: {
               <span className="block text-sm font-medium text-gray-900 truncate">{c.name}</span>
               {c.lastMessage && <span className="block text-xs text-gray-500 truncate">{c.lastMessage.text}</span>}
             </span>
+            {c.mentionsMe && (
+              <span title="You were mentioned"
+                className="shrink-0 w-5 h-5 rounded-full bg-accent-2 text-gray-50 text-[11px] font-bold flex items-center justify-center">@</span>
+            )}
             {c.unreadCount > 0 && (
               <span className="shrink-0 min-w-5 h-5 px-1.5 rounded-full bg-accent-2 text-gray-50 text-[11px] font-bold flex items-center justify-center">
                 {c.unreadCount > 99 ? "99+" : c.unreadCount}
