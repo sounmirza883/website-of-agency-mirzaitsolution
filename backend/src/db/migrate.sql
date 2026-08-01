@@ -228,6 +228,55 @@ ALTER TABLE notifications DROP CONSTRAINT IF EXISTS admin_notifications_target_u
   ADD CONSTRAINT notifications_target_user_id_fkey FOREIGN KEY (target_user_id) REFERENCES users(id) ON DELETE SET NULL;
 
 -- ============================================================
+-- Phase 4: direct + channel chat (admin <-> employee)
+-- ============================================================
+
+-- A conversation is either a 1-on-1 DM (exactly two members, name NULL) or a
+-- named channel (any number of members).
+--
+-- Deliberately NOT built on project_messages: that table's project_id is
+-- load-bearing for every one of its authorization checks, and its `time` column
+-- is a display string ("3:04 PM") rather than a real timestamp, which unread
+-- cursors need.
+CREATE TABLE IF NOT EXISTS chat_conversations (
+  id SERIAL PRIMARY KEY,
+  kind TEXT NOT NULL DEFAULT 'dm' CHECK (kind IN ('dm', 'channel')),
+  name TEXT,
+  created_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_message_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Membership doubles as the per-user read cursor: unread count is the number of
+-- messages newer than last_read_at that the member didn't send themselves.
+--
+-- Note user_id is part of the primary key, so unlike every content table above
+-- it can NOT be nulled on user deletion — these rows are deleted instead
+-- (handled explicitly in authStore.ts, which otherwise nulls user references).
+CREATE TABLE IF NOT EXISTS chat_members (
+  conversation_id INTEGER NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  last_read_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (conversation_id, user_id)
+);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+  id SERIAL PRIMARY KEY,
+  conversation_id INTEGER NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
+  sender_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  text TEXT,
+  attachment_path TEXT,
+  attachment_name TEXT,
+  attachment_type TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- A thread is always read for one conversation at a time, oldest-first by id;
+-- the sidebar reads every conversation a single user belongs to.
+CREATE INDEX IF NOT EXISTS chat_messages_conversation_idx ON chat_messages (conversation_id, id);
+CREATE INDEX IF NOT EXISTS chat_members_user_idx ON chat_members (user_id);
+
+-- ============================================================
 -- Seed Data
 -- ============================================================
 

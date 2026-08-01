@@ -233,6 +233,18 @@ const USER_REFERENCES: Array<[table: string, column: string]> = [
   ["notifications", "created_by"],
   ["notifications", "target_user_id"],
   ["users", "created_by"],
+  ["chat_messages", "sender_id"],
+  ["chat_conversations", "created_by"],
+];
+
+/**
+ * Tables whose user reference is part of a primary key, so it can't be nulled
+ * like the rows above — the row itself has to go. Chat membership is the only
+ * one: a membership row for a deleted user is meaningless, and its messages
+ * survive anyway (chat_messages.sender_id is nulled above, not deleted).
+ */
+const USER_MEMBERSHIPS: Array<[table: string, column: string]> = [
+  ["chat_members", "user_id"],
 ];
 
 export async function deleteUser(id: number): Promise<boolean> {
@@ -253,6 +265,13 @@ export async function deleteUser(id: number): Promise<boolean> {
     // database — skip it rather than blocking the delete.
     if (error && !/does not exist|schema cache/i.test(error.message)) {
       throw new Error(`Failed detaching ${table}.${column}: ${error.message}`);
+    }
+  }
+
+  for (const [table, column] of USER_MEMBERSHIPS) {
+    const { error } = await supabase.from(table).delete().eq(column, id);
+    if (error && !/does not exist|schema cache/i.test(error.message)) {
+      throw new Error(`Failed removing ${table}.${column}: ${error.message}`);
     }
   }
 

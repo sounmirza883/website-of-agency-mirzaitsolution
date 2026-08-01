@@ -41,6 +41,15 @@ CREATE TABLE client_tickets (id TEXT PRIMARY KEY, subject TEXT NOT NULL, status 
 -- Chat, scoped to a project (admin can read/send on any; employee/client only on their own)
 CREATE TABLE project_messages (id SERIAL PRIMARY KEY, project_id INTEGER REFERENCES admin_projects(id) ON DELETE SET NULL, sender_id INTEGER REFERENCES users(id) ON DELETE SET NULL, sender_role TEXT NOT NULL DEFAULT 'client', text TEXT NOT NULL, time TEXT NOT NULL, client_id INTEGER REFERENCES users(id) ON DELETE SET NULL);
 
+-- Direct + channel chat between staff (admin <-> employee), independent of projects.
+-- chat_members.user_id is part of the PK, so it is deleted rather than nulled when
+-- a user is removed — unlike the content tables, which orphan.
+CREATE TABLE chat_conversations (id SERIAL PRIMARY KEY, kind TEXT NOT NULL DEFAULT 'dm' CHECK (kind IN ('dm', 'channel')), name TEXT, created_by INTEGER REFERENCES users(id) ON DELETE SET NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), last_message_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE chat_members (conversation_id INTEGER NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, last_read_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (conversation_id, user_id));
+CREATE TABLE chat_messages (id SERIAL PRIMARY KEY, conversation_id INTEGER NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE, sender_id INTEGER REFERENCES users(id) ON DELETE SET NULL, text TEXT, attachment_path TEXT, attachment_name TEXT, attachment_type TEXT, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE INDEX chat_messages_conversation_idx ON chat_messages (conversation_id, id);
+CREATE INDEX chat_members_user_idx ON chat_members (user_id);
+
 -- Shared file storage (employee uploads, optionally visible to a client)
 CREATE TABLE project_files (
   id SERIAL PRIMARY KEY,

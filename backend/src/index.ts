@@ -7,6 +7,7 @@ import adminRoutes from "./routes/admin.js";
 import employeeRoutes from "./routes/employee.js";
 import clientRoutes from "./routes/client.js";
 import authRoutes from "./routes/auth.js";
+import chatRoutes from "./routes/chat.js";
 
 const app = express();
 const port = process.env.PORT || 4000;
@@ -40,6 +41,7 @@ app.use("/api/website", websiteRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/employee", employeeRoutes);
 app.use("/api/client", clientRoutes);
+app.use("/api/chat", chatRoutes);
 
 // Last-resort error handler: turns a thrown/forwarded error into a 500 response
 // rather than letting it escape as an unhandled rejection (which crashes Node).
