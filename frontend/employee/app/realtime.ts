@@ -26,9 +26,12 @@ export const realtime =
 /** Fires whenever any conversation this user belongs to receives a message. */
 export function useChatActivity(userId: number | undefined, onActivity: (conversationId: number) => void) {
   // Held in a ref so a new inline callback each render doesn't tear down and
-  // rebuild the websocket.
+  // rebuild the websocket. Assigned in an effect, never during render, which
+  // React forbids under concurrent rendering.
   const callback = useRef(onActivity);
-  callback.current = onActivity;
+  useEffect(() => {
+    callback.current = onActivity;
+  }, [onActivity]);
 
   useEffect(() => {
     if (!realtime || !userId) return;

@@ -120,6 +120,13 @@ export function sendProjectMessage(token: string, projectId: number, text: strin
 
 // Staff chat (DMs + channels between admins and employees), separate from the
 // project-scoped messages above.
+async function apiUpload<T>(path: string, token: string, formData: FormData): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
+
 export function fetchChatContacts(token: string) { return apiGet<any[]>("/chat/contacts", token); }
 export function fetchChatConversations(token: string) { return apiGet<any[]>("/chat/conversations", token); }
 export function fetchChatMessages(token: string, conversationId: number) {
@@ -136,4 +143,10 @@ export function createChatChannel(token: string, payload: { name: string; member
 }
 export function markChatRead(token: string, conversationId: number) {
   return apiPost<any>(`/chat/conversations/${conversationId}/read`, token, {});
+}
+export function sendChatAttachment(token: string, conversationId: number, file: File, text: string) {
+  const fd = new FormData();
+  fd.append("file", file);
+  if (text) fd.append("text", text);
+  return apiUpload<any>(`/chat/conversations/${conversationId}/attachments`, token, fd);
 }

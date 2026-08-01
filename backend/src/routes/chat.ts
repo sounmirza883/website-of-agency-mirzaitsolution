@@ -1,5 +1,7 @@
 import { Router } from "express";
+import multer from "multer";
 import { supabase } from "../supabase.js";
+import { supabaseAdmin, FILES_BUCKET } from "../supabaseAdmin.js";
 import { listUsersByRole } from "../authStore.js";
 import { type AuthedRequest, requireAuth, requireRole } from "../middleware/auth.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
@@ -15,10 +17,30 @@ import { broadcastChatActivity } from "../realtime.js";
  */
 const router = Router();
 
+// Same 25 MB cap as the other upload routes in this codebase.
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
+
 const staffOnly = [requireAuth, requireRole("admin", "employee")] as const;
 
 const MESSAGE_SELECT =
-  "id,conversationId:conversation_id,senderId:sender_id,text,attachmentName:attachment_name,attachmentType:attachment_type,createdAt:created_at,sender:users(name,role)";
+  "id,conversationId:conversation_id,senderId:sender_id,text,attachmentPath:attachment_path,attachmentName:attachment_name,attachmentType:attachment_type,createdAt:created_at,sender:users(name,role)";
+
+/**
+ * Swap stored object paths for short-lived signed URLs. The bucket is private,
+ * so a raw path is useless to the browser on its own — and because the URL
+ * expires in an hour, it can't be passed around as a permanent public link.
+ */
+async function attachSignedUrls<T extends { attachmentPath?: string | null }>(rows: T[]): Promise<Array<Omit<T, "attachmentPath"> & { attachmentUrl: string | null }>> {
+  return Promise.all(
+    rows.map(async ({ attachmentPath, ...row }) => {
+      // The storage path is an internal detail — sign it, then drop it rather
+      // than handing the client a key it has no use for.
+      if (!attachmentPath || !supabaseAdmin) return { ...row, attachmentUrl: null };
+      const { data } = await supabaseAdmin.storage.from(FILES_BUCKET).createSignedUrl(attachmentPath, 3600);
+      return { ...row, attachmentUrl: data?.signedUrl ?? null };
+    })
+  );
+}
 
 /** True when the user belongs to the conversation. Every handler gates on this. */
 async function isMember(conversationId: number, userId: number): Promise<boolean> {
@@ -188,7 +210,7 @@ router.get("/conversations/:id/messages", ...staffOnly, async (req: AuthedReques
 
   const { data, error } = await supabase.from("chat_messages").select(MESSAGE_SELECT).eq("conversation_id", conversationId).order("id", { ascending: true });
   if (error) return res.status(500).json({ error: error.message });
-  return res.json(data);
+  return res.json(await attachSignedUrls((data ?? []) as any[]));
 });
 
 router.post("/conversations/:id/messages", ...staffOnly, async (req: AuthedRequest, res) => {
@@ -215,6 +237,45 @@ router.post("/conversations/:id/messages", ...staffOnly, async (req: AuthedReque
   await broadcastChatActivity((members.data ?? []).map((m) => m.user_id), conversationId);
 
   return res.status(201).json(data);
+});
+
+/**
+ * Send a file or image. Separate from the JSON route above because this one is
+ * multipart; an optional caption rides along in the same message row.
+ */
+router.post("/conversations/:id/attachments", ...staffOnly, upload.single("file"), async (req: AuthedRequest, res) => {
+  const conversationId = Number(req.params.id);
+  const file = req.file;
+  const caption = typeof req.body?.text === "string" ? req.body.text.trim() : "";
+  if (!conversationId) return res.status(400).json({ error: "Invalid conversation id" });
+  if (!file) return res.status(400).json({ error: "file is required" });
+  if (!supabase || !supabaseAdmin) return res.status(503).json({ error: "File storage not configured" });
+  // Checked before the upload so a non-member can't write into the bucket at all.
+  if (!(await isMember(conversationId, req.user!.id))) return res.status(403).json({ error: "You are not a member of this conversation" });
+
+  const path = `chat/${conversationId}/${Date.now()}-${file.originalname}`;
+  const { error: uploadError } = await supabaseAdmin.storage.from(FILES_BUCKET).upload(path, file.buffer, { contentType: file.mimetype });
+  if (uploadError) return res.status(500).json({ error: uploadError.message });
+
+  const { data, error } = await supabase
+    .from("chat_messages")
+    .insert({
+      conversation_id: conversationId,
+      sender_id: req.user!.id,
+      text: caption || null,
+      attachment_path: path,
+      attachment_name: file.originalname,
+      attachment_type: file.mimetype,
+    })
+    .select(MESSAGE_SELECT)
+    .single();
+  if (error) return res.status(500).json({ error: error.message });
+
+  await supabase.from("chat_conversations").update({ last_message_at: new Date().toISOString() }).eq("id", conversationId);
+  const members = await supabase.from("chat_members").select("user_id").eq("conversation_id", conversationId);
+  await broadcastChatActivity((members.data ?? []).map((m) => m.user_id), conversationId);
+
+  return res.status(201).json((await attachSignedUrls([data as any]))[0]);
 });
 
 /**

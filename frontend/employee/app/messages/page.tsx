@@ -4,7 +4,25 @@ import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../auth";
 import { useChatActivity, useStaffPresence } from "../realtime";
-import { useChatContacts, useChatConversations, useChatMessages, useSendChatMessage, useOpenChatDm, useMarkChatRead } from "../hooks";
+import { useChatContacts, useChatConversations, useChatMessages, useSendChatMessage, useSendChatAttachment, useOpenChatDm, useMarkChatRead } from "../hooks";
+
+interface ChatMessage {
+  id: number;
+  senderId: number | null;
+  text: string | null;
+  attachmentName: string | null;
+  attachmentType: string | null;
+  attachmentUrl: string | null;
+  createdAt: string;
+  sender: { name: string; role: string } | null;
+}
+
+interface Contact {
+  id: number;
+  name: string;
+  role: string;
+  position: string | null;
+}
 
 interface Conversation {
   id: number;
@@ -36,11 +54,14 @@ export default function MessagesPage() {
   // restricts channel creation to admins, so there is no channel form here.
   const [pickerOpen, setPickerOpen] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   const { data: conversations } = useChatConversations();
   const { data: contacts } = useChatContacts();
   const { data: messages, isLoading: loadingMessages } = useChatMessages(activeId);
   const sendMessage = useSendChatMessage();
+  const sendAttachment = useSendChatAttachment();
   const openDm = useOpenChatDm();
   const markRead = useMarkChatRead();
 
@@ -70,9 +91,20 @@ export default function MessagesPage() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages?.length, activeId]);
 
+  const sending = sendMessage.isPending || sendAttachment.isPending;
+
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
-    if (!activeId || !text.trim()) return;
+    if (!activeId) return;
+    // A file may ride with an optional caption; without one it's a plain message.
+    if (pendingFile) {
+      await sendAttachment.mutateAsync({ conversationId: activeId, file: pendingFile, text: text.trim() });
+      setPendingFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      setText("");
+      return;
+    }
+    if (!text.trim()) return;
     await sendMessage.mutateAsync({ conversationId: activeId, text: text.trim() });
     setText("");
   }
@@ -126,7 +158,7 @@ export default function MessagesPage() {
                 {loadingMessages ? (
                   <p className="text-sm text-gray-400 text-center mt-8">Loading…</p>
                 ) : messages?.length ? (
-                  messages.map((m: any) => {
+                  messages.map((m: ChatMessage) => {
                     const isMe = m.senderId === user?.id;
                     return (
                       <div key={m.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
@@ -134,6 +166,9 @@ export default function MessagesPage() {
                           {isMe ? "You" : m.sender?.name ?? "Deleted user"} · {timeLabel(m.createdAt)}
                         </span>
                         <div className={`max-w-[70%] px-4 py-2 rounded-2xl text-sm ${isMe ? "bg-accent-2 text-gray-50 rounded-br-sm" : "bg-gray-100 text-gray-900 rounded-bl-sm"}`}>
+                          {m.attachmentUrl && (
+                            <Attachment url={m.attachmentUrl} name={m.attachmentName} type={m.attachmentType} />
+                          )}
                           {m.text}
                         </div>
                       </div>
@@ -145,16 +180,29 @@ export default function MessagesPage() {
                 <div ref={bottomRef} />
               </div>
 
-              <form onSubmit={handleSend} className="border-t border-gray-200 p-4 flex gap-2 shrink-0">
+              <form onSubmit={handleSend} className="border-t border-gray-200 p-4 shrink-0">
+                {pendingFile && (
+                  <div className="flex items-center gap-2 mb-2 text-xs text-gray-600 bg-gray-100 rounded-lg px-3 py-2">
+                    <span className="truncate flex-1">{pendingFile.name}</span>
+                    <button type="button" onClick={() => { setPendingFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}
+                      className="text-gray-500 hover:text-gray-900">Remove</button>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <input ref={fileInputRef} type="file" className="hidden"
+                    onChange={(e) => setPendingFile(e.target.files?.[0] ?? null)} />
+                  <button type="button" onClick={() => fileInputRef.current?.click()} title="Attach a file"
+                    className="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:text-gray-900">+</button>
                 <input
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  placeholder={active.kind === "channel" ? `Message # ${active.name}` : `Message ${active.name}`}
+                  placeholder={pendingFile ? "Add a caption (optional)" : active.kind === "channel" ? `Message # ${active.name}` : `Message ${active.name}`}
                   className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm"
                 />
-                <button type="submit" disabled={sendMessage.isPending || !text.trim()} className="bg-accent-2 text-gray-50 text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">
-                  {sendMessage.isPending ? "Sending…" : "Send"}
-                </button>
+                  <button type="submit" disabled={sending || (!text.trim() && !pendingFile)} className="bg-accent-2 text-gray-50 text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">
+                    {sending ? "Sending…" : "Send"}
+                  </button>
+                </div>
               </form>
             </>
           )}
@@ -166,7 +214,7 @@ export default function MessagesPage() {
           <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md bg-white rounded-xl p-6 max-h-[80vh] overflow-auto">
             <h2 className="text-lg font-bold mb-4">Start a conversation</h2>
             <div className="space-y-1">
-              {contacts?.length ? contacts.map((c: any) => (
+              {contacts?.length ? contacts.map((c: Contact) => (
                 <button key={c.id} onClick={() => handleStartDm(c.id)} disabled={openDm.isPending}
                   className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-gray-100 text-left disabled:opacity-50">
                   <Avatar name={c.name} />
@@ -181,6 +229,24 @@ export default function MessagesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function Attachment({ url, name, type }: { url: string; name?: string | null; type?: string | null }) {
+  // Images preview inline; anything else gets a download link, since the signed
+  // URL expires in an hour and is not a permanent public link.
+  if (type?.startsWith("image/")) {
+    return (
+      <a href={url} target="_blank" rel="noreferrer" className="block mb-1">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={url} alt={name ?? "attachment"} className="max-h-60 rounded-lg" />
+      </a>
+    );
+  }
+  return (
+    <a href={url} target="_blank" rel="noreferrer" className="block mb-1 underline break-all">
+      {name ?? "Download"}
+    </a>
   );
 }
 

@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
 import { fetchMyClients, createClient, fetchAssignedProjects, fetchEmpTasks, fetchEmpFiles, fetchStatusUpdates, fetchAttendance, fetchLeaveRequests, createTask, updateTaskStatus, postStatusUpdate, checkIn, checkOut, requestLeave, uploadFile, fetchProjectMessages, sendProjectMessage, fetchEmpNotifications, createEmpNotification, changePassword, fetchEmpTickets, setEmpTicketStatus,
-  fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, markChatRead } from "./queries";
+  fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, markChatRead, sendChatAttachment } from "./queries";
 
 export function useChangePassword() {
   const { token } = useAuth();
@@ -224,5 +224,18 @@ export function useMarkChatRead() {
   return useMutation({
     mutationFn: (conversationId: number) => markChatRead(token!, conversationId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["chatConversations"] }),
+  });
+}
+
+export function useSendChatAttachment() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ conversationId, file, text }: { conversationId: number; file: File; text: string }) =>
+      sendChatAttachment(token!, conversationId, file, text),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["chatMessages", vars.conversationId] });
+      qc.invalidateQueries({ queryKey: ["chatConversations"] });
+    },
   });
 }

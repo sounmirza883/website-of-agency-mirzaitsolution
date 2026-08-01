@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
 import { fetchUsers, fetchEmployees, fetchClientsList, createEmployee, createClient, setEmployeePermission, fetchServices, fetchProjects, fetchInvoices, fetchNotifications, fetchPortfolioList, fetchContactSubmissions, deleteLead, fetchPaymentSettings, fetchAdminTickets, setTicketStatus, createService, createProject, updateProjectStatus, assignProjectEmployee, createInvoice, verifyInvoice, createNotification, createPortfolioItem, setUserStatus, updateUserDetails, deleteUserAccount, fetchAdminAttendance, fetchAdminLeaveRequests, setLeaveRequestStatus, fetchProjectMessages, sendProjectMessage, changePassword, updatePaymentSettings,
-  fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, createChatChannel, markChatRead } from "./queries";
+  fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, createChatChannel, markChatRead, sendChatAttachment } from "./queries";
 
 export function useChangePassword() {
   const { token } = useAuth();
@@ -333,5 +333,18 @@ export function useSendProjectMessage() {
   return useMutation({
     mutationFn: ({ projectId, text }: { projectId: number; text: string }) => sendProjectMessage(token!, projectId, text),
     onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: ["projectMessages", vars.projectId] }),
+  });
+}
+
+export function useSendChatAttachment() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ conversationId, file, text }: { conversationId: number; file: File; text: string }) =>
+      sendChatAttachment(token!, conversationId, file, text),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["chatMessages", vars.conversationId] });
+      qc.invalidateQueries({ queryKey: ["chatConversations"] });
+    },
   });
 }

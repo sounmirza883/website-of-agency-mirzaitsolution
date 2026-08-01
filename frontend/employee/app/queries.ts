@@ -92,3 +92,9 @@ export function openChatDm(token: string, userId: number) {
 export function markChatRead(token: string, conversationId: number) {
   return apiPost<any>(`/chat/conversations/${conversationId}/read`, token, {});
 }
+export function sendChatAttachment(token: string, conversationId: number, file: File, text: string) {
+  const fd = new FormData();
+  fd.append("file", file);
+  if (text) fd.append("text", text);
+  return apiUpload<any>(`/chat/conversations/${conversationId}/attachments`, token, fd);
+}
