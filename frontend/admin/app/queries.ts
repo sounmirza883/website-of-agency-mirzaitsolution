@@ -155,3 +155,24 @@ export function sendChatAttachment(token: string, conversationId: number, file: 
   if (mentionIds.length) fd.append("mentionIds", JSON.stringify(mentionIds));
   return apiUpload<any>(`/chat/conversations/${conversationId}/attachments`, token, fd);
 }
+export function editChatMessage(token: string, conversationId: number, messageId: number, text: string, mentionIds: number[] = []) {
+  return apiPatch<any>(`/chat/conversations/${conversationId}/messages/${messageId}`, token, { text, mentionIds });
+}
+export function deleteChatMessage(token: string, conversationId: number, messageId: number) {
+  return apiDelete(`/chat/conversations/${conversationId}/messages/${messageId}`, token);
+}
+export function leaveChatConversation(token: string, conversationId: number) {
+  return apiPost<any>(`/chat/conversations/${conversationId}/leave`, token, {});
+}
+export function renameChatChannel(token: string, conversationId: number, name: string) {
+  return apiPatch<any>(`/chat/conversations/${conversationId}`, token, { name });
+}
+export function addChatMember(token: string, conversationId: number, userId: number) {
+  return apiPost<any>(`/chat/conversations/${conversationId}/members`, token, { userId });
+}
+export function removeChatMember(token: string, conversationId: number, userId: number) {
+  return apiDelete(`/chat/conversations/${conversationId}/members/${userId}`, token);
+}
+export function deleteChatChannel(token: string, conversationId: number) {
+  return apiDelete(`/chat/conversations/${conversationId}`, token);
+}

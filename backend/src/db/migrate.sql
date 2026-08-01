@@ -286,6 +286,10 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 );
 -- Re-runnable upgrade for databases created before mentions existed.
 ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS mentions INTEGER[] NOT NULL DEFAULT '{}';
+-- Edits and deletes. Deletion is soft: the row stays so replies and paging
+-- keyed on id don't develop holes, and the client renders a tombstone.
+ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS edited_at TIMESTAMPTZ;
+ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
 
 -- A thread is always read for one conversation at a time, oldest-first by id;
 -- the sidebar reads every conversation a single user belongs to.
@@ -330,7 +334,10 @@ AS $$
     (ARRAY_AGG(COALESCE(msg.text, msg.attachment_name) ORDER BY msg.id DESC))[1],
     MAX(msg.created_at)
   FROM chat_members m
-  LEFT JOIN chat_messages msg ON msg.conversation_id = m.conversation_id
+  -- Deleted messages are excluded from the join entirely, so they can't leave
+  -- an unread badge behind or sit in the sidebar as the last preview.
+  LEFT JOIN chat_messages msg
+    ON msg.conversation_id = m.conversation_id AND msg.deleted_at IS NULL
   WHERE m.user_id = p_user_id
   GROUP BY m.conversation_id;
 $$;

@@ -7,6 +7,7 @@ import { useChatActivity, useStaffPresence } from "../realtime";
 import {
   useChatContacts, useChatConversations, useChatMessages,
   useSendChatMessage, useSendChatAttachment, useOpenChatDm, useCreateChatChannel, useMarkChatRead,
+  useEditChatMessage, useDeleteChatMessage, useLeaveChatConversation, useRenameChatChannel, useAddChatMember, useRemoveChatMember, useDeleteChatChannel,
 } from "../hooks";
 
 interface ChatMessage {
@@ -17,6 +18,8 @@ interface ChatMessage {
   attachmentName: string | null;
   attachmentType: string | null;
   attachmentUrl: string | null;
+  editedAt: string | null;
+  deletedAt: string | null;
   createdAt: string;
   sender: { name: string; role: string } | null;
 }
@@ -66,6 +69,10 @@ export default function MessagesPage() {
   // re-derived from the final text on send, so editing or deleting a name can't
   // leave a stale id behind.
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editText, setEditText] = useState("");
+  const [showSettings, setShowSettings] = useState(false);
+  const [renameValue, setRenameValue] = useState("");
 
   const { data: conversations } = useChatConversations();
   const { data: contacts } = useChatContacts();
@@ -81,6 +88,13 @@ export default function MessagesPage() {
   const openDm = useOpenChatDm();
   const createChannel = useCreateChatChannel();
   const markRead = useMarkChatRead();
+  const editMessage = useEditChatMessage();
+  const deleteMessage = useDeleteChatMessage();
+  const leaveConversation = useLeaveChatConversation();
+  const renameChannel = useRenameChatChannel();
+  const addMember = useAddChatMember();
+  const removeMember = useRemoveChatMember();
+  const deleteChannel = useDeleteChatChannel();
 
   const list: Conversation[] = conversations ?? [];
   const active = list.find((c) => c.id === activeId) ?? null;
@@ -152,6 +166,27 @@ export default function MessagesPage() {
     setMentionQuery(null);
   }
 
+  async function handleSaveEdit(messageId: number) {
+    if (!activeId || !editText.trim()) return;
+    await editMessage.mutateAsync({ conversationId: activeId, messageId, text: editText.trim(), mentionIds: resolveMentions(editText) });
+    setEditingId(null);
+    setEditText("");
+  }
+
+  async function handleDelete(messageId: number) {
+    if (!activeId) return;
+    if (!window.confirm("Delete this message? This can't be undone.")) return;
+    await deleteMessage.mutateAsync({ conversationId: activeId, messageId });
+  }
+
+  async function handleLeave() {
+    if (!activeId || !active) return;
+    if (!window.confirm(`Leave # ${active.name}?`)) return;
+    await leaveConversation.mutateAsync(activeId);
+    setActiveId(null);
+    setShowSettings(false);
+  }
+
   async function handleStartDm(userId: number) {
     const conv = await openDm.mutateAsync(userId);
     setPicker(null);
@@ -199,7 +234,8 @@ export default function MessagesPage() {
             </div>
           ) : (
             <>
-              <header className="px-5 py-3 border-b border-gray-200 shrink-0">
+              <header className="px-5 py-3 border-b border-gray-200 shrink-0 flex items-start justify-between gap-3">
+                <div>
                 <div className="font-semibold text-gray-900">{active.kind === "channel" ? `# ${active.name}` : active.name}</div>
                 <div className="text-xs text-gray-500">
                   {active.kind === "channel"
@@ -208,6 +244,10 @@ export default function MessagesPage() {
                       ? "Online"
                       : "Offline"}
                 </div>
+                </div>
+                {active.kind === "channel" && (
+                  <button onClick={() => setShowSettings(true)} className="text-xs text-gray-500 hover:text-gray-900 shrink-0">Settings</button>
+                )}
               </header>
 
               <div className="flex-1 overflow-auto p-5 space-y-3">
@@ -229,12 +269,41 @@ export default function MessagesPage() {
                         <span className="text-xs text-gray-400 mb-1">
                           {isMe ? "You" : m.sender?.name ?? "Deleted user"} · {timeLabel(m.createdAt)}
                         </span>
-                        <div className={`max-w-[70%] px-4 py-2 rounded-2xl text-sm ${isMe ? "bg-accent text-gray-50 rounded-br-sm" : "bg-gray-100 text-gray-900 rounded-bl-sm"}`}>
-                          {m.attachmentUrl && (
-                            <Attachment url={m.attachmentUrl} name={m.attachmentName} type={m.attachmentType} />
-                          )}
-                          <MessageText text={m.text} members={active.members} me={user?.id} />
-                        </div>
+                        {m.deletedAt ? (
+                          <div className="max-w-[70%] px-4 py-2 rounded-2xl text-sm italic text-gray-400 border border-gray-200">
+                            This message was deleted
+                          </div>
+                        ) : editingId === m.id ? (
+                          <div className="w-full max-w-[70%] flex gap-2">
+                            <input value={editText} onChange={(e) => setEditText(e.target.value)} autoFocus
+                              onKeyDown={(e) => { if (e.key === "Escape") setEditingId(null); }}
+                              className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                            <button onClick={() => handleSaveEdit(m.id)} disabled={editMessage.isPending || !editText.trim()}
+                              className="bg-accent text-gray-50 text-xs font-medium px-3 py-2 rounded-lg disabled:opacity-50">Save</button>
+                            <button onClick={() => setEditingId(null)} className="text-xs text-gray-500 px-2">Cancel</button>
+                          </div>
+                        ) : (
+                          <div className="group flex items-center gap-2">
+                            {isMe && (
+                              <span className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 text-xs text-gray-500">
+                                <button onClick={() => { setEditingId(m.id); setEditText(m.text ?? ""); }} className="hover:text-gray-900">Edit</button>
+                                <button onClick={() => handleDelete(m.id)} className="hover:text-gray-900">Delete</button>
+                              </span>
+                            )}
+                            {!isMe && true && (
+                              <span className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-gray-500 order-last">
+                                <button onClick={() => handleDelete(m.id)} className="hover:text-gray-900">Delete</button>
+                              </span>
+                            )}
+                            <div className={`px-4 py-2 rounded-2xl text-sm ${isMe ? "bg-accent text-gray-50 rounded-br-sm" : "bg-gray-100 text-gray-900 rounded-bl-sm"}`}>
+                              {m.attachmentUrl && (
+                                <Attachment url={m.attachmentUrl} name={m.attachmentName} type={m.attachmentType} />
+                              )}
+                              <MessageText text={m.text} members={active.members} me={user?.id} />
+                              {m.editedAt && <span className="ml-2 text-[11px] opacity-70">(edited)</span>}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -327,6 +396,64 @@ export default function MessagesPage() {
                 </div>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {showSettings && active && active.kind === "channel" && (
+        <div className="fixed inset-0 bg-black/30 flex items-center justify-center z-50 p-4" onClick={() => setShowSettings(false)}>
+          <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md bg-white rounded-xl p-6 max-h-[80vh] overflow-auto">
+            <h2 className="text-lg font-bold mb-4"># {active.name}</h2>
+
+            <p className="text-xs text-gray-500 mb-2">Rename</p>
+            <form className="flex gap-2 mb-5" onSubmit={async (e) => {
+              e.preventDefault();
+              const next = renameValue.trim();
+              if (!next || !activeId) return;
+              await renameChannel.mutateAsync({ conversationId: activeId, name: next });
+              setRenameValue("");
+            }}>
+              <input value={renameValue} onChange={(e) => setRenameValue(e.target.value)} placeholder={active.name}
+                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <button type="submit" disabled={renameChannel.isPending || !renameValue.trim()}
+                className="bg-accent text-gray-50 text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">Save</button>
+            </form>
+
+            <p className="text-xs text-gray-500 mb-2">Members</p>
+            <div className="space-y-1 mb-4">
+              {active.members.map((m) => (
+                <div key={m.id} className="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-gray-100">
+                  <span className="text-sm text-gray-900">{m.name} <span className="text-xs text-gray-500">{m.role}</span></span>
+                  {m.id !== user?.id && (
+                    <button onClick={() => activeId && removeMember.mutate({ conversationId: activeId, userId: m.id })}
+                      className="text-xs text-gray-500 hover:text-gray-900">Remove</button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <p className="text-xs text-gray-500 mb-2">Add someone</p>
+            <div className="space-y-1 mb-5">
+              {(contacts ?? []).filter((c: Contact) => !active.members.some((m) => m.id === c.id)).map((c: Contact) => (
+                <button key={c.id} onClick={() => activeId && addMember.mutate({ conversationId: activeId, userId: c.id })}
+                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 text-sm text-gray-900">
+                  {c.name} <span className="text-xs text-gray-500">{c.position || c.role}</span>
+                </button>
+              ))}
+              {(contacts ?? []).every((c: Contact) => active.members.some((m) => m.id === c.id)) && (
+                <p className="text-xs text-gray-400 px-3">Everyone is already in this channel.</p>
+              )}
+            </div>
+
+            <div className="flex justify-between border-t border-gray-200 pt-4">
+              <button onClick={handleLeave} className="text-sm text-gray-600 hover:text-gray-900">Leave channel</button>
+              <button onClick={async () => {
+                if (!activeId || !window.confirm(`Delete # ${active.name} for everyone? This can't be undone.`)) return;
+                await deleteChannel.mutateAsync(activeId);
+                setActiveId(null);
+                setShowSettings(false);
+              }} className="text-sm text-red-600 hover:text-red-700">Delete channel</button>
+            </div>
           </div>
         </div>
       )}

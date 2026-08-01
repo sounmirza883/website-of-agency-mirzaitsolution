@@ -23,7 +23,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 
 const staffOnly = [requireAuth, requireRole("admin", "employee")] as const;
 
 const MESSAGE_SELECT =
-  "id,conversationId:conversation_id,senderId:sender_id,text,mentions,attachmentPath:attachment_path,attachmentName:attachment_name,attachmentType:attachment_type,createdAt:created_at,sender:users(name,role)";
+  "id,conversationId:conversation_id,senderId:sender_id,text,mentions,attachmentPath:attachment_path,attachmentName:attachment_name,attachmentType:attachment_type,editedAt:edited_at,deletedAt:deleted_at,createdAt:created_at,sender:users(name,role)";
 
 /** Multipart fields arrive as strings, so mention ids come over as JSON there. */
 function safeParseIds(raw: unknown): unknown {
@@ -351,6 +351,178 @@ router.post("/conversations/:id/attachments", ...staffOnly, upload.single("file"
  * message in the conversation. Reads the id back from the database rather than
  * using a timestamp, so app-server clock drift can't strand messages as unread.
  */
+/**
+ * Edit your own message. Only the sender, only while it still exists — an admin
+ * may remove someone's message but may not rewrite what they said.
+ */
+router.patch("/conversations/:id/messages/:messageId", ...staffOnly, asyncHandler(async (req, res) => {
+  const authed = req as AuthedRequest;
+  const conversationId = Number(req.params.id);
+  const messageId = Number(req.params.messageId);
+  const text = typeof req.body?.text === "string" ? req.body.text.trim() : "";
+  if (!conversationId || !messageId) return res.status(400).json({ error: "Invalid id" });
+  if (!text) return res.status(400).json({ error: "text is required" });
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+  if (!(await isMember(conversationId, authed.user!.id))) return res.status(403).json({ error: "You are not a member of this conversation" });
+
+  const existing = await supabase
+    .from("chat_messages")
+    .select("id,sender_id,deleted_at")
+    .eq("id", messageId)
+    .eq("conversation_id", conversationId)
+    .maybeSingle();
+  if (!existing.data) return res.status(404).json({ error: "Message not found" });
+  if (existing.data.sender_id !== authed.user!.id) return res.status(403).json({ error: "You can only edit your own messages" });
+  if (existing.data.deleted_at) return res.status(400).json({ error: "This message was deleted" });
+
+  const mentions = await validMentionIds(conversationId, req.body?.mentionIds);
+  const { data, error } = await supabase
+    .from("chat_messages")
+    .update({ text, mentions, edited_at: new Date().toISOString() })
+    .eq("id", messageId)
+    .select(MESSAGE_SELECT)
+    .single();
+  if (error) return res.status(500).json({ error: error.message });
+
+  const members = await supabase.from("chat_members").select("user_id").eq("conversation_id", conversationId);
+  await broadcastChatActivity((members.data ?? []).map((m) => m.user_id), conversationId);
+  return res.json((await attachSignedUrls([data as any]))[0]);
+}));
+
+/**
+ * Delete a message. Senders may remove their own; admins may remove anyone's,
+ * for moderation. Soft delete — the row stays so keyset paging and any future
+ * replies don't develop holes, and the client shows a tombstone.
+ */
+router.delete("/conversations/:id/messages/:messageId", ...staffOnly, asyncHandler(async (req, res) => {
+  const authed = req as AuthedRequest;
+  const conversationId = Number(req.params.id);
+  const messageId = Number(req.params.messageId);
+  if (!conversationId || !messageId) return res.status(400).json({ error: "Invalid id" });
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+  if (!(await isMember(conversationId, authed.user!.id))) return res.status(403).json({ error: "You are not a member of this conversation" });
+
+  const existing = await supabase
+    .from("chat_messages")
+    .select("id,sender_id,attachment_path")
+    .eq("id", messageId)
+    .eq("conversation_id", conversationId)
+    .maybeSingle();
+  if (!existing.data) return res.status(404).json({ error: "Message not found" });
+  const isOwn = existing.data.sender_id === authed.user!.id;
+  if (!isOwn && authed.user!.role !== "admin") return res.status(403).json({ error: "You can only delete your own messages" });
+
+  // Text and attachment metadata are cleared, not just flagged, so a deleted
+  // message stops being readable through the API at all.
+  const { error } = await supabase
+    .from("chat_messages")
+    .update({ deleted_at: new Date().toISOString(), text: null, attachment_path: null, attachment_name: null, attachment_type: null, mentions: [] })
+    .eq("id", messageId);
+  if (error) return res.status(500).json({ error: error.message });
+
+  // Drop the stored object too, otherwise deleting a message would leave its
+  // file paying for storage forever with nothing referencing it. Done after the
+  // row update so a storage hiccup can't leave the message readable.
+  if (existing.data.attachment_path && supabaseAdmin) {
+    const removal = await supabaseAdmin.storage.from(FILES_BUCKET).remove([existing.data.attachment_path]);
+    if (removal.error) console.warn("chat attachment cleanup failed:", removal.error.message);
+  }
+
+  const members = await supabase.from("chat_members").select("user_id").eq("conversation_id", conversationId);
+  await broadcastChatActivity((members.data ?? []).map((m) => m.user_id), conversationId);
+  return res.json({ success: true });
+}));
+
+/** Rename a channel. Admin-only, matching who can create one. */
+router.patch("/conversations/:id", requireAuth, requireRole("admin"), asyncHandler(async (req, res) => {
+  const conversationId = Number(req.params.id);
+  const name = typeof req.body?.name === "string" ? req.body.name.trim() : "";
+  if (!conversationId) return res.status(400).json({ error: "Invalid conversation id" });
+  if (!name) return res.status(400).json({ error: "name is required" });
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+
+  const conv = await supabase.from("chat_conversations").select("id,kind").eq("id", conversationId).maybeSingle();
+  if (!conv.data) return res.status(404).json({ error: "Conversation not found" });
+  if (conv.data.kind !== "channel") return res.status(400).json({ error: "Only channels can be renamed" });
+
+  const { data, error } = await supabase.from("chat_conversations").update({ name }).eq("id", conversationId).select("id,kind,name").single();
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json(data);
+}));
+
+/** Add someone to a channel. Admin-only. */
+router.post("/conversations/:id/members", requireAuth, requireRole("admin"), asyncHandler(async (req, res) => {
+  const conversationId = Number(req.params.id);
+  const userId = Number(req.body?.userId);
+  if (!conversationId || !userId) return res.status(400).json({ error: "conversationId and userId are required" });
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+
+  const conv = await supabase.from("chat_conversations").select("id,kind").eq("id", conversationId).maybeSingle();
+  if (!conv.data) return res.status(404).json({ error: "Conversation not found" });
+  // A DM is defined by its two participants; adding a third would silently turn
+  // it into something the rest of the code still treats as a DM.
+  if (conv.data.kind !== "channel") return res.status(400).json({ error: "Members can only be added to channels" });
+
+  const target = await supabase.from("users").select("id,role").eq("id", userId).maybeSingle();
+  if (!target.data) return res.status(404).json({ error: "User not found" });
+  if (target.data.role === "client") return res.status(403).json({ error: "Staff chat is for admins and employees only" });
+
+  // Already-a-member is a no-op rather than a duplicate-key error.
+  const { error } = await supabase.from("chat_members").upsert(
+    { conversation_id: conversationId, user_id: userId },
+    { onConflict: "conversation_id,user_id", ignoreDuplicates: true }
+  );
+  if (error) return res.status(500).json({ error: error.message });
+  return res.status(201).json({ success: true });
+}));
+
+/** Remove someone from a channel. Admin-only. */
+router.delete("/conversations/:id/members/:userId", requireAuth, requireRole("admin"), asyncHandler(async (req, res) => {
+  const conversationId = Number(req.params.id);
+  const userId = Number(req.params.userId);
+  if (!conversationId || !userId) return res.status(400).json({ error: "Invalid id" });
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+
+  const conv = await supabase.from("chat_conversations").select("id,kind").eq("id", conversationId).maybeSingle();
+  if (!conv.data) return res.status(404).json({ error: "Conversation not found" });
+  if (conv.data.kind !== "channel") return res.status(400).json({ error: "Members can only be removed from channels" });
+
+  const { error } = await supabase.from("chat_members").delete().eq("conversation_id", conversationId).eq("user_id", userId);
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json({ success: true });
+}));
+
+/** Leave a channel yourself. Anyone may leave; DMs can't be left, only ignored. */
+router.post("/conversations/:id/leave", ...staffOnly, asyncHandler(async (req, res) => {
+  const authed = req as AuthedRequest;
+  const conversationId = Number(req.params.id);
+  if (!conversationId) return res.status(400).json({ error: "Invalid conversation id" });
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+
+  const conv = await supabase.from("chat_conversations").select("id,kind").eq("id", conversationId).maybeSingle();
+  if (!conv.data) return res.status(404).json({ error: "Conversation not found" });
+  if (conv.data.kind !== "channel") return res.status(400).json({ error: "You can't leave a direct message" });
+
+  const { error } = await supabase.from("chat_members").delete().eq("conversation_id", conversationId).eq("user_id", authed.user!.id);
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json({ success: true });
+}));
+
+/** Delete a whole channel. Admin-only; members and messages cascade. */
+router.delete("/conversations/:id", requireAuth, requireRole("admin"), asyncHandler(async (req, res) => {
+  const conversationId = Number(req.params.id);
+  if (!conversationId) return res.status(400).json({ error: "Invalid conversation id" });
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+
+  const conv = await supabase.from("chat_conversations").select("id,kind").eq("id", conversationId).maybeSingle();
+  if (!conv.data) return res.status(404).json({ error: "Conversation not found" });
+  if (conv.data.kind !== "channel") return res.status(400).json({ error: "Only channels can be deleted" });
+
+  const { error } = await supabase.from("chat_conversations").delete().eq("id", conversationId);
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json({ success: true });
+}));
+
 router.post("/conversations/:id/read", ...staffOnly, asyncHandler(async (req, res) => {
   const authed = req as AuthedRequest;
   const conversationId = Number(req.params.id);

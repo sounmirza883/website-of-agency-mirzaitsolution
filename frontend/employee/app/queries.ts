@@ -24,6 +24,20 @@ async function apiPatch<T>(path: string, token: string, body: unknown): Promise<
   return data;
 }
 
+async function apiDelete(path: string, token: string): Promise<void> {
+  const res = await fetch(`${API_BASE}${path}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) {
+    let message = "Request failed";
+    try {
+      const data = await res.json();
+      message = data.error || message;
+    } catch {
+      // no JSON body
+    }
+    throw new Error(message);
+  }
+}
+
 async function apiUpload<T>(path: string, token: string, formData: FormData): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData });
   const data = await res.json();
@@ -102,4 +116,13 @@ export function sendChatAttachment(token: string, conversationId: number, file: 
   // Multipart has no array type, so ids ride as JSON and are parsed server-side.
   if (mentionIds.length) fd.append("mentionIds", JSON.stringify(mentionIds));
   return apiUpload<any>(`/chat/conversations/${conversationId}/attachments`, token, fd);
+}
+export function editChatMessage(token: string, conversationId: number, messageId: number, text: string, mentionIds: number[] = []) {
+  return apiPatch<any>(`/chat/conversations/${conversationId}/messages/${messageId}`, token, { text, mentionIds });
+}
+export function deleteChatMessage(token: string, conversationId: number, messageId: number) {
+  return apiDelete(`/chat/conversations/${conversationId}/messages/${messageId}`, token);
+}
+export function leaveChatConversation(token: string, conversationId: number) {
+  return apiPost<any>(`/chat/conversations/${conversationId}/leave`, token, {});
 }

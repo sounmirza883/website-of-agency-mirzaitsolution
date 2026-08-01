@@ -3,7 +3,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
 import { fetchUsers, fetchEmployees, fetchClientsList, createEmployee, createClient, setEmployeePermission, fetchServices, fetchProjects, fetchInvoices, fetchNotifications, fetchPortfolioList, fetchContactSubmissions, deleteLead, fetchPaymentSettings, fetchAdminTickets, setTicketStatus, createService, createProject, updateProjectStatus, assignProjectEmployee, createInvoice, verifyInvoice, createNotification, createPortfolioItem, setUserStatus, updateUserDetails, deleteUserAccount, fetchAdminAttendance, fetchAdminLeaveRequests, setLeaveRequestStatus, fetchProjectMessages, sendProjectMessage, changePassword, updatePaymentSettings,
-  fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, createChatChannel, markChatRead, sendChatAttachment } from "./queries";
+  fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, createChatChannel, markChatRead, sendChatAttachment, editChatMessage, deleteChatMessage, leaveChatConversation, renameChatChannel, addChatMember, removeChatMember, deleteChatChannel } from "./queries";
 
 export function useChangePassword() {
   const { token } = useAuth();
@@ -352,5 +352,76 @@ export function useSendChatAttachment() {
       qc.invalidateQueries({ queryKey: ["chatMessages", vars.conversationId] });
       qc.invalidateQueries({ queryKey: ["chatConversations"] });
     },
+  });
+}
+
+export function useEditChatMessage() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ conversationId, messageId, text, mentionIds }: { conversationId: number; messageId: number; text: string; mentionIds?: number[] }) =>
+      editChatMessage(token!, conversationId, messageId, text, mentionIds ?? []),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ["chatMessages", v.conversationId] });
+      qc.invalidateQueries({ queryKey: ["chatConversations"] });
+    },
+  });
+}
+
+export function useDeleteChatMessage() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ conversationId, messageId }: { conversationId: number; messageId: number }) =>
+      deleteChatMessage(token!, conversationId, messageId),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ["chatMessages", v.conversationId] });
+      qc.invalidateQueries({ queryKey: ["chatConversations"] });
+    },
+  });
+}
+
+export function useLeaveChatConversation() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId: number) => leaveChatConversation(token!, conversationId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["chatConversations"] }),
+  });
+}
+
+export function useRenameChatChannel() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ conversationId, name }: { conversationId: number; name: string }) => renameChatChannel(token!, conversationId, name),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["chatConversations"] }),
+  });
+}
+
+export function useAddChatMember() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ conversationId, userId }: { conversationId: number; userId: number }) => addChatMember(token!, conversationId, userId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["chatConversations"] }),
+  });
+}
+
+export function useRemoveChatMember() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ conversationId, userId }: { conversationId: number; userId: number }) => removeChatMember(token!, conversationId, userId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["chatConversations"] }),
+  });
+}
+
+export function useDeleteChatChannel() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId: number) => deleteChatChannel(token!, conversationId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["chatConversations"] }),
   });
 }

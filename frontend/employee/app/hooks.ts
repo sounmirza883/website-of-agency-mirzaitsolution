@@ -3,7 +3,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
 import { fetchMyClients, createClient, fetchAssignedProjects, fetchEmpTasks, fetchEmpFiles, fetchStatusUpdates, fetchAttendance, fetchLeaveRequests, createTask, updateTaskStatus, postStatusUpdate, checkIn, checkOut, requestLeave, uploadFile, fetchProjectMessages, sendProjectMessage, fetchEmpNotifications, createEmpNotification, changePassword, fetchEmpTickets, setEmpTicketStatus,
-  fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, markChatRead, sendChatAttachment } from "./queries";
+  fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, markChatRead, sendChatAttachment, editChatMessage, deleteChatMessage, leaveChatConversation } from "./queries";
 
 export function useChangePassword() {
   const { token } = useAuth();
@@ -243,5 +243,40 @@ export function useSendChatAttachment() {
       qc.invalidateQueries({ queryKey: ["chatMessages", vars.conversationId] });
       qc.invalidateQueries({ queryKey: ["chatConversations"] });
     },
+  });
+}
+
+export function useEditChatMessage() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ conversationId, messageId, text, mentionIds }: { conversationId: number; messageId: number; text: string; mentionIds?: number[] }) =>
+      editChatMessage(token!, conversationId, messageId, text, mentionIds ?? []),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ["chatMessages", v.conversationId] });
+      qc.invalidateQueries({ queryKey: ["chatConversations"] });
+    },
+  });
+}
+
+export function useDeleteChatMessage() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ conversationId, messageId }: { conversationId: number; messageId: number }) =>
+      deleteChatMessage(token!, conversationId, messageId),
+    onSuccess: (_d, v) => {
+      qc.invalidateQueries({ queryKey: ["chatMessages", v.conversationId] });
+      qc.invalidateQueries({ queryKey: ["chatConversations"] });
+    },
+  });
+}
+
+export function useLeaveChatConversation() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId: number) => leaveChatConversation(token!, conversationId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["chatConversations"] }),
   });
 }
