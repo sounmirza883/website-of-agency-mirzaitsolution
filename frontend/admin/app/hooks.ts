@@ -2,7 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
-import { fetchUsers, fetchEmployees, fetchClientsList, createEmployee, createClient, setEmployeePermission, fetchServices, fetchProjects, fetchInvoices, fetchNotifications, fetchPortfolioList, fetchContactSubmissions, deleteLead, fetchPaymentSettings, fetchAdminTickets, setTicketStatus, createService, createProject, updateProjectStatus, assignProjectEmployee, createInvoice, verifyInvoice, createNotification, createPortfolioItem, setUserStatus, updateUserDetails, deleteUserAccount, fetchAdminAttendance, fetchAdminLeaveRequests, setLeaveRequestStatus, fetchProjectMessages, sendProjectMessage, changePassword, updatePaymentSettings } from "./queries";
+import { fetchUsers, fetchEmployees, fetchClientsList, createEmployee, createClient, setEmployeePermission, fetchServices, fetchProjects, fetchInvoices, fetchNotifications, fetchPortfolioList, fetchContactSubmissions, deleteLead, fetchPaymentSettings, fetchAdminTickets, setTicketStatus, createService, createProject, updateProjectStatus, assignProjectEmployee, createInvoice, verifyInvoice, createNotification, createPortfolioItem, setUserStatus, updateUserDetails, deleteUserAccount, fetchAdminAttendance, fetchAdminLeaveRequests, setLeaveRequestStatus, fetchProjectMessages, sendProjectMessage, changePassword, updatePaymentSettings,
+  fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, createChatChannel, markChatRead } from "./queries";
 
 export function useChangePassword() {
   const { token } = useAuth();
@@ -260,6 +261,69 @@ export function useProjectMessages(projectId: number | null | undefined) {
     queryFn: () => fetchProjectMessages(token!, projectId!),
     enabled: !!token && !!projectId,
     refetchInterval: 5000,
+  });
+}
+
+// --- Staff chat (DMs + channels) ---------------------------------------
+// Polls on the same 5s cadence as project chat; phase 3 replaces this with a
+// Supabase Realtime subscription and drops the interval to a slow safety net.
+
+export function useChatContacts() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["chatContacts"], queryFn: () => fetchChatContacts(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
+}
+
+export function useChatConversations() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["chatConversations"], queryFn: () => fetchChatConversations(token!), enabled: !!token, refetchInterval: 5000 });
+}
+
+export function useChatMessages(conversationId: number | null) {
+  const { token } = useAuth();
+  return useQuery({
+    queryKey: ["chatMessages", conversationId],
+    queryFn: () => fetchChatMessages(token!, conversationId!),
+    enabled: !!token && !!conversationId,
+    refetchInterval: 5000,
+  });
+}
+
+export function useSendChatMessage() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ conversationId, text }: { conversationId: number; text: string }) => sendChatMessage(token!, conversationId, text),
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["chatMessages", vars.conversationId] });
+      qc.invalidateQueries({ queryKey: ["chatConversations"] });
+    },
+  });
+}
+
+export function useOpenChatDm() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (userId: number) => openChatDm(token!, userId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["chatConversations"] }),
+  });
+}
+
+export function useCreateChatChannel() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Parameters<typeof createChatChannel>[1]) => createChatChannel(token!, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["chatConversations"] }),
+  });
+}
+
+export function useMarkChatRead() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (conversationId: number) => markChatRead(token!, conversationId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["chatConversations"] }),
   });
 }
 

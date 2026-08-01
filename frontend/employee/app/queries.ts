@@ -74,3 +74,21 @@ export function setEmpTicketStatus(token: string, id: string, status: string) {
 export function createEmpNotification(token: string, payload: { title: string; msg: string; targetRole: "employee" | "client" | "all"; targetClientId?: number }) {
   return apiPost<any>("/employee/notifications", token, payload);
 }
+
+// Staff chat (DMs + channels between admins and employees), separate from the
+// project-scoped messages above. Channel creation is admin-only, so there is no
+// createChatChannel here.
+export function fetchChatContacts(token: string) { return apiGet<any[]>("/chat/contacts", token); }
+export function fetchChatConversations(token: string) { return apiGet<any[]>("/chat/conversations", token); }
+export function fetchChatMessages(token: string, conversationId: number) {
+  return apiGet<any[]>(`/chat/conversations/${conversationId}/messages`, token);
+}
+export function sendChatMessage(token: string, conversationId: number, text: string) {
+  return apiPost<any>(`/chat/conversations/${conversationId}/messages`, token, { text });
+}
+export function openChatDm(token: string, userId: number) {
+  return apiPost<any>("/chat/conversations/dm", token, { userId });
+}
+export function markChatRead(token: string, conversationId: number) {
+  return apiPost<any>(`/chat/conversations/${conversationId}/read`, token, {});
+}

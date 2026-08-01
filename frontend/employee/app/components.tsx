@@ -48,6 +48,7 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
 
 const baseNav = [
   { label: "Dashboard", href: "/" },
+  { label: "Messages", href: "/messages" },
   { label: "Projects", href: "/projects" },
   { label: "Tasks", href: "/tasks" },
   { label: "Files", href: "/files" },

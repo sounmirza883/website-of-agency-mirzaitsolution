@@ -117,3 +117,23 @@ export function fetchProjectMessages(token: string, projectId: number) {
 export function sendProjectMessage(token: string, projectId: number, text: string) {
   return apiPost<any>("/admin/messages", token, { projectId, text });
 }
+
+// Staff chat (DMs + channels between admins and employees), separate from the
+// project-scoped messages above.
+export function fetchChatContacts(token: string) { return apiGet<any[]>("/chat/contacts", token); }
+export function fetchChatConversations(token: string) { return apiGet<any[]>("/chat/conversations", token); }
+export function fetchChatMessages(token: string, conversationId: number) {
+  return apiGet<any[]>(`/chat/conversations/${conversationId}/messages`, token);
+}
+export function sendChatMessage(token: string, conversationId: number, text: string) {
+  return apiPost<any>(`/chat/conversations/${conversationId}/messages`, token, { text });
+}
+export function openChatDm(token: string, userId: number) {
+  return apiPost<any>("/chat/conversations/dm", token, { userId });
+}
+export function createChatChannel(token: string, payload: { name: string; memberIds: number[] }) {
+  return apiPost<any>("/chat/conversations/channel", token, payload);
+}
+export function markChatRead(token: string, conversationId: number) {
+  return apiPost<any>(`/chat/conversations/${conversationId}/read`, token, {});
+}
