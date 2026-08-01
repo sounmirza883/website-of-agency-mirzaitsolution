@@ -275,7 +275,7 @@ export function useChatContacts() {
 
 export function useChatConversations() {
   const { token } = useAuth();
-  return useQuery({ queryKey: ["chatConversations"], queryFn: () => fetchChatConversations(token!), enabled: !!token, refetchInterval: 5000 });
+  return useQuery({ queryKey: ["chatConversations"], queryFn: () => fetchChatConversations(token!), enabled: !!token, refetchInterval: 30000 });
 }
 
 export function useChatMessages(conversationId: number | null) {
@@ -284,7 +284,7 @@ export function useChatMessages(conversationId: number | null) {
     queryKey: ["chatMessages", conversationId],
     queryFn: () => fetchChatMessages(token!, conversationId!),
     enabled: !!token && !!conversationId,
-    refetchInterval: 5000,
+    refetchInterval: 30000,
   });
 }
 

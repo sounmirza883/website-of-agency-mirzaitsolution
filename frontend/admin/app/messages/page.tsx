@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../auth";
+import { useChatActivity, useStaffPresence } from "../realtime";
 import {
   useChatContacts, useChatConversations, useChatMessages,
   useSendChatMessage, useOpenChatDm, useCreateChatChannel, useMarkChatRead,
@@ -51,6 +53,15 @@ export default function MessagesPage() {
   const active = list.find((c) => c.id === activeId) ?? null;
   const channels = list.filter((c) => c.kind === "channel");
   const dms = list.filter((c) => c.kind === "dm");
+
+  // Realtime: a broadcast only says "conversation N changed", so refetch it
+  // over the authenticated API rather than trusting anything off the socket.
+  const queryClient = useQueryClient();
+  const onlineIds = useStaffPresence(user?.id);
+  useChatActivity(user?.id, (conversationId) => {
+    queryClient.invalidateQueries({ queryKey: ["chatConversations"] });
+    queryClient.invalidateQueries({ queryKey: ["chatMessages", conversationId] });
+  });
 
   // Opening a thread (or receiving into the open one) clears its badge.
   const unreadForActive = active?.unreadCount ?? 0;
@@ -103,7 +114,7 @@ export default function MessagesPage() {
           </div>
           <div className="flex-1 overflow-auto p-2 space-y-4">
             <Section title="Channels" items={channels} activeId={activeId} onSelect={setActiveId} prefix="#" />
-            <Section title="Direct Messages" items={dms} activeId={activeId} onSelect={setActiveId} />
+            <Section title="Direct Messages" items={dms} activeId={activeId} onSelect={setActiveId} onlineIds={onlineIds} />
             {list.length === 0 && (
               <p className="text-xs text-gray-400 text-center px-2 py-6">No conversations yet. Start a DM to get going.</p>
             )}
@@ -123,7 +134,9 @@ export default function MessagesPage() {
                 <div className="text-xs text-gray-500">
                   {active.kind === "channel"
                     ? `${active.members.length} member${active.members.length === 1 ? "" : "s"}`
-                    : active.members.find((m) => m.id !== user?.id)?.role ?? ""}
+                    : active.otherUserId != null && onlineIds.has(active.otherUserId)
+                      ? "Online"
+                      : "Offline"}
                 </div>
               </header>
 
@@ -217,20 +230,29 @@ export default function MessagesPage() {
   );
 }
 
-function Avatar({ name }: { name: string }) {
+function Avatar({ name, online }: { name: string; online?: boolean }) {
   return (
-    <span className="w-8 h-8 shrink-0 rounded-full bg-gray-100 text-gray-900 flex items-center justify-center text-xs font-bold">
-      {initials(name)}
+    <span className="relative w-8 h-8 shrink-0">
+      <span className="w-8 h-8 rounded-full bg-gray-100 text-gray-900 flex items-center justify-center text-xs font-bold">
+        {initials(name)}
+      </span>
+      {online !== undefined && (
+        <span
+          title={online ? "Online" : "Offline"}
+          className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${online ? "bg-green-500" : "bg-gray-300"}`}
+        />
+      )}
     </span>
   );
 }
 
-function Section({ title, items, activeId, onSelect, prefix = "" }: {
+function Section({ title, items, activeId, onSelect, prefix = "", onlineIds }: {
   title: string;
   items: Conversation[];
   activeId: number | null;
   onSelect: (id: number) => void;
   prefix?: string;
+  onlineIds?: Set<number>;
 }) {
   if (items.length === 0) return null;
   return (
@@ -240,7 +262,9 @@ function Section({ title, items, activeId, onSelect, prefix = "" }: {
         {items.map((c) => (
           <button key={c.id} onClick={() => onSelect(c.id)}
             className={`w-full flex items-center gap-2 px-2 py-2 rounded-lg text-left transition-colors ${c.id === activeId ? "bg-gray-100" : "hover:bg-gray-50"}`}>
-            {prefix ? <span className="w-8 text-center text-gray-400">{prefix}</span> : <Avatar name={c.name} />}
+            {prefix
+              ? <span className="w-8 text-center text-gray-400">{prefix}</span>
+              : <Avatar name={c.name} online={onlineIds ? (c.otherUserId != null && onlineIds.has(c.otherUserId)) : undefined} />}
             <span className="flex-1 min-w-0">
               <span className="block text-sm font-medium text-gray-900 truncate">{c.name}</span>
               {c.lastMessage && <span className="block text-xs text-gray-500 truncate">{c.lastMessage.text}</span>}

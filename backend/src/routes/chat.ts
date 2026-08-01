@@ -3,6 +3,7 @@ import { supabase } from "../supabase.js";
 import { listUsersByRole } from "../authStore.js";
 import { type AuthedRequest, requireAuth, requireRole } from "../middleware/auth.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
+import { broadcastChatActivity } from "../realtime.js";
 
 /**
  * Staff chat: 1-on-1 DMs and named channels between admins and employees,
@@ -207,6 +208,11 @@ router.post("/conversations/:id/messages", ...staffOnly, async (req: AuthedReque
 
   // Drives sidebar ordering; a failure here shouldn't fail the send.
   await supabase.from("chat_conversations").update({ last_message_at: new Date().toISOString() }).eq("id", conversationId);
+
+  // Nudge every member (including the sender, whose other tabs need it too) so
+  // their sidebar and open thread refresh without waiting for the poll.
+  const members = await supabase.from("chat_members").select("user_id").eq("conversation_id", conversationId);
+  await broadcastChatActivity((members.data ?? []).map((m) => m.user_id), conversationId);
 
   return res.status(201).json(data);
 });
