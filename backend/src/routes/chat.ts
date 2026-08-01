@@ -55,18 +55,18 @@ router.get("/conversations", ...staffOnly, async (req: AuthedRequest, res) => {
   if (!supabase) return res.json([]);
   const me = req.user!.id;
 
-  const memberships = await supabase.from("chat_members").select("conversation_id,last_read_at").eq("user_id", me);
+  const memberships = await supabase.from("chat_members").select("conversation_id,last_read_message_id").eq("user_id", me);
   if (memberships.error) return res.status(500).json({ error: memberships.error.message });
   const ids = (memberships.data ?? []).map((m) => m.conversation_id);
   if (ids.length === 0) return res.json([]);
 
-  const lastReadBy = new Map<number, string>();
-  for (const m of memberships.data ?? []) lastReadBy.set(m.conversation_id, m.last_read_at);
+  const lastReadBy = new Map<number, number>();
+  for (const m of memberships.data ?? []) lastReadBy.set(m.conversation_id, m.last_read_message_id ?? 0);
 
   const [conversations, allMembers, messages] = await Promise.all([
     supabase.from("chat_conversations").select("id,kind,name,createdAt:created_at,lastMessageAt:last_message_at").in("id", ids),
     supabase.from("chat_members").select("conversation_id,user_id,users(name,role)").in("conversation_id", ids),
-    supabase.from("chat_messages").select("conversation_id,sender_id,text,attachment_name,created_at").in("conversation_id", ids).order("id", { ascending: true }),
+    supabase.from("chat_messages").select("id,conversation_id,sender_id,text,attachment_name,created_at").in("conversation_id", ids).order("id", { ascending: true }),
   ]);
   for (const q of [conversations, allMembers, messages]) {
     if (q.error) return res.status(500).json({ error: q.error.message });
@@ -81,12 +81,15 @@ router.get("/conversations", ...staffOnly, async (req: AuthedRequest, res) => {
     membersByConversation.set(row.conversation_id, list);
   }
 
+  // Messages arrive ordered by id ascending, so the last one seen per
+  // conversation is the newest — it doubles as the preview and the sort key.
   const unread = new Map<number, number>();
   const preview = new Map<number, { text: string; createdAt: string }>();
+  const newestId = new Map<number, number>();
   for (const m of (messages.data ?? []) as any[]) {
     preview.set(m.conversation_id, { text: m.text ?? m.attachment_name ?? "Attachment", createdAt: m.created_at });
-    const lastRead = lastReadBy.get(m.conversation_id);
-    const isUnread = m.sender_id !== me && (!lastRead || new Date(m.created_at) > new Date(lastRead));
+    newestId.set(m.conversation_id, m.id);
+    const isUnread = m.sender_id !== me && m.id > (lastReadBy.get(m.conversation_id) ?? 0);
     if (isUnread) unread.set(m.conversation_id, (unread.get(m.conversation_id) ?? 0) + 1);
   }
 
@@ -102,10 +105,14 @@ router.get("/conversations", ...staffOnly, async (req: AuthedRequest, res) => {
       unreadCount: unread.get(c.id) ?? 0,
       lastMessage: preview.get(c.id) ?? null,
       lastMessageAt: c.lastMessageAt,
+      newestMessageId: newestId.get(c.id) ?? 0,
     };
   });
 
-  payload.sort((a, b) => new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime());
+  // Sorted by newest message id rather than last_message_at, for the same
+  // clock-skew reason the read cursor uses ids: conversations messaged within a
+  // couple of seconds of each other would otherwise sort unpredictably.
+  payload.sort((a, b) => b.newestMessageId - a.newestMessageId);
   return res.json(payload);
 });
 
@@ -204,20 +211,33 @@ router.post("/conversations/:id/messages", ...staffOnly, async (req: AuthedReque
   return res.status(201).json(data);
 });
 
-/** Clear the unread badge by moving this member's read cursor to now. */
+/**
+ * Clear the unread badge by advancing this member's cursor to the newest
+ * message in the conversation. Reads the id back from the database rather than
+ * using a timestamp, so app-server clock drift can't strand messages as unread.
+ */
 router.post("/conversations/:id/read", ...staffOnly, async (req: AuthedRequest, res) => {
   const conversationId = Number(req.params.id);
   if (!conversationId) return res.status(400).json({ error: "Invalid conversation id" });
   if (!supabase) return res.status(503).json({ error: "Database not configured" });
   if (!(await isMember(conversationId, req.user!.id))) return res.status(403).json({ error: "You are not a member of this conversation" });
 
+  const newest = await supabase
+    .from("chat_messages")
+    .select("id")
+    .eq("conversation_id", conversationId)
+    .order("id", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (newest.error) return res.status(500).json({ error: newest.error.message });
+
   const { error } = await supabase
     .from("chat_members")
-    .update({ last_read_at: new Date().toISOString() })
+    .update({ last_read_message_id: newest.data?.id ?? 0 })
     .eq("conversation_id", conversationId)
     .eq("user_id", req.user!.id);
   if (error) return res.status(500).json({ error: error.message });
-  return res.json({ success: true });
+  return res.json({ success: true, lastReadMessageId: newest.data?.id ?? 0 });
 });
 
 export default router;

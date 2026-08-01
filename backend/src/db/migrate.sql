@@ -248,7 +248,14 @@ CREATE TABLE IF NOT EXISTS chat_conversations (
 );
 
 -- Membership doubles as the per-user read cursor: unread count is the number of
--- messages newer than last_read_at that the member didn't send themselves.
+-- messages with a higher id than last_read_message_id that the member didn't
+-- send themselves.
+--
+-- The cursor is a message id, deliberately NOT a timestamp. Message timestamps
+-- come from Postgres's clock while the app server writes its own — those clocks
+-- drift (measured ~2s apart against this Supabase instance), so a timestamp
+-- cursor leaves anything read shortly after it arrived stuck as unread forever.
+-- Ids are database-generated and monotonic, so no clock is involved.
 --
 -- Note user_id is part of the primary key, so unlike every content table above
 -- it can NOT be nulled on user deletion — these rows are deleted instead
@@ -256,9 +263,12 @@ CREATE TABLE IF NOT EXISTS chat_conversations (
 CREATE TABLE IF NOT EXISTS chat_members (
   conversation_id INTEGER NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE,
   user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  last_read_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  last_read_message_id INTEGER NOT NULL DEFAULT 0,
   PRIMARY KEY (conversation_id, user_id)
 );
+-- Re-runnable upgrade for databases created before the cursor changed.
+ALTER TABLE chat_members ADD COLUMN IF NOT EXISTS last_read_message_id INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE chat_members DROP COLUMN IF EXISTS last_read_at;
 
 CREATE TABLE IF NOT EXISTS chat_messages (
   id SERIAL PRIMARY KEY,
