@@ -49,8 +49,11 @@ CREATE TABLE chat_conversations (id SERIAL PRIMARY KEY, kind TEXT NOT NULL DEFAU
 -- which would leave just-read messages permanently unread. Ids are DB-generated and monotonic.
 CREATE TABLE chat_members (conversation_id INTEGER NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, last_read_message_id INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (conversation_id, user_id));
 -- mentions holds @mentioned user ids, so who was mentioned survives a rename.
-CREATE TABLE chat_messages (id SERIAL PRIMARY KEY, conversation_id INTEGER NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE, sender_id INTEGER REFERENCES users(id) ON DELETE SET NULL, text TEXT, attachment_path TEXT, attachment_name TEXT, attachment_type TEXT, mentions INTEGER[] NOT NULL DEFAULT '{}', edited_at TIMESTAMPTZ, deleted_at TIMESTAMPTZ, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+CREATE TABLE chat_messages (id SERIAL PRIMARY KEY, conversation_id INTEGER NOT NULL REFERENCES chat_conversations(id) ON DELETE CASCADE, sender_id INTEGER REFERENCES users(id) ON DELETE SET NULL, text TEXT, attachment_path TEXT, attachment_name TEXT, attachment_type TEXT, mentions INTEGER[] NOT NULL DEFAULT '{}', edited_at TIMESTAMPTZ, deleted_at TIMESTAMPTZ, reply_to_id INTEGER REFERENCES chat_messages(id) ON DELETE SET NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+-- reply_to_id is SET NULL, not CASCADE: deleting a quoted message must not take the replies with it.
+CREATE TABLE chat_reactions (message_id INTEGER NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, emoji TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (message_id, user_id, emoji));
 CREATE INDEX chat_messages_conversation_idx ON chat_messages (conversation_id, id);
+CREATE INDEX chat_reactions_message_idx ON chat_reactions (message_id);
 CREATE INDEX chat_members_user_idx ON chat_members (user_id);
 
 -- Shared file storage (employee uploads, optionally visible to a client)

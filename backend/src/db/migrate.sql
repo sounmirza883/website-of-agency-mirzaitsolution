@@ -290,6 +290,20 @@ ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS mentions INTEGER[] NOT NULL D
 -- keyed on id don't develop holes, and the client renders a tombstone.
 ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS edited_at TIMESTAMPTZ;
 ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+-- Quote-reply. SET NULL rather than CASCADE: deleting a quoted message must not
+-- take the replies to it with it.
+ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS reply_to_id INTEGER REFERENCES chat_messages(id) ON DELETE SET NULL;
+
+-- One row per person per emoji per message; the composite key is what makes a
+-- repeat reaction a no-op rather than a duplicate.
+CREATE TABLE IF NOT EXISTS chat_reactions (
+  message_id INTEGER NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  emoji TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  PRIMARY KEY (message_id, user_id, emoji)
+);
+CREATE INDEX IF NOT EXISTS chat_reactions_message_idx ON chat_reactions (message_id);
 
 -- A thread is always read for one conversation at a time, oldest-first by id;
 -- the sidebar reads every conversation a single user belongs to.

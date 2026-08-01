@@ -23,7 +23,54 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 
 const staffOnly = [requireAuth, requireRole("admin", "employee")] as const;
 
 const MESSAGE_SELECT =
-  "id,conversationId:conversation_id,senderId:sender_id,text,mentions,attachmentPath:attachment_path,attachmentName:attachment_name,attachmentType:attachment_type,editedAt:edited_at,deletedAt:deleted_at,createdAt:created_at,sender:users(name,role)";
+  "id,conversationId:conversation_id,senderId:sender_id,text,mentions,attachmentPath:attachment_path,attachmentName:attachment_name,attachmentType:attachment_type,editedAt:edited_at,deletedAt:deleted_at,replyToId:reply_to_id,createdAt:created_at,sender:users(name,role)";
+
+/**
+ * Fold reactions and quoted-message previews onto a page of messages.
+ *
+ * Both are looked up once for the whole page rather than per message — the
+ * per-row version of this pattern is what made attachment signing expensive.
+ * Reactions come back grouped by emoji with a `mine` flag so the client can
+ * render counts and highlight the viewer's own without a second pass.
+ */
+async function decorateMessages(rows: any[], me: number): Promise<any[]> {
+  if (rows.length === 0 || !supabase) return rows;
+
+  const ids = rows.map((r) => r.id);
+  const replyIds = [...new Set(rows.map((r) => r.replyToId).filter((v): v is number => !!v))];
+
+  const [reactionRows, quotedRows] = await Promise.all([
+    supabase.from("chat_reactions").select("message_id,user_id,emoji").in("message_id", ids),
+    replyIds.length
+      ? supabase.from("chat_messages").select("id,text,attachment_name,deleted_at,sender:users(name)").in("id", replyIds)
+      : Promise.resolve({ data: [] as any[], error: null }),
+  ]);
+
+  const byMessage = new Map<number, Map<string, { emoji: string; count: number; mine: boolean }>>();
+  for (const r of (reactionRows.data ?? []) as any[]) {
+    const forMessage = byMessage.get(r.message_id) ?? new Map();
+    const entry = forMessage.get(r.emoji) ?? { emoji: r.emoji, count: 0, mine: false };
+    entry.count += 1;
+    if (r.user_id === me) entry.mine = true;
+    forMessage.set(r.emoji, entry);
+    byMessage.set(r.message_id, forMessage);
+  }
+
+  const quotedById = new Map<number, { id: number; text: string | null; senderName: string | null }>();
+  for (const q of (quotedRows.data ?? []) as any[]) {
+    quotedById.set(q.id, {
+      id: q.id,
+      text: q.deleted_at ? null : q.text ?? q.attachment_name ?? "Attachment",
+      senderName: q.sender?.name ?? "Deleted user",
+    });
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    reactions: [...(byMessage.get(r.id)?.values() ?? [])],
+    replyTo: r.replyToId ? quotedById.get(r.replyToId) ?? null : null,
+  }));
+}
 
 /** Multipart fields arrive as strings, so mention ids come over as JSON there. */
 function safeParseIds(raw: unknown): unknown {
@@ -50,6 +97,22 @@ async function validMentionIds(conversationId: number, raw: unknown): Promise<nu
     .eq("conversation_id", conversationId)
     .in("user_id", requested);
   return (data ?? []).map((m) => m.user_id);
+}
+
+/**
+ * A reply may only point at a message in the same conversation — otherwise a
+ * crafted request could quote a thread the sender can't even read.
+ */
+async function validReplyId(conversationId: number, raw: unknown): Promise<number | null> {
+  const id = Number(raw);
+  if (!Number.isInteger(id) || id <= 0 || !supabase) return null;
+  const { data } = await supabase
+    .from("chat_messages")
+    .select("id")
+    .eq("id", id)
+    .eq("conversation_id", conversationId)
+    .maybeSingle();
+  return data ? id : null;
 }
 
 /**
@@ -272,7 +335,8 @@ router.get("/conversations/:id/messages", ...staffOnly, asyncHandler(async (req,
   const hasMore = rows.length > MESSAGE_PAGE_SIZE;
   const page = hasMore ? rows.slice(0, MESSAGE_PAGE_SIZE) : rows;
   // Reversed so the client still renders oldest-at-top.
-  const messages = await attachSignedUrls(page.reverse() as any[]);
+  const signed = await attachSignedUrls(page.reverse() as any[]);
+  const messages = await decorateMessages(signed as any[], authed.user!.id);
   return res.json({ messages, hasMore });
 }));
 
@@ -286,9 +350,10 @@ router.post("/conversations/:id/messages", ...staffOnly, asyncHandler(async (req
   if (!(await isMember(conversationId, authed.user!.id))) return res.status(403).json({ error: "You are not a member of this conversation" });
 
   const mentions = await validMentionIds(conversationId, req.body?.mentionIds);
+  const replyToId = await validReplyId(conversationId, req.body?.replyToId);
   const { data, error } = await supabase
     .from("chat_messages")
-    .insert({ conversation_id: conversationId, sender_id: authed.user!.id, text, mentions })
+    .insert({ conversation_id: conversationId, sender_id: authed.user!.id, text, mentions, reply_to_id: replyToId })
     .select(MESSAGE_SELECT)
     .single();
   if (error) return res.status(500).json({ error: error.message });
@@ -431,6 +496,53 @@ router.delete("/conversations/:id/messages/:messageId", ...staffOnly, asyncHandl
   const members = await supabase.from("chat_members").select("user_id").eq("conversation_id", conversationId);
   await broadcastChatActivity((members.data ?? []).map((m) => m.user_id), conversationId);
   return res.json({ success: true });
+}));
+
+/**
+ * Toggle a reaction. Same emoji twice removes it, so the client needs no
+ * separate delete route and can't drift out of sync about what it already sent.
+ */
+router.post("/conversations/:id/messages/:messageId/reactions", ...staffOnly, asyncHandler(async (req, res) => {
+  const authed = req as AuthedRequest;
+  const conversationId = Number(req.params.id);
+  const messageId = Number(req.params.messageId);
+  const emoji = typeof req.body?.emoji === "string" ? req.body.emoji.trim() : "";
+  if (!conversationId || !messageId) return res.status(400).json({ error: "Invalid id" });
+  // Bounded so this can't become a place to stash arbitrary text.
+  if (!emoji || [...emoji].length > 4) return res.status(400).json({ error: "emoji is required" });
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+  if (!(await isMember(conversationId, authed.user!.id))) return res.status(403).json({ error: "You are not a member of this conversation" });
+
+  const target = await supabase
+    .from("chat_messages")
+    .select("id,deleted_at")
+    .eq("id", messageId)
+    .eq("conversation_id", conversationId)
+    .maybeSingle();
+  if (!target.data) return res.status(404).json({ error: "Message not found" });
+  if (target.data.deleted_at) return res.status(400).json({ error: "This message was deleted" });
+
+  const existing = await supabase
+    .from("chat_reactions")
+    .select("emoji")
+    .eq("message_id", messageId)
+    .eq("user_id", authed.user!.id)
+    .eq("emoji", emoji)
+    .maybeSingle();
+
+  if (existing.data) {
+    const { error } = await supabase.from("chat_reactions").delete()
+      .eq("message_id", messageId).eq("user_id", authed.user!.id).eq("emoji", emoji);
+    if (error) return res.status(500).json({ error: error.message });
+  } else {
+    const { error } = await supabase.from("chat_reactions")
+      .insert({ message_id: messageId, user_id: authed.user!.id, emoji });
+    if (error) return res.status(500).json({ error: error.message });
+  }
+
+  const members = await supabase.from("chat_members").select("user_id").eq("conversation_id", conversationId);
+  await broadcastChatActivity((members.data ?? []).map((m) => m.user_id), conversationId);
+  return res.json({ success: true, reacted: !existing.data });
 }));
 
 /** Rename a channel. Admin-only, matching who can create one. */

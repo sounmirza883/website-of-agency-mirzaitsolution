@@ -48,27 +48,59 @@ export function useChatActivity(userId: number | undefined, onActivity: (convers
   }, [userId]);
 }
 
-/** Ids of staff currently connected, via Supabase Presence (no DB writes). */
-export function useStaffPresence(userId: number | undefined): Set<number> {
+/**
+ * Who is online, and who is typing where — both from one Supabase Presence
+ * channel (no DB writes, no schema).
+ *
+ * Typing rides presence rather than the server broadcast helper on purpose: the
+ * API is serverless, so routing keystrokes through it would cost two network
+ * hops each. Presence is already open, already keyed per user, and already
+ * cleans itself up when a tab closes.
+ *
+ * `typingIn` is published by the browser, so like everything else on this
+ * channel it is spoofable by anyone holding the public anon key. That is
+ * acceptable for "someone is typing" and is exactly why message content still
+ * never travels over the socket.
+ */
+export function useStaffPresence(userId: number | undefined, typingIn?: number | null) {
   const [online, setOnline] = useState<Set<number>>(new Set());
+  const [typingByConversation, setTypingByConversation] = useState<Map<number, number[]>>(new Map());
+  const channelRef = useRef<ReturnType<NonNullable<typeof realtime>["channel"]> | null>(null);
 
   useEffect(() => {
     if (!realtime || !userId) return;
     const channel = realtime.channel("staff-presence", { config: { presence: { key: String(userId) } } });
+    channelRef.current = channel;
     channel
       .on("presence", { event: "sync" }, () => {
-        const ids = Object.keys(channel.presenceState())
-          .map(Number)
-          .filter((n) => Number.isFinite(n));
+        const state = channel.presenceState() as Record<string, Array<{ userId?: number; typingIn?: number | null }>>;
+        const ids: number[] = [];
+        const typing = new Map<number, number[]>();
+        for (const [key, entries] of Object.entries(state)) {
+          const id = Number(key);
+          if (!Number.isFinite(id)) continue;
+          ids.push(id);
+          const conv = entries[0]?.typingIn;
+          if (typeof conv === "number") typing.set(conv, [...(typing.get(conv) ?? []), id]);
+        }
         setOnline(new Set(ids));
+        setTypingByConversation(typing);
       })
       .subscribe(async (status) => {
         if (status === "SUBSCRIBED") await channel.track({ userId });
       });
     return () => {
+      channelRef.current = null;
       realtime.removeChannel(channel);
     };
   }, [userId]);
 
-  return online;
+  // Re-published whenever the typing target changes; the caller debounces so
+  // this isn't one network message per keystroke.
+  useEffect(() => {
+    if (!userId) return;
+    channelRef.current?.track({ userId, typingIn: typingIn ?? null });
+  }, [userId, typingIn]);
+
+  return { online, typingByConversation };
 }

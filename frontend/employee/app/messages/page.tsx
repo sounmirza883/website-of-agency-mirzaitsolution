@@ -4,7 +4,7 @@ import { memo, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../auth";
 import { useChatActivity, useStaffPresence } from "../realtime";
-import { useChatContacts, useChatConversations, useChatMessages, useSendChatMessage, useSendChatAttachment, useOpenChatDm, useMarkChatRead, useEditChatMessage, useDeleteChatMessage, useLeaveChatConversation } from "../hooks";
+import { useChatContacts, useChatConversations, useChatMessages, useSendChatMessage, useSendChatAttachment, useOpenChatDm, useMarkChatRead, useEditChatMessage, useDeleteChatMessage, useLeaveChatConversation, useToggleChatReaction } from "../hooks";
 
 interface ChatMessage {
   id: number;
@@ -16,6 +16,8 @@ interface ChatMessage {
   attachmentUrl: string | null;
   editedAt: string | null;
   deletedAt: string | null;
+  replyTo: { id: number; text: string | null; senderName: string | null } | null;
+  reactions: Array<{ emoji: string; count: number; mine: boolean }>;
   createdAt: string;
   sender: { name: string; role: string } | null;
 }
@@ -37,6 +39,9 @@ interface Conversation {
   mentionsMe: boolean;
   lastMessage: { text: string; createdAt: string } | null;
 }
+
+// A small fixed set beats pulling in an emoji-picker dependency for now.
+const REACTIONS = ["👍", "✅", "🎉", "👀"];
 
 function initials(name: string) {
   return name.split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("") || "?";
@@ -67,6 +72,8 @@ export default function MessagesPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
   const [showSettings, setShowSettings] = useState(false);
+  const [replyTo, setReplyTo] = useState<{ id: number; text: string | null; senderName: string } | null>(null);
+  const [isTyping, setIsTyping] = useState(false);
 
   const { data: conversations } = useChatConversations();
   const { data: contacts } = useChatContacts();
@@ -84,6 +91,7 @@ export default function MessagesPage() {
   const editMessage = useEditChatMessage();
   const deleteMessage = useDeleteChatMessage();
   const leaveConversation = useLeaveChatConversation();
+  const toggleReaction = useToggleChatReaction();
 
   const list: Conversation[] = conversations ?? [];
   const active = list.find((c) => c.id === activeId) ?? null;
@@ -98,7 +106,9 @@ export default function MessagesPage() {
   // Realtime: a broadcast only says "conversation N changed", so refetch it
   // over the authenticated API rather than trusting anything off the socket.
   const queryClient = useQueryClient();
-  const onlineIds = useStaffPresence(user?.id);
+  // Only advertise typing while actually composing in the open thread.
+  const { online: onlineIds, typingByConversation } = useStaffPresence(user?.id, isTyping ? activeId : null);
+  const typingHere = (typingByConversation.get(activeId ?? -1) ?? []).filter((id) => id !== user?.id);
   useChatActivity(user?.id, (conversationId) => {
     queryClient.invalidateQueries({ queryKey: ["chatConversations"] });
     queryClient.invalidateQueries({ queryKey: ["chatMessages", conversationId] });
@@ -128,6 +138,7 @@ export default function MessagesPage() {
 
   function handleTextChange(value: string) {
     setText(value);
+    setIsTyping(value.trim().length > 0);
     // Open the picker only while typing the word directly after an @.
     const trailing = value.match(/@([^@]*)$/);
     setMentionQuery(trailing && !trailing[1].includes(" ") ? trailing[1] : null);
@@ -150,9 +161,11 @@ export default function MessagesPage() {
       return;
     }
     if (!text.trim()) return;
-    await sendMessage.mutateAsync({ conversationId: activeId, text: text.trim(), mentionIds: resolveMentions(text) });
+    await sendMessage.mutateAsync({ conversationId: activeId, text: text.trim(), mentionIds: resolveMentions(text), replyToId: replyTo?.id ?? null });
     setText("");
     setMentionQuery(null);
+    setReplyTo(null);
+    setIsTyping(false);
   }
 
   async function handleSaveEdit(messageId: number) {
@@ -264,6 +277,10 @@ export default function MessagesPage() {
                               <span className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2 text-xs text-gray-500">
                                 <button onClick={() => { setEditingId(m.id); setEditText(m.text ?? ""); }} className="hover:text-gray-900">Edit</button>
                                 <button onClick={() => handleDelete(m.id)} className="hover:text-gray-900">Delete</button>
+                                <button onClick={() => setReplyTo({ id: m.id, text: m.text, senderName: m.sender?.name ?? "You" })} className="hover:text-gray-900">Reply</button>
+                                {REACTIONS.map((e) => (
+                                  <button key={e} type="button" onClick={() => activeId && toggleReaction.mutate({ conversationId: activeId, messageId: m.id, emoji: e })}>{e}</button>
+                                ))}
                               </span>
                             )}
                             {!isMe && false && (
@@ -272,12 +289,28 @@ export default function MessagesPage() {
                               </span>
                             )}
                             <div className={`px-4 py-2 rounded-2xl text-sm ${isMe ? "bg-accent-2 text-gray-50 rounded-br-sm" : "bg-gray-100 text-gray-900 rounded-bl-sm"}`}>
+                              {m.replyTo && (
+                                <div className="mb-1 pl-2 border-l-2 border-gray-300 text-xs opacity-80">
+                                  <span className="font-medium">{m.replyTo.senderName}</span>{" "}
+                                  {m.replyTo.text ?? <span className="italic">deleted message</span>}
+                                </div>
+                              )}
                               {m.attachmentUrl && (
                                 <Attachment url={m.attachmentUrl} name={m.attachmentName} type={m.attachmentType} />
                               )}
                               <MessageText text={m.text} members={active.members} me={user?.id} />
                               {m.editedAt && <span className="ml-2 text-[11px] opacity-70">(edited)</span>}
                             </div>
+                            {m.reactions?.length > 0 && (
+                              <span className="flex gap-1">
+                                {m.reactions.map((r) => (
+                                  <button key={r.emoji} type="button" onClick={() => activeId && toggleReaction.mutate({ conversationId: activeId, messageId: m.id, emoji: r.emoji })}
+                                    className={"text-xs px-1.5 py-0.5 rounded-full border " + (r.mine ? "border-accent-2 bg-gray-100" : "border-gray-200")}>
+                                    {r.emoji} {r.count}
+                                  </button>
+                                ))}
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
@@ -289,7 +322,19 @@ export default function MessagesPage() {
                 <div ref={bottomRef} />
               </div>
 
+              {typingHere.length > 0 && (
+                <div className="px-4 pb-1 text-xs text-gray-500 italic shrink-0">
+                  {typingHere.map((id) => active.members.find((m) => m.id === id)?.name ?? "Someone").join(", ")}
+                  {typingHere.length === 1 ? " is typing…" : " are typing…"}
+                </div>
+              )}
               <form onSubmit={handleSend} className="border-t border-gray-200 p-4 shrink-0">
+                {replyTo && (
+                  <div className="flex items-center gap-2 mb-2 text-xs text-gray-600 bg-gray-100 rounded-lg px-3 py-2">
+                    <span className="truncate flex-1">Replying to <span className="font-medium">{replyTo.senderName}</span>: {replyTo.text ?? "attachment"}</span>
+                    <button type="button" onClick={() => setReplyTo(null)} className="text-gray-500 hover:text-gray-900">Cancel</button>
+                  </div>
+                )}
                 {pendingFile && (
                   <div className="flex items-center gap-2 mb-2 text-xs text-gray-600 bg-gray-100 rounded-lg px-3 py-2">
                     <span className="truncate flex-1">{pendingFile.name}</span>

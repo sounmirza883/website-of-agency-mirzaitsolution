@@ -135,8 +135,11 @@ export function fetchChatMessages(token: string, conversationId: number, before?
   const qs = before ? `?before=${before}` : "";
   return apiGet<{ messages: any[]; hasMore: boolean }>(`/chat/conversations/${conversationId}/messages${qs}`, token);
 }
-export function sendChatMessage(token: string, conversationId: number, text: string, mentionIds: number[] = []) {
-  return apiPost<any>(`/chat/conversations/${conversationId}/messages`, token, { text, mentionIds });
+export function sendChatMessage(token: string, conversationId: number, text: string, mentionIds: number[] = [], replyToId?: number | null) {
+  return apiPost<any>(`/chat/conversations/${conversationId}/messages`, token, { text, mentionIds, replyToId });
+}
+export function toggleChatReaction(token: string, conversationId: number, messageId: number, emoji: string) {
+  return apiPost<any>(`/chat/conversations/${conversationId}/messages/${messageId}/reactions`, token, { emoji });
 }
 export function openChatDm(token: string, userId: number) {
   return apiPost<any>("/chat/conversations/dm", token, { userId });
