@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../auth";
 import { useChatActivity, useStaffPresence } from "../realtime";
@@ -69,7 +69,13 @@ export default function MessagesPage() {
 
   const { data: conversations } = useChatConversations();
   const { data: contacts } = useChatContacts();
-  const { data: messages, isLoading: loadingMessages } = useChatMessages(activeId);
+  const messagesQuery = useChatMessages(activeId);
+  const loadingMessages = messagesQuery.isLoading;
+  // Pages come newest-page-first, each page oldest-last, so reverse the page
+  // order to get one continuous oldest-to-newest thread.
+  const messages = messagesQuery.data
+    ? [...messagesQuery.data.pages].reverse().flatMap((pg) => pg.messages as ChatMessage[])
+    : undefined;
   const sendMessage = useSendChatMessage();
   const sendAttachment = useSendChatAttachment();
   const openDm = useOpenChatDm();
@@ -103,9 +109,12 @@ export default function MessagesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId, unreadForActive]);
 
+  const newestId = messages?.length ? messages[messages.length - 1].id : null;
   useEffect(() => {
+    // Keyed on the newest id, not length, so loading older history (which also
+    // changes length) doesn't yank the view back down to the bottom.
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages?.length, activeId]);
+  }, [newestId, activeId]);
 
   const sending = sendMessage.isPending || sendAttachment.isPending;
 
@@ -202,10 +211,18 @@ export default function MessagesPage() {
               </header>
 
               <div className="flex-1 overflow-auto p-5 space-y-3">
+                {messagesQuery.hasNextPage && (
+                  <div className="text-center">
+                    <button type="button" onClick={() => messagesQuery.fetchNextPage()} disabled={messagesQuery.isFetchingNextPage}
+                      className="text-xs text-gray-500 hover:text-gray-900 underline disabled:opacity-50">
+                      {messagesQuery.isFetchingNextPage ? "Loading…" : "Load older messages"}
+                    </button>
+                  </div>
+                )}
                 {loadingMessages ? (
                   <p className="text-sm text-gray-400 text-center mt-8">Loading…</p>
                 ) : messages?.length ? (
-                  messages.map((m: ChatMessage) => {
+                  messages.map((m) => {
                     const isMe = m.senderId === user?.id;
                     return (
                       <div key={m.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
@@ -317,7 +334,9 @@ export default function MessagesPage() {
   );
 }
 
-function MessageText({ text, members, me }: { text: string | null; members: Array<{ id: number; name: string }>; me?: number }) {
+// Memoised: the scanner walks the string against every member on each render,
+// and the thread re-renders on every poll and every incoming message.
+const MessageText = memo(function MessageText({ text, members, me }: { text: string | null; members: Array<{ id: number; name: string }>; me?: number }) {
   if (!text) return null;
   // Scanned rather than regex-matched, so a display name containing regex
   // punctuation can't corrupt the pattern. Longest names first, so "Ali Hassan"
@@ -351,7 +370,7 @@ function MessageText({ text, members, me }: { text: string | null; members: Arra
   }
 
   return <>{parts.map((p, i) => (typeof p === "string" ? <span key={`t${i}`}>{p}</span> : p))}</>;
-}
+});
 
 function Attachment({ url, name, type }: { url: string; name?: string | null; type?: string | null }) {
   // Images preview inline; anything else gets a download link, since the signed

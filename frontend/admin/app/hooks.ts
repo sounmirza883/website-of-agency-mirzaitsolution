@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
 import { fetchUsers, fetchEmployees, fetchClientsList, createEmployee, createClient, setEmployeePermission, fetchServices, fetchProjects, fetchInvoices, fetchNotifications, fetchPortfolioList, fetchContactSubmissions, deleteLead, fetchPaymentSettings, fetchAdminTickets, setTicketStatus, createService, createProject, updateProjectStatus, assignProjectEmployee, createInvoice, verifyInvoice, createNotification, createPortfolioItem, setUserStatus, updateUserDetails, deleteUserAccount, fetchAdminAttendance, fetchAdminLeaveRequests, setLeaveRequestStatus, fetchProjectMessages, sendProjectMessage, changePassword, updatePaymentSettings,
   fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, createChatChannel, markChatRead, sendChatAttachment } from "./queries";
@@ -265,8 +265,8 @@ export function useProjectMessages(projectId: number | null | undefined) {
 }
 
 // --- Staff chat (DMs + channels) ---------------------------------------
-// Polls on the same 5s cadence as project chat; phase 3 replaces this with a
-// Supabase Realtime subscription and drops the interval to a slow safety net.
+// Delivery is realtime (see app/realtime.ts); the 30s interval below is only a
+// safety net so a dropped socket still recovers on its own.
 
 export function useChatContacts() {
   const { token } = useAuth();
@@ -278,11 +278,16 @@ export function useChatConversations() {
   return useQuery({ queryKey: ["chatConversations"], queryFn: () => fetchChatConversations(token!), enabled: !!token, refetchInterval: 30000 });
 }
 
+// Paged newest-first from the server; useInfiniteQuery walks backwards with
+// the oldest id on the current page as the cursor.
 export function useChatMessages(conversationId: number | null) {
   const { token } = useAuth();
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ["chatMessages", conversationId],
-    queryFn: () => fetchChatMessages(token!, conversationId!),
+    queryFn: ({ pageParam }) => fetchChatMessages(token!, conversationId!, pageParam as number | undefined),
+    initialPageParam: undefined as number | undefined,
+    // Pages arrive oldest-last, so the cursor for older history is the first id.
+    getNextPageParam: (last) => (last.hasMore ? last.messages[0]?.id : undefined),
     enabled: !!token && !!conversationId,
     refetchInterval: 30000,
   });

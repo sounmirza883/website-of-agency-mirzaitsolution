@@ -58,15 +58,26 @@ async function validMentionIds(conversationId: number, raw: unknown): Promise<nu
  * expires in an hour, it can't be passed around as a permanent public link.
  */
 async function attachSignedUrls<T extends { attachmentPath?: string | null }>(rows: T[]): Promise<Array<Omit<T, "attachmentPath"> & { attachmentUrl: string | null }>> {
-  return Promise.all(
-    rows.map(async ({ attachmentPath, ...row }) => {
-      // The storage path is an internal detail — sign it, then drop it rather
-      // than handing the client a key it has no use for.
-      if (!attachmentPath || !supabaseAdmin) return { ...row, attachmentUrl: null };
-      const { data } = await supabaseAdmin.storage.from(FILES_BUCKET).createSignedUrl(attachmentPath, 3600);
-      return { ...row, attachmentUrl: data?.signedUrl ?? null };
-    })
-  );
+  const paths = [...new Set(rows.map((r) => r.attachmentPath).filter((p): p is string => !!p))];
+
+  // Signed in ONE batched call rather than one call per attachment. The
+  // per-row version fanned out a Storage request for every attachment in the
+  // response, on every poll and every received message — a thread with a few
+  // hundred files would exhaust the request budget before the page rendered.
+  const urlByPath = new Map<string, string>();
+  if (paths.length > 0 && supabaseAdmin) {
+    const { data } = await supabaseAdmin.storage.from(FILES_BUCKET).createSignedUrls(paths, 3600);
+    for (const entry of data ?? []) {
+      if (entry.path && entry.signedUrl) urlByPath.set(entry.path, entry.signedUrl);
+    }
+  }
+
+  // The storage path is an internal detail — sign it, then drop it rather than
+  // handing the client a key it has no use for.
+  return rows.map(({ attachmentPath, ...row }) => ({
+    ...row,
+    attachmentUrl: attachmentPath ? urlByPath.get(attachmentPath) ?? null : null,
+  }));
 }
 
 /** True when the user belongs to the conversation. Every handler gates on this. */
@@ -94,31 +105,35 @@ router.get("/contacts", ...staffOnly, asyncHandler(async (req, res) => {
 
 /**
  * Sidebar payload: every conversation the caller belongs to, with the other
- * member (for DMs), an unread count, and a last-message preview.
+ * member (for DMs), an unread count, a mention flag and a last-message preview.
  *
- * Message metadata for all of the caller's conversations is pulled in one query
- * and grouped in memory rather than issuing a count query per conversation.
- * Fine at team scale; if staff chat volume ever grows into the tens of
- * thousands this should become a Postgres RPC that returns the counts directly.
+ * The counts come from the chat_conversation_summary RPC rather than being
+ * computed here. The previous version pulled every message of every
+ * conversation the user belonged to — full text included — purely to produce a
+ * handful of numbers, and repeated that on every poll and every realtime nudge.
+ * Only conversation and member rows are fetched now, both bounded by the number
+ * of conversations rather than the message history behind them.
  */
-router.get("/conversations", ...staffOnly, async (req: AuthedRequest, res) => {
+router.get("/conversations", ...staffOnly, asyncHandler(async (req, res) => {
+  const authed = req as AuthedRequest;
   if (!supabase) return res.json([]);
-  const me = req.user!.id;
+  const me = authed.user!.id;
 
-  const memberships = await supabase.from("chat_members").select("conversation_id,last_read_message_id").eq("user_id", me);
-  if (memberships.error) return res.status(500).json({ error: memberships.error.message });
-  const ids = (memberships.data ?? []).map((m) => m.conversation_id);
+  const summary = await supabase.rpc("chat_conversation_summary", { p_user_id: me });
+  if (summary.error) return res.status(500).json({ error: summary.error.message });
+  const rows = (summary.data ?? []) as Array<{
+    conv_id: number; unread: number; mentioned: boolean;
+    newest_id: number | null; preview_text: string | null; preview_at: string | null;
+  }>;
+  const ids = rows.map((r) => r.conv_id);
   if (ids.length === 0) return res.json([]);
+  const summaryBy = new Map(rows.map((r) => [r.conv_id, r]));
 
-  const lastReadBy = new Map<number, number>();
-  for (const m of memberships.data ?? []) lastReadBy.set(m.conversation_id, m.last_read_message_id ?? 0);
-
-  const [conversations, allMembers, messages] = await Promise.all([
-    supabase.from("chat_conversations").select("id,kind,name,createdAt:created_at,lastMessageAt:last_message_at").in("id", ids),
+  const [conversations, allMembers] = await Promise.all([
+    supabase.from("chat_conversations").select("id,kind,name,createdAt:created_at").in("id", ids),
     supabase.from("chat_members").select("conversation_id,user_id,users(name,role)").in("conversation_id", ids),
-    supabase.from("chat_messages").select("id,conversation_id,sender_id,text,attachment_name,mentions,created_at").in("conversation_id", ids).order("id", { ascending: true }),
   ]);
-  for (const q of [conversations, allMembers, messages]) {
+  for (const q of [conversations, allMembers]) {
     if (q.error) return res.status(500).json({ error: q.error.message });
   }
 
@@ -131,26 +146,9 @@ router.get("/conversations", ...staffOnly, async (req: AuthedRequest, res) => {
     membersByConversation.set(row.conversation_id, list);
   }
 
-  // Messages arrive ordered by id ascending, so the last one seen per
-  // conversation is the newest — it doubles as the preview and the sort key.
-  const unread = new Map<number, number>();
-  const preview = new Map<number, { text: string; createdAt: string }>();
-  const newestId = new Map<number, number>();
-  const mentionsMe = new Set<number>();
-  for (const m of (messages.data ?? []) as any[]) {
-    preview.set(m.conversation_id, { text: m.text ?? m.attachment_name ?? "Attachment", createdAt: m.created_at });
-    newestId.set(m.conversation_id, m.id);
-    const isUnread = m.sender_id !== me && m.id > (lastReadBy.get(m.conversation_id) ?? 0);
-    if (isUnread) {
-      unread.set(m.conversation_id, (unread.get(m.conversation_id) ?? 0) + 1);
-      // Only unread mentions matter — once you've read the thread the marker
-      // has done its job and shouldn't linger.
-      if (Array.isArray(m.mentions) && m.mentions.includes(me)) mentionsMe.add(m.conversation_id);
-    }
-  }
-
   const payload = ((conversations.data ?? []) as any[]).map((c) => {
     const members = membersByConversation.get(c.id) ?? [];
+    const s = summaryBy.get(c.id);
     return {
       id: c.id,
       kind: c.kind,
@@ -158,11 +156,12 @@ router.get("/conversations", ...staffOnly, async (req: AuthedRequest, res) => {
       name: c.kind === "dm" ? (members.find((m) => m.id !== me)?.name ?? "Deleted user") : c.name,
       otherUserId: c.kind === "dm" ? (members.find((m) => m.id !== me)?.id ?? null) : null,
       members,
-      unreadCount: unread.get(c.id) ?? 0,
-      mentionsMe: mentionsMe.has(c.id),
-      lastMessage: preview.get(c.id) ?? null,
-      lastMessageAt: c.lastMessageAt,
-      newestMessageId: newestId.get(c.id) ?? 0,
+      unreadCount: Number(s?.unread ?? 0),
+      mentionsMe: !!s?.mentioned,
+      lastMessage: s?.preview_at
+        ? { text: s.preview_text ?? "Attachment", createdAt: s.preview_at }
+        : null,
+      newestMessageId: s?.newest_id ?? 0,
     };
   });
 
@@ -171,11 +170,12 @@ router.get("/conversations", ...staffOnly, async (req: AuthedRequest, res) => {
   // couple of seconds of each other would otherwise sort unpredictably.
   payload.sort((a, b) => b.newestMessageId - a.newestMessageId);
   return res.json(payload);
-});
+}));
 
 /** Open a DM: returns the existing thread for this pair if there is one. */
-router.post("/conversations/dm", ...staffOnly, async (req: AuthedRequest, res) => {
-  const me = req.user!.id;
+router.post("/conversations/dm", ...staffOnly, asyncHandler(async (req, res) => {
+  const authed = req as AuthedRequest;
+  const me = authed.user!.id;
   const otherId = Number(req.body?.userId);
   if (!otherId) return res.status(400).json({ error: "userId is required" });
   if (otherId === me) return res.status(400).json({ error: "You can't DM yourself" });
@@ -212,11 +212,12 @@ router.post("/conversations/dm", ...staffOnly, async (req: AuthedRequest, res) =
   }
 
   return res.status(201).json({ id: created.data.id, kind: "dm", created: true });
-});
+}));
 
 /** Create a named channel. Admin-only, mirroring who can create other shared resources. */
-router.post("/conversations/channel", requireAuth, requireRole("admin"), async (req: AuthedRequest, res) => {
-  const me = req.user!.id;
+router.post("/conversations/channel", requireAuth, requireRole("admin"), asyncHandler(async (req, res) => {
+  const authed = req as AuthedRequest;
+  const me = authed.user!.id;
   const { name, memberIds } = req.body ?? {};
   if (!name?.trim()) return res.status(400).json({ error: "name is required" });
   if (!supabase) return res.status(503).json({ error: "Database not configured" });
@@ -234,31 +235,60 @@ router.post("/conversations/channel", requireAuth, requireRole("admin"), async (
   }
 
   return res.status(201).json(created.data);
-});
+}));
 
-router.get("/conversations/:id/messages", ...staffOnly, async (req: AuthedRequest, res) => {
+/** Newest-first page size. Kept modest because every row may carry an attachment to sign. */
+const MESSAGE_PAGE_SIZE = 50;
+
+/**
+ * One page of a thread, newest first, oldest-last in the response.
+ *
+ * Keyset paginated on `id` (`?before=<id>` walks backwards) rather than
+ * offset — it rides the existing (conversation_id, id) index and can't skip or
+ * repeat rows when new messages arrive mid-scroll.
+ *
+ * The bound also matters for correctness, not just speed: PostgREST caps
+ * unbounded selects at its own `max-rows` WITHOUT raising an error, and the
+ * previous ascending-unbounded query would have silently returned the OLDEST
+ * rows once a thread crossed that cap. An explicit limit makes the behaviour
+ * the same whatever the server is configured to allow.
+ */
+router.get("/conversations/:id/messages", ...staffOnly, asyncHandler(async (req, res) => {
+  const authed = req as AuthedRequest;
   const conversationId = Number(req.params.id);
+  const before = Number(req.query.before);
   if (!conversationId) return res.status(400).json({ error: "Invalid conversation id" });
-  if (!supabase) return res.json([]);
-  if (!(await isMember(conversationId, req.user!.id))) return res.status(403).json({ error: "You are not a member of this conversation" });
+  if (!supabase) return res.json({ messages: [], hasMore: false });
+  if (!(await isMember(conversationId, authed.user!.id))) return res.status(403).json({ error: "You are not a member of this conversation" });
 
-  const { data, error } = await supabase.from("chat_messages").select(MESSAGE_SELECT).eq("conversation_id", conversationId).order("id", { ascending: true });
+  let query = supabase.from("chat_messages").select(MESSAGE_SELECT).eq("conversation_id", conversationId);
+  if (Number.isInteger(before) && before > 0) query = query.lt("id", before);
+
+  // Fetch one extra to detect a further page without a second count query.
+  const { data, error } = await query.order("id", { ascending: false }).limit(MESSAGE_PAGE_SIZE + 1);
   if (error) return res.status(500).json({ error: error.message });
-  return res.json(await attachSignedUrls((data ?? []) as any[]));
-});
 
-router.post("/conversations/:id/messages", ...staffOnly, async (req: AuthedRequest, res) => {
+  const rows = data ?? [];
+  const hasMore = rows.length > MESSAGE_PAGE_SIZE;
+  const page = hasMore ? rows.slice(0, MESSAGE_PAGE_SIZE) : rows;
+  // Reversed so the client still renders oldest-at-top.
+  const messages = await attachSignedUrls(page.reverse() as any[]);
+  return res.json({ messages, hasMore });
+}));
+
+router.post("/conversations/:id/messages", ...staffOnly, asyncHandler(async (req, res) => {
+  const authed = req as AuthedRequest;
   const conversationId = Number(req.params.id);
   const text = typeof req.body?.text === "string" ? req.body.text.trim() : "";
   if (!conversationId) return res.status(400).json({ error: "Invalid conversation id" });
   if (!text) return res.status(400).json({ error: "text is required" });
   if (!supabase) return res.status(503).json({ error: "Database not configured" });
-  if (!(await isMember(conversationId, req.user!.id))) return res.status(403).json({ error: "You are not a member of this conversation" });
+  if (!(await isMember(conversationId, authed.user!.id))) return res.status(403).json({ error: "You are not a member of this conversation" });
 
   const mentions = await validMentionIds(conversationId, req.body?.mentionIds);
   const { data, error } = await supabase
     .from("chat_messages")
-    .insert({ conversation_id: conversationId, sender_id: req.user!.id, text, mentions })
+    .insert({ conversation_id: conversationId, sender_id: authed.user!.id, text, mentions })
     .select(MESSAGE_SELECT)
     .single();
   if (error) return res.status(500).json({ error: error.message });
@@ -272,13 +302,14 @@ router.post("/conversations/:id/messages", ...staffOnly, async (req: AuthedReque
   await broadcastChatActivity((members.data ?? []).map((m) => m.user_id), conversationId);
 
   return res.status(201).json(data);
-});
+}));
 
 /**
  * Send a file or image. Separate from the JSON route above because this one is
  * multipart; an optional caption rides along in the same message row.
  */
-router.post("/conversations/:id/attachments", ...staffOnly, upload.single("file"), async (req: AuthedRequest, res) => {
+router.post("/conversations/:id/attachments", ...staffOnly, upload.single("file"), asyncHandler(async (req, res) => {
+  const authed = req as AuthedRequest;
   const conversationId = Number(req.params.id);
   const file = req.file;
   const caption = typeof req.body?.text === "string" ? req.body.text.trim() : "";
@@ -286,7 +317,7 @@ router.post("/conversations/:id/attachments", ...staffOnly, upload.single("file"
   if (!file) return res.status(400).json({ error: "file is required" });
   if (!supabase || !supabaseAdmin) return res.status(503).json({ error: "File storage not configured" });
   // Checked before the upload so a non-member can't write into the bucket at all.
-  if (!(await isMember(conversationId, req.user!.id))) return res.status(403).json({ error: "You are not a member of this conversation" });
+  if (!(await isMember(conversationId, authed.user!.id))) return res.status(403).json({ error: "You are not a member of this conversation" });
 
   const path = `chat/${conversationId}/${Date.now()}-${file.originalname}`;
   const { error: uploadError } = await supabaseAdmin.storage.from(FILES_BUCKET).upload(path, file.buffer, { contentType: file.mimetype });
@@ -297,7 +328,7 @@ router.post("/conversations/:id/attachments", ...staffOnly, upload.single("file"
     .from("chat_messages")
     .insert({
       conversation_id: conversationId,
-      sender_id: req.user!.id,
+      sender_id: authed.user!.id,
       text: caption || null,
       attachment_path: path,
       attachment_name: file.originalname,
@@ -313,18 +344,19 @@ router.post("/conversations/:id/attachments", ...staffOnly, upload.single("file"
   await broadcastChatActivity((members.data ?? []).map((m) => m.user_id), conversationId);
 
   return res.status(201).json((await attachSignedUrls([data as any]))[0]);
-});
+}));
 
 /**
  * Clear the unread badge by advancing this member's cursor to the newest
  * message in the conversation. Reads the id back from the database rather than
  * using a timestamp, so app-server clock drift can't strand messages as unread.
  */
-router.post("/conversations/:id/read", ...staffOnly, async (req: AuthedRequest, res) => {
+router.post("/conversations/:id/read", ...staffOnly, asyncHandler(async (req, res) => {
+  const authed = req as AuthedRequest;
   const conversationId = Number(req.params.id);
   if (!conversationId) return res.status(400).json({ error: "Invalid conversation id" });
   if (!supabase) return res.status(503).json({ error: "Database not configured" });
-  if (!(await isMember(conversationId, req.user!.id))) return res.status(403).json({ error: "You are not a member of this conversation" });
+  if (!(await isMember(conversationId, authed.user!.id))) return res.status(403).json({ error: "You are not a member of this conversation" });
 
   const newest = await supabase
     .from("chat_messages")
@@ -339,9 +371,9 @@ router.post("/conversations/:id/read", ...staffOnly, async (req: AuthedRequest, 
     .from("chat_members")
     .update({ last_read_message_id: newest.data?.id ?? 0 })
     .eq("conversation_id", conversationId)
-    .eq("user_id", req.user!.id);
+    .eq("user_id", authed.user!.id);
   if (error) return res.status(500).json({ error: error.message });
   return res.json({ success: true, lastReadMessageId: newest.data?.id ?? 0 });
-});
+}));
 
 export default router;

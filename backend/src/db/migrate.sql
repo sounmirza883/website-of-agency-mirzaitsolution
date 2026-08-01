@@ -292,6 +292,49 @@ ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS mentions INTEGER[] NOT NULL D
 CREATE INDEX IF NOT EXISTS chat_messages_conversation_idx ON chat_messages (conversation_id, id);
 CREATE INDEX IF NOT EXISTS chat_members_user_idx ON chat_members (user_id);
 
+-- Sidebar summary for one user, computed in the database.
+--
+-- Replaces reading every message of every conversation the user belongs to and
+-- counting them in the API process: that transferred full message text purely
+-- to produce a number, on every sidebar load, every poll, and every realtime
+-- nudge. Unread count, mention flag and the last-message preview all have to
+-- come back together, because the mention flag is only meaningful for messages
+-- that are also unread.
+-- Output columns are deliberately NOT named conversation_id / mentions / text:
+-- RETURNS TABLE names behave as output parameters, and reusing a real column
+-- name there is a classic source of "column reference is ambiguous" errors.
+CREATE OR REPLACE FUNCTION chat_conversation_summary(p_user_id INTEGER)
+RETURNS TABLE (
+  conv_id INTEGER,
+  unread BIGINT,
+  mentioned BOOLEAN,
+  newest_id INTEGER,
+  preview_text TEXT,
+  preview_at TIMESTAMPTZ
+)
+LANGUAGE sql
+STABLE
+AS $$
+  SELECT
+    m.conversation_id,
+    COALESCE(COUNT(msg.id) FILTER (
+      WHERE msg.id > m.last_read_message_id AND msg.sender_id IS DISTINCT FROM p_user_id
+    ), 0),
+    COALESCE(BOOL_OR(
+      msg.id > m.last_read_message_id
+      AND msg.sender_id IS DISTINCT FROM p_user_id
+      AND p_user_id = ANY(msg.mentions)
+    ), FALSE),
+    MAX(msg.id),
+    -- Preview text of the newest message, picked without a second query.
+    (ARRAY_AGG(COALESCE(msg.text, msg.attachment_name) ORDER BY msg.id DESC))[1],
+    MAX(msg.created_at)
+  FROM chat_members m
+  LEFT JOIN chat_messages msg ON msg.conversation_id = m.conversation_id
+  WHERE m.user_id = p_user_id
+  GROUP BY m.conversation_id;
+$$;
+
 -- ============================================================
 -- Seed Data
 -- ============================================================

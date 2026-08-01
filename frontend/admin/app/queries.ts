@@ -129,8 +129,11 @@ async function apiUpload<T>(path: string, token: string, formData: FormData): Pr
 
 export function fetchChatContacts(token: string) { return apiGet<any[]>("/chat/contacts", token); }
 export function fetchChatConversations(token: string) { return apiGet<any[]>("/chat/conversations", token); }
-export function fetchChatMessages(token: string, conversationId: number) {
-  return apiGet<any[]>(`/chat/conversations/${conversationId}/messages`, token);
+// Returns one newest-first page, oldest-last in the array. `before` walks
+// backwards through history for "load older".
+export function fetchChatMessages(token: string, conversationId: number, before?: number) {
+  const qs = before ? `?before=${before}` : "";
+  return apiGet<{ messages: any[]; hasMore: boolean }>(`/chat/conversations/${conversationId}/messages${qs}`, token);
 }
 export function sendChatMessage(token: string, conversationId: number, text: string, mentionIds: number[] = []) {
   return apiPost<any>(`/chat/conversations/${conversationId}/messages`, token, { text, mentionIds });
