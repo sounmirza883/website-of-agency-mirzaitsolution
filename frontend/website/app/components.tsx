@@ -4,17 +4,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { useState } from "react";
 import { useSubmitContact } from "./hooks";
+import { countries } from "./data";
 
 const nav = [["Home", "/"], ["About", "/about"], ["Services", "/services"], ["Portfolio", "/portfolio"], ["Contact", "/contact"]];
-// Dial codes for the phone field. Pakistan first as the home market, then the
-// regions the currency options below cover.
-const dialCodes = [
-  ["+92", "PK"], ["+44", "UK"], ["+1", "US/CA"], ["+971", "AE"], ["+966", "SA"],
-  ["+91", "IN"], ["+61", "AU"], ["+49", "DE"], ["+33", "FR"], ["+34", "ES"],
-  ["+39", "IT"], ["+31", "NL"], ["+353", "IE"], ["+46", "SE"], ["+41", "CH"],
-  ["+65", "SG"], ["+60", "MY"], ["+90", "TR"], ["+27", "ZA"], ["+86", "CN"],
-];
-
 const currencies = ["PKR", "USD", "GBP", "EUR"];
 
 const serviceLinks = ["App Development", "SaaS Website", "PaaS Website", "Web Development", "WordPress Development", "Custom Software", "Custom Web Software", "Custom Dashboard", "AI Automation"];
@@ -59,7 +51,7 @@ export function PortfolioFilter({ items }: { items: readonly (readonly [string, 
 }
 
 export function ContactForm() {
-  const empty = { name: "", email: "", dialCode: "+92", phone: "", service: "", budget: "", currency: "PKR", message: "" };
+  const empty = { name: "", email: "", country: "PK", phone: "", service: "", budget: "", currency: "PKR", message: "" };
   const [form, setForm] = useState(empty);
   const submit = useSubmitContact();
 
@@ -67,7 +59,8 @@ export function ContactForm() {
     event.preventDefault();
     // Dial code and number are stored as one value; the split only exists to
     // make the country explicit while typing.
-    const { dialCode, phone, ...rest } = form;
+    const { country, phone, ...rest } = form;
+    const dialCode = countries.find(([iso]) => iso === country)?.[2] ?? "";
     submit.mutate(
       { ...rest, phone: phone.trim() ? `${dialCode} ${phone.trim()}` : "" },
       { onSuccess: () => setForm(empty) }
@@ -79,9 +72,9 @@ export function ContactForm() {
     <div className="form-group"><input required type="text" placeholder=" " value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /><label>Full Name</label></div>
     <div className="form-group"><input required type="email" placeholder=" " value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /><label>Email Address</label></div>
     <div className="form-row">
-      <div className="form-group form-group-narrow">
-        <select value={form.dialCode} onChange={(e) => setForm({ ...form, dialCode: e.target.value })} aria-label="Country code">
-          {dialCodes.map(([code, label]) => <option key={code} value={code}>{code} {label}</option>)}
+      <div className="form-group form-group-country">
+        <select value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} aria-label="Country code">
+          {countries.map(([iso, name, dial]) => <option key={iso} value={iso}>{name} ({dial})</option>)}
         </select>
       </div>
       <div className="form-group"><input type="tel" inputMode="tel" placeholder=" " value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /><label>Phone Number</label></div>
