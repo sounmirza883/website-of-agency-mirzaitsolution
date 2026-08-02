@@ -23,7 +23,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 
 const staffOnly = [requireAuth, requireRole("admin", "employee")] as const;
 
 const MESSAGE_SELECT =
-  "id,conversationId:conversation_id,senderId:sender_id,text,mentions,attachmentPath:attachment_path,attachmentName:attachment_name,attachmentType:attachment_type,editedAt:edited_at,deletedAt:deleted_at,replyToId:reply_to_id,createdAt:created_at,sender:users(name,role)";
+  "id,conversationId:conversation_id,senderId:sender_id,text,mentions,attachmentPath:attachment_path,attachmentName:attachment_name,attachmentType:attachment_type,editedAt:edited_at,deletedAt:deleted_at,replyToId:reply_to_id,createdAt:created_at,sender:users!sender_id(name,role)";
 
 /**
  * Fold reactions and quoted-message previews onto a page of messages.
@@ -42,7 +42,7 @@ async function decorateMessages(rows: any[], me: number): Promise<any[]> {
   const [reactionRows, quotedRows] = await Promise.all([
     supabase.from("chat_reactions").select("message_id,user_id,emoji").in("message_id", ids),
     replyIds.length
-      ? supabase.from("chat_messages").select("id,text,attachment_name,deleted_at,sender:users(name)").in("id", replyIds)
+      ? supabase.from("chat_messages").select("id,text,attachment_name,deleted_at,sender:users!sender_id(name)").in("id", replyIds)
       : Promise.resolve({ data: [] as any[], error: null }),
   ]);
 
@@ -194,7 +194,7 @@ router.get("/conversations", ...staffOnly, asyncHandler(async (req, res) => {
 
   const [conversations, allMembers] = await Promise.all([
     supabase.from("chat_conversations").select("id,kind,name,createdAt:created_at").in("id", ids),
-    supabase.from("chat_members").select("conversation_id,user_id,users(name,role)").in("conversation_id", ids),
+    supabase.from("chat_members").select("conversation_id,user_id,users!user_id(name,role)").in("conversation_id", ids),
   ]);
   for (const q of [conversations, allMembers]) {
     if (q.error) return res.status(500).json({ error: q.error.message });
