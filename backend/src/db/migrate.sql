@@ -8,6 +8,9 @@ CREATE TABLE IF NOT EXISTS website_services (id SERIAL PRIMARY KEY, title TEXT N
 CREATE TABLE IF NOT EXISTS website_portfolio (id SERIAL PRIMARY KEY, title TEXT NOT NULL, category TEXT NOT NULL, slug TEXT NOT NULL, icon TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS website_service_details (id SERIAL PRIMARY KEY, title TEXT NOT NULL, description TEXT NOT NULL, features TEXT[] NOT NULL, class_name TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS website_contact_submissions (id SERIAL PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL, phone TEXT, service TEXT, message TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now());
+-- Estimated budget captured on the contact form, with the currency it was given in.
+ALTER TABLE website_contact_submissions ADD COLUMN IF NOT EXISTS budget TEXT;
+ALTER TABLE website_contact_submissions ADD COLUMN IF NOT EXISTS currency TEXT;
 
 -- Auth (shared login for admin/employee/client portals)
 CREATE TABLE IF NOT EXISTS users (

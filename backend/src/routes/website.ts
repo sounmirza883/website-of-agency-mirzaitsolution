@@ -71,21 +71,32 @@ router.get("/service-details", async (_req, res) => {
 });
 
 router.post("/contact", async (req, res) => {
-  const { name, email, phone, service, message } = req.body ?? {};
+  const { name, email, phone, service, budget, currency, message } = req.body ?? {};
   if (!name || !email || !message) {
     return res.status(400).json({ error: "name, email, and message are required" });
   }
   if (!supabase) {
-    console.log("[contact] Supabase not configured — submission not persisted:", { name, email, phone, service, message });
+    console.log("[contact] Supabase not configured — submission not persisted:", { name, email, phone, service, budget, currency, message });
     return res.status(201).json({ ok: true });
   }
-  const { data, error } = await supabase
-    .from("website_contact_submissions")
-    .insert({ name, email, phone: phone || null, service: service || null, message })
-    .select()
-    .single();
-  if (error) return res.status(500).json({ error: error.message });
-  return res.status(201).json(data);
+
+  const base = { name, email, phone: phone || null, service: service || null, message };
+  const withBudget = { ...base, budget: budget || null, currency: budget ? currency || null : null };
+
+  const first = await supabase.from("website_contact_submissions").insert(withBudget).select().single();
+  if (!first.error) return res.status(201).json(first.data);
+
+  // This is a public lead-capture form, so a pending migration must not cost a
+  // real enquiry: if budget/currency don't exist yet, save the rest rather than
+  // failing the whole submission. Any other error is genuine and surfaces.
+  if (/budget|currency|schema cache|does not exist/i.test(first.error.message)) {
+    console.warn("[contact] budget/currency columns missing — run migrate.sql; saving without them");
+    const retry = await supabase.from("website_contact_submissions").insert(base).select().single();
+    if (retry.error) return res.status(500).json({ error: retry.error.message });
+    return res.status(201).json(retry.data);
+  }
+
+  return res.status(500).json({ error: first.error.message });
 });
 
 export default router;

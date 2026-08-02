@@ -6,6 +6,17 @@ import { useState } from "react";
 import { useSubmitContact } from "./hooks";
 
 const nav = [["Home", "/"], ["About", "/about"], ["Services", "/services"], ["Portfolio", "/portfolio"], ["Contact", "/contact"]];
+// Dial codes for the phone field. Pakistan first as the home market, then the
+// regions the currency options below cover.
+const dialCodes = [
+  ["+92", "PK"], ["+44", "UK"], ["+1", "US/CA"], ["+971", "AE"], ["+966", "SA"],
+  ["+91", "IN"], ["+61", "AU"], ["+49", "DE"], ["+33", "FR"], ["+34", "ES"],
+  ["+39", "IT"], ["+31", "NL"], ["+353", "IE"], ["+46", "SE"], ["+41", "CH"],
+  ["+65", "SG"], ["+60", "MY"], ["+90", "TR"], ["+27", "ZA"], ["+86", "CN"],
+];
+
+const currencies = ["PKR", "USD", "GBP", "EUR"];
+
 const serviceLinks = ["App Development", "SaaS Website", "PaaS Website", "Web Development", "WordPress Development", "Custom Software", "Custom Web Software", "Custom Dashboard", "AI Automation"];
 
 export function Icon({ name, brand }: { name: string; brand?: boolean }) { return <i className={`${brand ? "fab" : "fas"} ${name}`} aria-hidden="true" />; }
@@ -47,6 +58,48 @@ export function PortfolioFilter({ items }: { items: readonly (readonly [string, 
   return <><div className="portfolio-filters">{filters.map(([id, label]) => <button key={id} className={`filter-btn ${filter === id ? "active" : ""}`} onClick={() => setFilter(id)}>{label}</button>)}</div><div className="grid-3">{items.filter(([, , category]) => filter === "all" || category === filter).map(([title, category, , , description, image]) => <div className="portfolio-card" key={title}><div className="thumb"><Image src={image} alt={title} fill sizes="(max-width: 768px) 100vw, 33vw" style={{ objectFit: "cover" }} /></div><div className="info"><h4>{title}</h4><span>{category}</span><p>{description}</p></div></div>)}</div></>;
 }
 
-export function ContactForm() { const [form, setForm] = useState({ name: "", email: "", phone: "", service: "", message: "" }); const submit = useSubmitContact(); return <form className="contact-form" onSubmit={(event) => { event.preventDefault(); submit.mutate(form, { onSuccess: () => setForm({ name: "", email: "", phone: "", service: "", message: "" }) }); }}><h3>Send Us a <strong>Message</strong></h3><div className="form-group"><input required type="text" placeholder=" " value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /><label>Full Name</label></div><div className="form-group"><input required type="email" placeholder=" " value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /><label>Email Address</label></div><div className="form-group"><input type="text" placeholder=" " value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /><label>Phone Number</label></div><div className="form-group"><select value={form.service} onChange={(e) => setForm({ ...form, service: e.target.value })}><option value="">Select a service</option>{serviceLinks.map((item) => <option key={item}>{item}</option>)}</select></div><div className="form-group"><textarea required placeholder=" " value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} /><label>Project Details</label></div><button type="submit" className="pill pill-primary" disabled={submit.isPending}><Icon name="fa-paper-plane" /> {submit.isPending ? "Sending…" : submit.isSuccess ? "Message Sent" : "Send Message"}</button>{submit.isSuccess && <p className="form-success">Thank you. We will get back to you shortly.</p>}{submit.isError && <p style={{ color: "var(--error)" }}>{(submit.error as Error).message}</p>}</form>; }
+export function ContactForm() {
+  const empty = { name: "", email: "", dialCode: "+92", phone: "", service: "", budget: "", currency: "PKR", message: "" };
+  const [form, setForm] = useState(empty);
+  const submit = useSubmitContact();
+
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    // Dial code and number are stored as one value; the split only exists to
+    // make the country explicit while typing.
+    const { dialCode, phone, ...rest } = form;
+    submit.mutate(
+      { ...rest, phone: phone.trim() ? `${dialCode} ${phone.trim()}` : "" },
+      { onSuccess: () => setForm(empty) }
+    );
+  }
+
+  return <form className="contact-form" onSubmit={handleSubmit}>
+    <h3>Send Us a <strong>Message</strong></h3>
+    <div className="form-group"><input required type="text" placeholder=" " value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /><label>Full Name</label></div>
+    <div className="form-group"><input required type="email" placeholder=" " value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /><label>Email Address</label></div>
+    <div className="form-row">
+      <div className="form-group form-group-narrow">
+        <select value={form.dialCode} onChange={(e) => setForm({ ...form, dialCode: e.target.value })} aria-label="Country code">
+          {dialCodes.map(([code, label]) => <option key={code} value={code}>{code} {label}</option>)}
+        </select>
+      </div>
+      <div className="form-group"><input type="tel" inputMode="tel" placeholder=" " value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /><label>Phone Number</label></div>
+    </div>
+    <div className="form-group"><select value={form.service} onChange={(e) => setForm({ ...form, service: e.target.value })}><option value="">Select a service</option>{serviceLinks.map((item) => <option key={item}>{item}</option>)}</select></div>
+    <div className="form-row">
+      <div className="form-group"><input type="number" min="0" step="any" placeholder=" " value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} /><label>Estimated Budget</label></div>
+      <div className="form-group form-group-narrow">
+        <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} aria-label="Currency">
+          {currencies.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </div>
+    </div>
+    <div className="form-group"><textarea required placeholder=" " value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} /><label>Project Details</label></div>
+    <button type="submit" className="pill pill-primary" disabled={submit.isPending}><Icon name="fa-paper-plane" /> {submit.isPending ? "Sending…" : submit.isSuccess ? "Message Sent" : "Send Message"}</button>
+    {submit.isSuccess && <p className="form-success">Thank you. We will get back to you shortly.</p>}
+    {submit.isError && <p style={{ color: "var(--error)" }}>{(submit.error as Error).message}</p>}
+  </form>;
+}
 
 export function FAQ() { const [open, setOpen] = useState(0); const questions = [["What services does Mirza IT Solution provide?", "Mirza IT Solution provides app development, SaaS and PaaS websites, web development, WordPress development, custom software, custom dashboards, and AI automation."], ["Do you work with international clients?", "Yes, Mirza IT Solution works with clients worldwide through email, video calls, and project management tools."], ["Can you create a complete brand package?", "Yes, we can create logos, brand identity, social media designs, websites, videos, and marketing content."], ["Do you provide revisions?", "Yes, revisions are provided based on the project package and client requirements."], ["How can I start a project?", "Contact us through the form, email, or WhatsApp button to discuss your project."]]; return <div className="faq-list">{questions.map(([question, answer], index) => <div className={`faq-item ${open === index ? "active" : ""}`} key={question}><button className="faq-question" onClick={() => setOpen(open === index ? -1 : index)}>{question}<i className="fas fa-chevron-down" /></button>{open === index && <div className="faq-answer">{answer}</div>}</div>)}</div>; }
