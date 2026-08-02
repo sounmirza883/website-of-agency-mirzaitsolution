@@ -3,7 +3,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
 import { fetchUsers, fetchEmployees, fetchClientsList, createEmployee, createClient, setEmployeePermission, fetchServices, fetchProjects, fetchInvoices, fetchNotifications, fetchPortfolioList, fetchContactSubmissions, deleteLead, fetchPaymentSettings, fetchAdminTickets, setTicketStatus, createService, createProject, updateProjectStatus, assignProjectEmployee, createInvoice, verifyInvoice, createNotification, createPortfolioItem, setUserStatus, updateUserDetails, deleteUserAccount, fetchAdminAttendance, fetchAdminLeaveRequests, setLeaveRequestStatus, fetchProjectMessages, sendProjectMessage, changePassword, updatePaymentSettings,
-  fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, createChatChannel, markChatRead, sendChatAttachment, editChatMessage, deleteChatMessage, leaveChatConversation, toggleChatReaction, renameChatChannel, addChatMember, removeChatMember, deleteChatChannel } from "./queries";
+  fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, createChatChannel, markChatRead, sendChatAttachment, editChatMessage, deleteChatMessage, leaveChatConversation, toggleChatReaction, searchChatMessages, renameChatChannel, addChatMember, removeChatMember, deleteChatChannel } from "./queries";
 
 export function useChangePassword() {
   const { token } = useAuth();
@@ -433,5 +433,16 @@ export function useToggleChatReaction() {
     mutationFn: ({ conversationId, messageId, emoji }: { conversationId: number; messageId: number; emoji: string }) =>
       toggleChatReaction(token!, conversationId, messageId, emoji),
     onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ["chatMessages", v.conversationId] }),
+  });
+}
+
+// Debounced by the caller; the server ignores queries shorter than 2 chars.
+export function useChatSearch(query: string) {
+  const { token } = useAuth();
+  return useQuery({
+    queryKey: ["chatSearch", query],
+    queryFn: () => searchChatMessages(token!, query),
+    enabled: !!token && query.trim().length >= 2,
+    staleTime: 1000 * 30,
   });
 }

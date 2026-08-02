@@ -54,6 +54,9 @@ CREATE TABLE chat_messages (id SERIAL PRIMARY KEY, conversation_id INTEGER NOT N
 CREATE TABLE chat_reactions (message_id INTEGER NOT NULL REFERENCES chat_messages(id) ON DELETE CASCADE, user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE, emoji TEXT NOT NULL, created_at TIMESTAMPTZ NOT NULL DEFAULT now(), PRIMARY KEY (message_id, user_id, emoji));
 CREATE INDEX chat_messages_conversation_idx ON chat_messages (conversation_id, id);
 CREATE INDEX chat_reactions_message_idx ON chat_reactions (message_id);
+-- Trigram index so message search (ILIKE '%term%') isn't a sequential scan.
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX chat_messages_text_trgm_idx ON chat_messages USING GIN (text gin_trgm_ops);
 CREATE INDEX chat_members_user_idx ON chat_members (user_id);
 
 -- Shared file storage (employee uploads, optionally visible to a client)

@@ -305,6 +305,13 @@ CREATE TABLE IF NOT EXISTS chat_reactions (
 );
 CREATE INDEX IF NOT EXISTS chat_reactions_message_idx ON chat_reactions (message_id);
 
+-- Message search. A plain ILIKE '%term%' can't use a normal btree index, so
+-- without this every search is a sequential scan of the whole table. pg_trgm
+-- gives ILIKE a usable index; it ships with Supabase and the extension create
+-- is idempotent.
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE INDEX IF NOT EXISTS chat_messages_text_trgm_idx ON chat_messages USING GIN (text gin_trgm_ops);
+
 -- A thread is always read for one conversation at a time, oldest-first by id;
 -- the sidebar reads every conversation a single user belongs to.
 CREATE INDEX IF NOT EXISTS chat_messages_conversation_idx ON chat_messages (conversation_id, id);

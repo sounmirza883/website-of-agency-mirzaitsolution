@@ -3,7 +3,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
 import { fetchMyClients, createClient, fetchAssignedProjects, fetchEmpTasks, fetchEmpFiles, fetchStatusUpdates, fetchAttendance, fetchLeaveRequests, createTask, updateTaskStatus, postStatusUpdate, checkIn, checkOut, requestLeave, uploadFile, fetchProjectMessages, sendProjectMessage, fetchEmpNotifications, createEmpNotification, changePassword, fetchEmpTickets, setEmpTicketStatus,
-  fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, markChatRead, sendChatAttachment, editChatMessage, deleteChatMessage, leaveChatConversation, toggleChatReaction } from "./queries";
+  fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, markChatRead, sendChatAttachment, editChatMessage, deleteChatMessage, leaveChatConversation, toggleChatReaction, searchChatMessages } from "./queries";
 
 export function useChangePassword() {
   const { token } = useAuth();
@@ -288,5 +288,16 @@ export function useToggleChatReaction() {
     mutationFn: ({ conversationId, messageId, emoji }: { conversationId: number; messageId: number; emoji: string }) =>
       toggleChatReaction(token!, conversationId, messageId, emoji),
     onSuccess: (_d, v) => qc.invalidateQueries({ queryKey: ["chatMessages", v.conversationId] }),
+  });
+}
+
+// Debounced by the caller; the server ignores queries shorter than 2 chars.
+export function useChatSearch(query: string) {
+  const { token } = useAuth();
+  return useQuery({
+    queryKey: ["chatSearch", query],
+    queryFn: () => searchChatMessages(token!, query),
+    enabled: !!token && query.trim().length >= 2,
+    staleTime: 1000 * 30,
   });
 }

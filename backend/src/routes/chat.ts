@@ -155,6 +155,71 @@ async function isMember(conversationId: number, userId: number): Promise<boolean
   return !!data;
 }
 
+const SEARCH_LIMIT = 30;
+
+/**
+ * Search messages across the caller's conversations.
+ *
+ * Scoped by first resolving the caller's memberships and constraining the query
+ * to those conversation ids — the search must never be able to surface a
+ * message from a thread the caller isn't in, which is the obvious way a feature
+ * like this leaks private conversations.
+ *
+ * `%` and `_` in the query are escaped so they're matched literally rather than
+ * acting as wildcards that widen the search.
+ */
+router.get("/search", ...staffOnly, asyncHandler(async (req, res) => {
+  const authed = req as AuthedRequest;
+  const raw = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  if (raw.length < 2) return res.json([]);
+  if (!supabase) return res.json([]);
+
+  const memberships = await supabase.from("chat_members").select("conversation_id").eq("user_id", authed.user!.id);
+  if (memberships.error) return res.status(500).json({ error: memberships.error.message });
+  const ids = (memberships.data ?? []).map((m) => m.conversation_id);
+  if (ids.length === 0) return res.json([]);
+
+  const pattern = `%${raw.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+  const { data, error } = await supabase
+    .from("chat_messages")
+    .select("id,conversationId:conversation_id,text,createdAt:created_at,sender:users!sender_id(name)")
+    .in("conversation_id", ids)
+    .is("deleted_at", null)
+    .ilike("text", pattern)
+    .order("id", { ascending: false })
+    .limit(SEARCH_LIMIT);
+  if (error) return res.status(500).json({ error: error.message });
+
+  // Conversation labels are resolved here so the client can show where each hit
+  // came from without a second round trip per result.
+  const hitIds = [...new Set((data ?? []).map((m: any) => m.conversationId))];
+  const [convs, members] = await Promise.all([
+    supabase.from("chat_conversations").select("id,kind,name").in("id", hitIds),
+    supabase.from("chat_members").select("conversation_id,user_id,users!user_id(name)").in("conversation_id", hitIds),
+  ]);
+
+  const otherNameBy = new Map<number, string>();
+  for (const row of (members.data ?? []) as any[]) {
+    // For a DM the label is the OTHER participant — skipping the caller's own
+    // row, otherwise a DM hit would be labelled with the searcher's own name.
+    if (row.user_id === authed.user!.id) continue;
+    if (row.users?.name && !otherNameBy.has(row.conversation_id)) otherNameBy.set(row.conversation_id, row.users.name);
+  }
+  const convBy = new Map<number, { kind: string; name: string | null }>(
+    ((convs.data ?? []) as any[]).map((c) => [c.id, { kind: c.kind, name: c.name }])
+  );
+
+  return res.json(
+    ((data ?? []) as any[]).map((m) => {
+      const c = convBy.get(m.conversationId);
+      return {
+        ...m,
+        conversationLabel: c?.kind === "channel" ? `# ${c.name}` : otherNameBy.get(m.conversationId) ?? "Direct message",
+      };
+    })
+  );
+}));
+
 /** Everyone this user is allowed to start a DM with: all other staff. */
 router.get("/contacts", ...staffOnly, asyncHandler(async (req, res) => {
   const me = (req as AuthedRequest).user!.id;

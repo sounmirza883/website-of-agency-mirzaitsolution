@@ -179,3 +179,6 @@ export function removeChatMember(token: string, conversationId: number, userId: 
 export function deleteChatChannel(token: string, conversationId: number) {
   return apiDelete(`/chat/conversations/${conversationId}`, token);
 }
+export function searchChatMessages(token: string, q: string) {
+  return apiGet<any[]>(`/chat/search?q=${encodeURIComponent(q)}`, token);
+}

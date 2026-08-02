@@ -5,7 +5,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../auth";
 import { MessageBody } from "../message-body";
 import { useChatActivity, useStaffPresence } from "../realtime";
-import { useChatContacts, useChatConversations, useChatMessages, useSendChatMessage, useSendChatAttachment, useOpenChatDm, useMarkChatRead, useEditChatMessage, useDeleteChatMessage, useLeaveChatConversation, useToggleChatReaction } from "../hooks";
+import { useChatContacts, useChatConversations, useChatMessages, useSendChatMessage, useSendChatAttachment, useOpenChatDm, useMarkChatRead, useEditChatMessage, useDeleteChatMessage, useLeaveChatConversation, useToggleChatReaction, useChatSearch } from "../hooks";
 
 interface ChatMessage {
   id: number;
@@ -28,6 +28,15 @@ interface Contact {
   name: string;
   role: string;
   position: string | null;
+}
+
+interface SearchHit {
+  id: number;
+  conversationId: number;
+  text: string | null;
+  createdAt: string;
+  conversationLabel: string;
+  sender: { name: string } | null;
 }
 
 interface Conversation {
@@ -88,6 +97,8 @@ export default function MessagesPage() {
   const [isTyping, setIsTyping] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const { data: conversations } = useChatConversations();
   const { data: contacts } = useChatContacts();
@@ -106,6 +117,7 @@ export default function MessagesPage() {
   const deleteMessage = useDeleteChatMessage();
   const leaveConversation = useLeaveChatConversation();
   const toggleReaction = useToggleChatReaction();
+  const searchResults = useChatSearch(debouncedSearch);
 
   const list: Conversation[] = conversations ?? [];
   const active = list.find((c) => c.id === activeId) ?? null;
@@ -135,6 +147,11 @@ export default function MessagesPage() {
     // markRead is a stable mutation object; including it would re-fire the effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId, unreadForActive]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const newestId = messages?.length ? messages[messages.length - 1].id : null;
   useEffect(() => {
@@ -235,6 +252,26 @@ export default function MessagesPage() {
           <div className="p-3 border-b border-gray-200">
             <button onClick={() => setPickerOpen(true)} className="w-full bg-accent-2 text-gray-50 text-xs font-medium px-3 py-2 rounded-lg">+ New DM</button>
           </div>
+          <div className="px-3 pb-2">
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search messages"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+          </div>
+          {search.trim().length >= 2 ? (
+            <div className="flex-1 overflow-auto p-2 space-y-1">
+              {searchResults.isLoading && <p className="text-xs text-gray-400 px-2 py-4 text-center">Searching…</p>}
+              {!searchResults.isLoading && (searchResults.data?.length ?? 0) === 0 && (
+                <p className="text-xs text-gray-400 px-2 py-4 text-center">No messages found.</p>
+              )}
+              {(searchResults.data ?? []).map((r: SearchHit) => (
+                <button key={r.id} onClick={() => { setActiveId(r.conversationId); setSearch(""); }}
+                  className="w-full text-left px-2 py-2 rounded-lg hover:bg-gray-100">
+                  <span className="block text-[11px] uppercase tracking-wide text-gray-400 truncate">{r.conversationLabel}</span>
+                  <span className="block text-sm text-gray-900 truncate">{r.text}</span>
+                  <span className="block text-[11px] text-gray-500">{r.sender?.name ?? "Deleted user"} · {timeLabel(r.createdAt)}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
           <div className="flex-1 overflow-auto p-2 space-y-4">
             <Section title="Channels" items={channels} activeId={activeId} onSelect={setActiveId} prefix="#" />
             <Section title="Direct Messages" items={dms} activeId={activeId} onSelect={setActiveId} onlineIds={onlineIds} />
@@ -242,6 +279,7 @@ export default function MessagesPage() {
               <p className="text-xs text-gray-400 text-center px-2 py-6">No conversations yet. Start a DM to get going.</p>
             )}
           </div>
+          )}
         </aside>
 
         <section
