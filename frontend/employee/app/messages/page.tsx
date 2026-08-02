@@ -1,8 +1,9 @@
 "use client";
 
-import { memo, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../auth";
+import { MessageBody } from "../message-body";
 import { useChatActivity, useStaffPresence } from "../realtime";
 import { useChatContacts, useChatConversations, useChatMessages, useSendChatMessage, useSendChatAttachment, useOpenChatDm, useMarkChatRead, useEditChatMessage, useDeleteChatMessage, useLeaveChatConversation, useToggleChatReaction } from "../hooks";
 
@@ -41,10 +42,21 @@ interface Conversation {
 }
 
 // A small fixed set beats pulling in an emoji-picker dependency for now.
+const EMOJI = ["👍", "👎", "✅", "❌", "🎉", "👀", "🔥", "😀", "😂", "😕", "🙏", "❤️", "🚀", "⚠️", "🐛", "💡"];
 const REACTIONS = ["👍", "✅", "🎉", "👀"];
 
 function initials(name: string) {
   return name.split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join("") || "?";
+}
+
+function dayLabel(iso: string) {
+  const d = new Date(iso);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return "Today";
+  if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
 }
 
 function timeLabel(iso: string) {
@@ -74,6 +86,8 @@ export default function MessagesPage() {
   const [showSettings, setShowSettings] = useState(false);
   const [replyTo, setReplyTo] = useState<{ id: number; text: string | null; senderName: string } | null>(null);
   const [isTyping, setIsTyping] = useState(false);
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
 
   const { data: conversations } = useChatConversations();
   const { data: contacts } = useChatContacts();
@@ -189,6 +203,20 @@ export default function MessagesPage() {
     setShowSettings(false);
   }
 
+  // Pasting or dropping a file routes into the same pending-attachment slot the
+  // paperclip uses, so there's one send path rather than three.
+  function handlePaste(e: React.ClipboardEvent) {
+    const file = Array.from(e.clipboardData.files)[0];
+    if (file) { e.preventDefault(); setPendingFile(file); }
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragOver(false);
+    const file = Array.from(e.dataTransfer.files)[0];
+    if (file) setPendingFile(file);
+  }
+
   async function handleStartDm(userId: number) {
     const conv = await openDm.mutateAsync(userId);
     setPickerOpen(false);
@@ -216,7 +244,11 @@ export default function MessagesPage() {
           </div>
         </aside>
 
-        <section className="flex-1 flex flex-col bg-white rounded-xl border border-gray-200 min-h-0">
+        <section
+          onDragOver={(e) => { if (active) { e.preventDefault(); setDragOver(true); } }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={handleDrop}
+          className={`flex-1 flex flex-col bg-white rounded-xl border min-h-0 ${dragOver ? "border-accent-2 border-dashed" : "border-gray-200"}`}>
           {!active ? (
             <div className="flex-1 flex items-center justify-center text-sm text-gray-400">
               Select a conversation to start chatting.
@@ -251,13 +283,28 @@ export default function MessagesPage() {
                 {loadingMessages ? (
                   <p className="text-sm text-gray-400 text-center mt-8">Loading…</p>
                 ) : messages?.length ? (
-                  messages.map((m) => {
+                  messages.map((m, i) => {
                     const isMe = m.senderId === user?.id;
+                    const prev = i > 0 ? messages[i - 1] : null;
+                    const newDay = !prev || new Date(prev.createdAt).toDateString() !== new Date(m.createdAt).toDateString();
+                    // Consecutive messages from the same person within a few
+                    // minutes hide the repeated name/time header.
+                    const grouped = !newDay && !!prev && prev.senderId === m.senderId && !prev.deletedAt && !m.deletedAt &&
+                      new Date(m.createdAt).getTime() - new Date(prev.createdAt).getTime() < 5 * 60 * 1000;
                     return (
-                      <div key={m.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                        <span className="text-xs text-gray-400 mb-1">
-                          {isMe ? "You" : m.sender?.name ?? "Deleted user"} · {timeLabel(m.createdAt)}
-                        </span>
+                      <div key={m.id} className={`flex flex-col ${isMe ? "items-end" : "items-start"} ${grouped ? "-mt-2" : ""}`}>
+                        {newDay && (
+                          <div className="w-full flex items-center gap-3 my-3">
+                            <span className="flex-1 h-px bg-gray-200" />
+                            <span className="text-[11px] uppercase tracking-wide text-gray-400">{dayLabel(m.createdAt)}</span>
+                            <span className="flex-1 h-px bg-gray-200" />
+                          </div>
+                        )}
+                        {!grouped && (
+                          <span className="text-xs text-gray-400 mb-1">
+                            {isMe ? "You" : m.sender?.name ?? "Deleted user"} · {timeLabel(m.createdAt)}
+                          </span>
+                        )}
                         {m.deletedAt ? (
                           <div className="max-w-[70%] px-4 py-2 rounded-2xl text-sm italic text-gray-400 border border-gray-200">
                             This message was deleted
@@ -298,7 +345,7 @@ export default function MessagesPage() {
                               {m.attachmentUrl && (
                                 <Attachment url={m.attachmentUrl} name={m.attachmentName} type={m.attachmentType} />
                               )}
-                              <MessageText text={m.text} members={active.members} me={user?.id} />
+                              <MessageBody text={m.text} members={active.members} me={user?.id} />
                               {m.editedAt && <span className="ml-2 text-[11px] opacity-70">(edited)</span>}
                             </div>
                             {m.reactions?.length > 0 && (
@@ -342,6 +389,14 @@ export default function MessagesPage() {
                       className="text-gray-500 hover:text-gray-900">Remove</button>
                   </div>
                 )}
+                {showEmoji && (
+                  <div className="mb-2 p-2 border border-gray-200 rounded-lg flex flex-wrap gap-1">
+                    {EMOJI.map((e) => (
+                      <button key={e} type="button" onClick={() => { setText((prev) => prev + e); setShowEmoji(false); }}
+                        className="w-8 h-8 rounded hover:bg-gray-100 text-lg leading-none">{e}</button>
+                    ))}
+                  </div>
+                )}
                 {mentionMatches.length > 0 && (
                   <div className="mb-2 border border-gray-200 rounded-lg overflow-hidden">
                     {mentionMatches.map((m) => (
@@ -357,8 +412,11 @@ export default function MessagesPage() {
                     onChange={(e) => setPendingFile(e.target.files?.[0] ?? null)} />
                   <button type="button" onClick={() => fileInputRef.current?.click()} title="Attach a file"
                     className="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:text-gray-900">+</button>
+                  <button type="button" onClick={() => setShowEmoji((v) => !v)} title="Emoji"
+                    className="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:text-gray-900">☺</button>
                 <input
                   value={text}
+                  onPaste={handlePaste}
                   onChange={(e) => handleTextChange(e.target.value)}
                   placeholder={pendingFile ? "Add a caption (optional)" : active.kind === "channel" ? `Message # ${active.name}` : `Message ${active.name}`}
                   className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm"
@@ -416,44 +474,6 @@ export default function MessagesPage() {
     </div>
   );
 }
-
-// Memoised: the scanner walks the string against every member on each render,
-// and the thread re-renders on every poll and every incoming message.
-const MessageText = memo(function MessageText({ text, members, me }: { text: string | null; members: Array<{ id: number; name: string }>; me?: number }) {
-  if (!text) return null;
-  // Scanned rather than regex-matched, so a display name containing regex
-  // punctuation can't corrupt the pattern. Longest names first, so "Ali Hassan"
-  // wins over a member also called "Ali".
-  const names = [...members].sort((a, b) => b.name.length - a.name.length);
-  const parts: React.ReactNode[] = [];
-  let rest = text;
-  let key = 0;
-
-  while (rest.length > 0) {
-    const at = rest.indexOf("@");
-    if (at === -1) {
-      parts.push(rest);
-      break;
-    }
-    const hit = names.find((m) => rest.startsWith(`@${m.name}`, at));
-    if (!hit) {
-      // A stray @ that isn't a member — keep it as plain text and move past it.
-      parts.push(rest.slice(0, at + 1));
-      rest = rest.slice(at + 1);
-      continue;
-    }
-    if (at > 0) parts.push(rest.slice(0, at));
-    parts.push(
-      // Your own mention is emphasised harder than someone else's.
-      <span key={`m${key++}`} className={`rounded px-1 font-medium ${hit.id === me ? "bg-amber-400 text-gray-50" : "bg-gray-200 text-gray-900"}`}>
-        @{hit.name}
-      </span>
-    );
-    rest = rest.slice(at + 1 + hit.name.length);
-  }
-
-  return <>{parts.map((p, i) => (typeof p === "string" ? <span key={`t${i}`}>{p}</span> : p))}</>;
-});
 
 function Attachment({ url, name, type }: { url: string; name?: string | null; type?: string | null }) {
   // Images preview inline; anything else gets a download link, since the signed
