@@ -85,7 +85,7 @@ export default function InvoicesPage() {
       <PaymentDetailsCard />
       <div style={{background:"var(--canvas)",borderRadius:"var(--radius)",border:"1px solid var(--line)",overflow:"auto"}}>
         <table className="w-full text-sm">
-          <thead><tr style={{background:"var(--soft)",textAlign:"left"}}>{["Invoice", "Project", "Amount", "Status", "Due Date", ""].map((h) => <th key={h} style={{padding:"12px 20px",fontWeight:"500",color:"var(--ink-soft)"}}>{h}</th>)}</tr></thead>
+          <thead><tr style={{background:"var(--soft)",textAlign:"left"}}>{["Invoice", "Project", "Amount", "Status", "Due Date", "Payment Proof"].map((h) => <th key={h} style={{padding:"12px 20px",fontWeight:"500",color:"var(--ink-soft)"}}>{h}</th>)}</tr></thead>
           <tbody>
             {invoices?.map((inv) => {
               const badge = STATUS_STYLE[inv.status] || STATUS_STYLE.Unpaid;
@@ -101,6 +101,7 @@ export default function InvoicesPage() {
                       <div className="flex items-center gap-2">
                         <input
                           type="file"
+                          aria-label={`Payment proof for invoice ${inv.id}`}
                           onChange={(e) => setSelectedFiles((prev) => ({ ...prev, [inv.id]: e.target.files?.[0] ?? null }))}
                           style={{fontSize:"12px",color:"var(--ink-soft)",maxWidth:"160px"}}
                         />

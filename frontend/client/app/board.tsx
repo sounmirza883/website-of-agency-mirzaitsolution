@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Icon } from "./components";
+import { Icon, Field, inputStyle } from "./components";
 import { useTickets, useCreateTicket } from "./hooks";
 
 const STATUSES = ["Open", "Closed"];
@@ -37,13 +37,15 @@ function NewTicketModal({ open, onClose }: { open: boolean; onClose: () => void 
         <h2 style={{fontSize:"18px",fontWeight:"700",color:"var(--ink)",marginBottom:"16px"}}>New Ticket</h2>
         {error && <div style={{marginBottom:"16px",fontSize:"13px",color:"#b91c1c",background:"#fef2f2",padding:"8px 12px",borderRadius:"12px"}}>{error}</div>}
         <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
-          <input required placeholder="Subject" value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} style={{width:"100%",padding:"10px 14px",border:"1px solid var(--line)",borderRadius:"12px",fontSize:"14px",outline:"none",background:"var(--canvas)",color:"var(--ink)"}} />
-          <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} style={{width:"100%",padding:"10px 14px",border:"1px solid var(--line)",borderRadius:"12px",fontSize:"14px",outline:"none",background:"var(--canvas)",color:"var(--ink)"}}>
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-          </select>
-          <textarea required placeholder="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} style={{width:"100%",padding:"10px 14px",border:"1px solid var(--line)",borderRadius:"12px",fontSize:"14px",outline:"none",resize:"vertical",background:"var(--canvas)",color:"var(--ink)"}} />
+          <Field label="Subject"><input required value={form.subject} onChange={(e) => setForm({ ...form, subject: e.target.value })} style={inputStyle} /></Field>
+          <Field label="Priority">
+            <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} style={inputStyle}>
+              <option value="Low">Low</option>
+              <option value="Medium">Medium</option>
+              <option value="High">High</option>
+            </select>
+          </Field>
+          <Field label="Description"><textarea required value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} style={{ ...inputStyle, resize: "vertical" }} /></Field>
         </div>
         <div style={{display:"flex",justifyContent:"flex-end",gap:"8px",marginTop:"20px"}}>
           <button type="button" onClick={onClose} style={{padding:"10px 20px",background:"none",border:0,fontSize:"14px",color:"var(--ink-soft)",cursor:"pointer"}}>Cancel</button>

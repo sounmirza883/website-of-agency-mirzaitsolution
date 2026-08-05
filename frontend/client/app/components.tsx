@@ -2,9 +2,24 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { cloneElement, useEffect, useId, useState } from "react";
 import { useAuth } from "./auth";
 import { useChangePassword } from "./hooks";
+
+export const inputStyle: React.CSSProperties = { width: "100%", padding: "10px 14px", border: "1px solid var(--line)", borderRadius: "12px", fontSize: "14px", outline: "none", background: "var(--canvas)", color: "var(--ink)" };
+
+// Every input gets a visible label naming it. Placeholders disappear as soon as
+// you type, and select/file controls never show one at all. Matches the label
+// styling already used on the login page.
+export function Field({ label, children }: { label: string; children: React.ReactElement<{ id?: string }> }) {
+  const id = useId();
+  return (
+    <div>
+      <label htmlFor={id} style={{ display: "block", fontSize: "13px", fontWeight: 600, marginBottom: "4px", color: "var(--ink)" }}>{label}</label>
+      {cloneElement(children, { id })}
+    </div>
+  );
+}
 
 function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
@@ -31,9 +46,9 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
           <>
             {error && <div style={{marginBottom:"16px",fontSize:"13px",color:"#b91c1c",background:"#fef2f2",padding:"8px 12px",borderRadius:"12px"}}>{error}</div>}
             <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
-              <input required type="password" placeholder="Current password" value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} style={{width:"100%",padding:"10px 14px",border:"1px solid var(--line)",borderRadius:"12px",fontSize:"14px",outline:"none",background:"var(--canvas)",color:"var(--ink)"}} />
-              <input required type="password" placeholder="New password" minLength={8} value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} style={{width:"100%",padding:"10px 14px",border:"1px solid var(--line)",borderRadius:"12px",fontSize:"14px",outline:"none",background:"var(--canvas)",color:"var(--ink)"}} />
-              <input required type="password" placeholder="Confirm new password" minLength={8} value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} style={{width:"100%",padding:"10px 14px",border:"1px solid var(--line)",borderRadius:"12px",fontSize:"14px",outline:"none",background:"var(--canvas)",color:"var(--ink)"}} />
+              <Field label="Current Password"><input required type="password" value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} style={inputStyle} /></Field>
+              <Field label="New Password (min 8 characters)"><input required type="password" minLength={8} value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} style={inputStyle} /></Field>
+              <Field label="Confirm New Password"><input required type="password" minLength={8} value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} style={inputStyle} /></Field>
             </div>
           </>
         )}
