@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useAssignedProjects, useCreateEmpNotification, useEmpNotifications } from "../hooks";
+import { Field, fieldClass } from "../components";
 
 type TargetRole = "employee" | "client" | "all";
 
@@ -74,29 +75,33 @@ export default function NotificationsPage() {
             <h2 className="text-lg font-bold mb-4">New Notification</h2>
             {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</div>}
             <div className="space-y-3">
-              <input required placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <textarea required placeholder="Message" value={form.msg} onChange={(e) => setForm({ ...form, msg: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" rows={3} />
-              <select
-                value={form.targetRole}
-                onChange={(e) => setForm({ ...form, targetRole: e.target.value as TargetRole, targetClientId: "" })}
-                className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
-              >
-                <option value="employee">Employees</option>
-                <option value="client">Specific Client</option>
-                <option value="all">Employees &amp; Client</option>
-              </select>
-              {form.targetRole === "client" && (
+              <Field label="Title"><input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Message"><textarea required value={form.msg} onChange={(e) => setForm({ ...form, msg: e.target.value })} className={fieldClass} rows={3} /></Field>
+              <Field label="Send To">
                 <select
-                  required
-                  value={form.targetClientId}
-                  onChange={(e) => setForm({ ...form, targetClientId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                  value={form.targetRole}
+                  onChange={(e) => setForm({ ...form, targetRole: e.target.value as TargetRole, targetClientId: "" })}
+                  className={fieldClass}
                 >
-                  <option value="" disabled>Select a client</option>
-                  {clients.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
+                  <option value="employee">Employees</option>
+                  <option value="client">Specific Client</option>
+                  <option value="all">Employees &amp; Client</option>
                 </select>
+              </Field>
+              {form.targetRole === "client" && (
+                <Field label="Client">
+                  <select
+                    required
+                    value={form.targetClientId}
+                    onChange={(e) => setForm({ ...form, targetClientId: e.target.value })}
+                    className={fieldClass}
+                  >
+                    <option value="" disabled>Select a client</option>
+                    {clients.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                </Field>
               )}
               {form.targetRole === "client" && clients.length === 0 && (
                 <p className="text-xs text-gray-500">No clients found among your assigned projects yet.</p>

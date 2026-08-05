@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useMyClients, useCreateClient } from "../hooks";
+import { Field, fieldClass } from "../components";
 
 export default function ClientsPage() {
   const { data: clients } = useMyClients();
@@ -46,10 +47,10 @@ export default function ClientsPage() {
             <h2 className="text-lg font-bold mb-4">Add Client</h2>
             {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</div>}
             <div className="space-y-3">
-              <input required placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <input required type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <input required type="password" placeholder="Temporary password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <input required placeholder="Company" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <Field label="Name"><input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Email"><input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Temporary Password"><input required type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Company"><input required value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className={fieldClass} /></Field>
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>

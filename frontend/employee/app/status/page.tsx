@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useStatusUpdates, usePostStatusUpdate, useAssignedProjects } from "../hooks";
+import { Field, fieldClass } from "../components";
 
 export default function StatusPage() {
   const { data: updates } = useStatusUpdates();
@@ -52,16 +53,18 @@ export default function StatusPage() {
             <h2 className="text-lg font-bold mb-4">Post Update</h2>
             {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</div>}
             <div className="space-y-3">
-              {projects && projects.length > 0 ? (
-                <select required value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                  <option value="">Select project</option>
-                  {projects.map((p) => <option key={p.id} value={p.name}>{p.name}</option>)}
-                </select>
-              ) : (
-                <input required placeholder="Project" value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              )}
-              <textarea required placeholder="Update" value={form.update} onChange={(e) => setForm({ ...form, update: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" rows={3} />
-              <input required type="number" min={0} max={100} placeholder="Progress (%)" value={form.progress} onChange={(e) => setForm({ ...form, progress: Number(e.target.value) })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <Field label="Project">
+                {projects && projects.length > 0 ? (
+                  <select required value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })} className={fieldClass}>
+                    <option value="">Select project</option>
+                    {projects.map((p) => <option key={p.id} value={p.name}>{p.name}</option>)}
+                  </select>
+                ) : (
+                  <input required value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })} className={fieldClass} />
+                )}
+              </Field>
+              <Field label="Update"><textarea required value={form.update} onChange={(e) => setForm({ ...form, update: e.target.value })} className={fieldClass} rows={3} /></Field>
+              <Field label="Progress (%)"><input required type="number" min={0} max={100} value={form.progress} onChange={(e) => setForm({ ...form, progress: Number(e.target.value) })} className={fieldClass} /></Field>
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>

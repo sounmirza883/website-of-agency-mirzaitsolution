@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useLeaveRequests, useRequestLeave } from "../hooks";
+import { Field, fieldClass } from "../components";
 
 export default function LeavePage() {
   const { data: requests } = useLeaveRequests();
@@ -45,14 +46,16 @@ export default function LeavePage() {
             <h2 className="text-lg font-bold mb-4">Request Leave</h2>
             {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</div>}
             <div className="space-y-3">
-              <select required value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                <option>Sick Leave</option>
-                <option>Personal Leave</option>
-                <option>Annual Leave</option>
-              </select>
-              <textarea required placeholder="Reason" value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" rows={3} />
-              <input required type="date" value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <input required type="date" value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <Field label="Leave Type">
+                <select required value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={fieldClass}>
+                  <option>Sick Leave</option>
+                  <option>Personal Leave</option>
+                  <option>Annual Leave</option>
+                </select>
+              </Field>
+              <Field label="Reason"><textarea required value={form.reason} onChange={(e) => setForm({ ...form, reason: e.target.value })} className={fieldClass} rows={3} /></Field>
+              <Field label="From Date"><input required type="date" value={form.from} onChange={(e) => setForm({ ...form, from: e.target.value })} className={fieldClass} /></Field>
+              <Field label="To Date"><input required type="date" value={form.to} onChange={(e) => setForm({ ...form, to: e.target.value })} className={fieldClass} /></Field>
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>

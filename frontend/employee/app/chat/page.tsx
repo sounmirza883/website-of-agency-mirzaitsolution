@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAssignedProjects, useProjectMessages, useSendProjectMessage } from "../hooks";
+import { Field } from "../components";
 
 export default function ChatPage() {
   const { data: projects } = useAssignedProjects();
@@ -42,6 +43,7 @@ export default function ChatPage() {
           <p className="text-sm text-gray-500">Message the client on your assigned projects</p>
         </div>
         {projects.length > 1 && (
+          <Field label="Project">
           <select
             value={projectId ?? ""}
             onChange={(e) => setSelectedId(Number(e.target.value))}
@@ -52,6 +54,7 @@ export default function ChatPage() {
               <option key={p.id} value={p.id}>{p.name} — {p.client}</option>
             ))}
           </select>
+          </Field>
         )}
       </div>
 

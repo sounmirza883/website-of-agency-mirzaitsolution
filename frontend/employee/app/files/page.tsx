@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useEmpFiles, useUploadFile, useMyClients } from "../hooks";
+import { Field, fieldClass } from "../components";
 
 export default function FilesPage() {
   const { data: files } = useEmpFiles();
@@ -60,12 +61,14 @@ export default function FilesPage() {
             <h2 className="text-lg font-bold mb-4">Upload File</h2>
             {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</div>}
             <div className="space-y-3">
-              <input required type="file" ref={fileRef} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <input required placeholder="Project" value={project} onChange={(e) => setProject(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <select value={clientId} onChange={(e) => setClientId(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                <option value="">Internal only</option>
-                {clients?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
+              <Field label="File"><input required type="file" ref={fileRef} className={fieldClass} /></Field>
+              <Field label="Project"><input required value={project} onChange={(e) => setProject(e.target.value)} className={fieldClass} /></Field>
+              <Field label="Visible To">
+                <select value={clientId} onChange={(e) => setClientId(e.target.value)} className={fieldClass}>
+                  <option value="">Internal only</option>
+                  {clients?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </Field>
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>

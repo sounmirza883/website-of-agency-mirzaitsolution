@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { DragDropProvider, useDraggable, useDroppable, type DragEndEvent } from "@dnd-kit/react";
 import { useEmpTasks, useCreateTask, useUpdateTaskStatus, useAssignedProjects } from "./hooks";
+import { Field, fieldClass } from "./components";
 
 const COLUMNS = ["Pending", "In Progress", "Done"];
 
@@ -94,21 +95,25 @@ export function TaskBoard() {
             <h2 className="text-lg font-bold mb-4">Add Task</h2>
             {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</div>}
             <div className="space-y-3">
-              {projects && projects.length > 0 ? (
-                <select required value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                  <option value="">Select project</option>
-                  {projects.map((p) => <option key={p.id} value={p.name}>{p.name}</option>)}
+              <Field label="Project">
+                {projects && projects.length > 0 ? (
+                  <select required value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })} className={fieldClass}>
+                    <option value="">Select project</option>
+                    {projects.map((p) => <option key={p.id} value={p.name}>{p.name}</option>)}
+                  </select>
+                ) : (
+                  <input required value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })} className={fieldClass} />
+                )}
+              </Field>
+              <Field label="Task"><input required value={form.task} onChange={(e) => setForm({ ...form, task: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Priority">
+                <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className={fieldClass}>
+                  <option>Low</option>
+                  <option>Medium</option>
+                  <option>High</option>
                 </select>
-              ) : (
-                <input required placeholder="Project" value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              )}
-              <input required placeholder="Task" value={form.task} onChange={(e) => setForm({ ...form, task: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                <option>Low</option>
-                <option>Medium</option>
-                <option>High</option>
-              </select>
-              <input required type="date" value={form.due} onChange={(e) => setForm({ ...form, due: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              </Field>
+              <Field label="Due Date"><input required type="date" value={form.due} onChange={(e) => setForm({ ...form, due: e.target.value })} className={fieldClass} /></Field>
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>
