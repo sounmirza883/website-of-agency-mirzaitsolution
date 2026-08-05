@@ -1,15 +1,17 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { StatusPicker } from '@/components/forms/status-picker';
+import { Field } from '@/components/forms/field';
+import { DateField } from '@/components/forms/date-field';
 import { useCreateEmployeeTask, useEmployeeTasks, useUpdateEmployeeTaskStatus } from '@/api/employee-hooks';
 
 const STATUS_OPTIONS = ['Pending', 'In Progress', 'Done'];
 
-const inputClass =
-  'rounded-lg border border-surface-selected px-3 py-2 text-sm text-text dark:border-surface-selected-dark dark:text-text-dark';
+// Must match the web portal's options exactly — both write to the same column.
+const PRIORITY_OPTIONS = ['Low', 'Medium', 'High'];
 
 export default function TasksScreen() {
   const { data: tasks, isLoading } = useEmployeeTasks();
@@ -53,34 +55,10 @@ export default function TasksScreen() {
 
         {showForm && (
           <View className="mb-6 gap-3 rounded-xl border border-surface-selected p-4 dark:border-surface-selected-dark">
-            <TextInput
-              value={project}
-              onChangeText={setProject}
-              placeholder="Project name"
-              placeholderTextColor="#9ca3af"
-              className={inputClass}
-            />
-            <TextInput
-              value={task}
-              onChangeText={setTask}
-              placeholder="Task description"
-              placeholderTextColor="#9ca3af"
-              className={inputClass}
-            />
-            <TextInput
-              value={priority}
-              onChangeText={setPriority}
-              placeholder="Priority (Low/Medium/High)"
-              placeholderTextColor="#9ca3af"
-              className={inputClass}
-            />
-            <TextInput
-              value={due}
-              onChangeText={setDue}
-              placeholder="Due date (e.g. Aug 1, 2026)"
-              placeholderTextColor="#9ca3af"
-              className={inputClass}
-            />
+            <Field label="Project" value={project} onChangeText={setProject} placeholder="Project name" />
+            <Field label="Task" value={task} onChangeText={setTask} placeholder="What needs doing" />
+            <StatusPicker label="Priority" value={priority} options={PRIORITY_OPTIONS} onChange={setPriority} />
+            <DateField label="Due Date" value={due} onChange={setDue} />
             {!!error && <Text className="text-xs text-red-600">{error}</Text>}
             <Pressable
               onPress={handleCreate}

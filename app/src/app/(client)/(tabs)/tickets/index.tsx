@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { StatusPicker } from '@/components/forms/status-picker';
+import { Field } from '@/components/forms/field';
 import { useClientTickets, useCreateClientTicket, useUpdateClientTicketStatus } from '@/api/client-role-hooks';
 import type { ClientTicket } from '@/api/client-role';
 
@@ -53,24 +54,15 @@ function NewTicketForm({ onDone }: { onDone: () => void }) {
   return (
     <Card className="mb-3">
       <Text className="mb-2 text-sm font-semibold text-text dark:text-text-dark">New Ticket</Text>
-      <TextInput
-        value={subject}
-        onChangeText={setSubject}
-        placeholder="Subject"
-        className="mb-3 rounded-lg border border-surface-selected px-3 py-2 text-sm text-text dark:border-surface-selected-dark dark:text-text-dark"
-      />
-      <Text className="mb-2 text-xs font-medium text-text-secondary dark:text-text-secondary-dark">Priority</Text>
       <View className="mb-3">
-        <StatusPicker value={priority} options={PRIORITY_OPTIONS} onChange={setPriority} disabled={createTicket.isPending} />
+        <Field label="Subject" value={subject} onChangeText={setSubject} placeholder="What the issue is about" />
       </View>
-      <TextInput
-        value={description}
-        onChangeText={setDescription}
-        placeholder="Description"
-        multiline
-        numberOfLines={3}
-        className="mb-3 rounded-lg border border-surface-selected px-3 py-2 text-sm text-text dark:border-surface-selected-dark dark:text-text-dark"
-      />
+      <View className="mb-3">
+        <StatusPicker label="Priority" value={priority} options={PRIORITY_OPTIONS} onChange={setPriority} disabled={createTicket.isPending} />
+      </View>
+      <View className="mb-3">
+        <Field label="Description" value={description} onChangeText={setDescription} placeholder="Describe the problem" multiline numberOfLines={3} />
+      </View>
       <View className="flex-row gap-3">
         <Pressable
           disabled={createTicket.isPending || !subject.trim()}

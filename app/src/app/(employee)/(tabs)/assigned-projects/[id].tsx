@@ -46,6 +46,7 @@ export default function AssignedProjectDetailScreen() {
           Progress: {project.progress}%
         </Text>
       </View>
+      <Text className="mb-2 px-6 text-sm font-semibold text-text dark:text-text-dark">Chat</Text>
       <MessageThread
         messages={messages}
         isLoading={messagesLoading}

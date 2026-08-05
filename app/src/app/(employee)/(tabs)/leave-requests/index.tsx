@@ -1,19 +1,22 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { Field } from '@/components/forms/field';
+import { DateField } from '@/components/forms/date-field';
+import { StatusPicker } from '@/components/forms/status-picker';
 import { useCreateLeaveRequest, useLeaveRequests } from '@/api/employee-hooks';
 
-const inputClass =
-  'rounded-lg border border-surface-selected px-3 py-2 text-sm text-text dark:border-surface-selected-dark dark:text-text-dark';
+// Must match the web portal's options exactly — both write to the same column.
+const LEAVE_TYPES = ['Sick Leave', 'Personal Leave', 'Annual Leave'];
 
 export default function LeaveRequestsScreen() {
   const { data: leaveRequests, isLoading } = useLeaveRequests();
   const createLeave = useCreateLeaveRequest();
 
   const [showForm, setShowForm] = useState(false);
-  const [type, setType] = useState('');
+  const [type, setType] = useState(LEAVE_TYPES[0]);
   const [reason, setReason] = useState('');
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
@@ -49,34 +52,10 @@ export default function LeaveRequestsScreen() {
 
         {showForm && (
           <View className="mb-6 gap-3 rounded-xl border border-surface-selected p-4 dark:border-surface-selected-dark">
-            <TextInput
-              value={type}
-              onChangeText={setType}
-              placeholder="Type (e.g. Sick, Vacation)"
-              placeholderTextColor="#9ca3af"
-              className={inputClass}
-            />
-            <TextInput
-              value={reason}
-              onChangeText={setReason}
-              placeholder="Reason"
-              placeholderTextColor="#9ca3af"
-              className={inputClass}
-            />
-            <TextInput
-              value={from}
-              onChangeText={setFrom}
-              placeholder="From date (e.g. Aug 1, 2026)"
-              placeholderTextColor="#9ca3af"
-              className={inputClass}
-            />
-            <TextInput
-              value={to}
-              onChangeText={setTo}
-              placeholder="To date (e.g. Aug 3, 2026)"
-              placeholderTextColor="#9ca3af"
-              className={inputClass}
-            />
+            <StatusPicker label="Leave Type" value={type} options={LEAVE_TYPES} onChange={setType} />
+            <Field label="Reason" value={reason} onChangeText={setReason} placeholder="Why you need the leave" />
+            <DateField label="From Date" value={from} onChange={setFrom} />
+            <DateField label="To Date" value={to} onChange={setTo} />
             {!!error && <Text className="text-xs text-red-600">{error}</Text>}
             <Pressable
               onPress={handleCreate}

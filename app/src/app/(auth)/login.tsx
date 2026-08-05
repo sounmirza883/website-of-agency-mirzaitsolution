@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, Text, View } from 'react-native';
+import { Field } from '@/components/forms/field';
 import { useAuth } from '@/context/auth-context';
 
 export default function LoginScreen() {
@@ -35,21 +36,12 @@ export default function LoginScreen() {
         </View>
       ) : null}
 
-      <TextInput
-        value={email}
-        onChangeText={setEmail}
-        placeholder="Email"
-        autoCapitalize="none"
-        keyboardType="email-address"
-        className="mb-3 rounded-lg border border-surface-selected px-4 py-3 text-base text-text dark:border-surface-selected-dark dark:text-text-dark"
-      />
-      <TextInput
-        value={password}
-        onChangeText={setPassword}
-        placeholder="Password"
-        secureTextEntry
-        className="mb-6 rounded-lg border border-surface-selected px-4 py-3 text-base text-text dark:border-surface-selected-dark dark:text-text-dark"
-      />
+      <View className="mb-3">
+        <Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" />
+      </View>
+      <View className="mb-6">
+        <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry />
+      </View>
 
       <Pressable
         onPress={handleSubmit}

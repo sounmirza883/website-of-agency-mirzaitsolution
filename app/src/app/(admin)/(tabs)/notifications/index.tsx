@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
 import { Card } from '@/components/ui/card';
 import { EmptyState } from '@/components/ui/empty-state';
 import { StatusPicker } from '@/components/forms/status-picker';
+import { Field } from '@/components/forms/field';
 import { useAdminClients, useAdminNotifications, useCreateAdminNotification } from '@/api/admin-hooks';
 
 const AUDIENCE_OPTIONS = ['Everyone', 'Employees', 'Specific Client'] as const;
@@ -42,36 +43,25 @@ function NewNotificationForm({ onDone }: { onDone: () => void }) {
     <Card className="mb-3">
       <Text className="mb-3 text-base font-semibold text-text dark:text-text-dark">New Notification</Text>
 
-      <Text className="mb-1 text-xs font-medium text-text-secondary dark:text-text-secondary-dark">Title</Text>
-      <TextInput
-        value={title}
-        onChangeText={setTitle}
-        placeholder="Title"
-        className="mb-3 rounded-lg border border-surface-selected px-3 py-2 text-sm text-text dark:border-surface-selected-dark dark:text-text-dark"
-      />
+      <View className="mb-3">
+        <Field label="Title" value={title} onChangeText={setTitle} placeholder="Short headline" />
+      </View>
 
-      <Text className="mb-1 text-xs font-medium text-text-secondary dark:text-text-secondary-dark">Message</Text>
-      <TextInput
-        value={msg}
-        onChangeText={setMsg}
-        placeholder="Message"
-        multiline
-        numberOfLines={3}
-        className="mb-3 rounded-lg border border-surface-selected px-3 py-2 text-sm text-text dark:border-surface-selected-dark dark:text-text-dark"
-      />
+      <View className="mb-3">
+        <Field label="Message" value={msg} onChangeText={setMsg} placeholder="What you want them to know" multiline numberOfLines={3} />
+      </View>
 
-      <Text className="mb-1 text-xs font-medium text-text-secondary dark:text-text-secondary-dark">Audience</Text>
-      <StatusPicker value={audience} options={[...AUDIENCE_OPTIONS]} onChange={(v) => setAudience(v as Audience)} />
+      <StatusPicker label="Audience" value={audience} options={[...AUDIENCE_OPTIONS]} onChange={(v) => setAudience(v as Audience)} />
 
       {audience === 'Specific Client' ? (
         <View className="mt-3">
-          <Text className="mb-1 text-xs font-medium text-text-secondary dark:text-text-secondary-dark">Client</Text>
           {clients.isLoading ? (
             <ActivityIndicator />
           ) : clientOptions.length === 0 ? (
             <Text className="text-sm text-text-secondary dark:text-text-secondary-dark">No clients available</Text>
           ) : (
             <StatusPicker
+              label="Client"
               value={selectedClientName ?? ''}
               options={clientOptions.map((c) => c.name)}
               onChange={(name) => setClientId(clientOptions.find((c) => c.name === name)?.id ?? null)}
