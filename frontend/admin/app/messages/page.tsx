@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "../auth";
 import { MessageBody } from "../message-body";
+import { Field, fieldClass } from "../components";
 import { useChatActivity, useStaffPresence } from "../realtime";
 import {
   useChatContacts, useChatConversations, useChatMessages,
@@ -158,6 +159,11 @@ export default function MessagesPage() {
     // markRead is a stable mutation object; including it would re-fire the effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeId, unreadForActive]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
   const newestId = messages?.length ? messages[messages.length - 1].id : null;
   useEffect(() => {
@@ -510,8 +516,11 @@ export default function MessagesPage() {
             ) : (
               <form onSubmit={handleCreateChannel}>
                 <h2 className="text-lg font-bold mb-4">New channel</h2>
-                <input value={channelName} onChange={(e) => setChannelName(e.target.value)} placeholder="Channel name" required
-                  className="w-full mb-4 px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                <div className="mb-4">
+                  <Field label="Channel Name">
+                    <input value={channelName} onChange={(e) => setChannelName(e.target.value)} required className={fieldClass} />
+                  </Field>
+                </div>
                 <p className="text-xs text-gray-500 mb-2">Add members (you&apos;re included automatically)</p>
                 <div className="space-y-1 mb-4">
                   {contacts?.map((c: Contact) => (
@@ -549,7 +558,7 @@ export default function MessagesPage() {
               await renameChannel.mutateAsync({ conversationId: activeId, name: next });
               setRenameValue("");
             }}>
-              <input value={renameValue} onChange={(e) => setRenameValue(e.target.value)} placeholder={active.name}
+              <input value={renameValue} onChange={(e) => setRenameValue(e.target.value)} placeholder="New channel name"
                 className="flex-1 px-3 py-2 border border-gray-200 rounded-lg text-sm" />
               <button type="submit" disabled={renameChannel.isPending || !renameValue.trim()}
                 className="bg-accent text-gray-50 text-sm font-medium px-4 py-2 rounded-lg disabled:opacity-50">Save</button>

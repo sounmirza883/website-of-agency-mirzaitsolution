@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useContactSubmissions, useClientsList, useEmployees, useCreateProject, useDeleteLead } from "../hooks";
+import { Field, fieldClass } from "../components";
 
 export default function LeadsPage() {
   const { data: leads } = useContactSubmissions();
@@ -93,24 +94,30 @@ export default function LeadsPage() {
             <p className="text-xs text-gray-500 mb-4">From lead: {assigning.name} ({assigning.email})</p>
             {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</div>}
             <div className="space-y-3">
-              <input required placeholder="Project name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <select required value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                <option value="">Select client account</option>
-                {clients?.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.email})</option>)}
-              </select>
+              <Field label="Project Name"><input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Client Account">
+                <select required value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })} className={fieldClass}>
+                  <option value="">Select client account</option>
+                  {clients?.map((c) => <option key={c.id} value={c.id}>{c.name} ({c.email})</option>)}
+                </select>
+              </Field>
               {!clients?.some((c) => c.email?.toLowerCase() === assigning.email?.toLowerCase()) && (
                 <p className="text-xs text-amber-600">No client account matches this lead's email yet — create one on the Clients page first, or pick an existing client to assign this project to instead.</p>
               )}
-              <select value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                <option value="">Assign employee (optional)</option>
-                {employees?.map((emp) => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
-              </select>
-              <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                <option value="Pending">Pending</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Completed">Completed</option>
-              </select>
-              <input required type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <Field label="Assign Employee (optional)">
+                <select value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} className={fieldClass}>
+                  <option value="">Unassigned</option>
+                  {employees?.map((emp) => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
+                </select>
+              </Field>
+              <Field label="Status">
+                <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className={fieldClass}>
+                  <option value="Pending">Pending</option>
+                  <option value="In Progress">In Progress</option>
+                  <option value="Completed">Completed</option>
+                </select>
+              </Field>
+              <Field label="Deadline"><input required type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} className={fieldClass} /></Field>
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setAssigning(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>

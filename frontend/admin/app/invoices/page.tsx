@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useInvoices, useCreateInvoice, useClientsList, useVerifyInvoice } from "../hooks";
+import { Field, fieldClass } from "../components";
 
 function statusBadgeClass(status: string) {
   if (status === "Paid") return "bg-green-100 text-green-700";
@@ -79,13 +80,15 @@ export default function InvoicesPage() {
             <h2 className="text-lg font-bold mb-4">Add Invoice</h2>
             {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</div>}
             <div className="space-y-3">
-              <select required value={form.clientUserId} onChange={(e) => setForm({ ...form, clientUserId: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                <option value="">Select client</option>
-                {clients?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <input required placeholder="Project" value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <input required type="number" placeholder="Amount" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <input required type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <Field label="Client">
+                <select required value={form.clientUserId} onChange={(e) => setForm({ ...form, clientUserId: e.target.value })} className={fieldClass}>
+                  <option value="">Select client</option>
+                  {clients?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </Field>
+              <Field label="Project"><input required value={form.project} onChange={(e) => setForm({ ...form, project: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Amount"><input required type="number" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Invoice Date"><input required type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className={fieldClass} /></Field>
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>

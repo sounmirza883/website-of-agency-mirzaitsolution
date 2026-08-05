@@ -4,6 +4,7 @@ import { useState } from "react";
 import { DragDropProvider, useDraggable, useDroppable, type DragEndEvent } from "@dnd-kit/react";
 import { useProjects, useCreateProject, useUpdateProjectStatus, useAssignProjectEmployee, useClientsList, useEmployees } from "./hooks";
 import { ProjectChatModal } from "./chat-modal";
+import { Field, fieldClass } from "./components";
 
 const COLUMNS = ["Pending", "In Progress", "Completed"];
 
@@ -31,7 +32,10 @@ function Card({ project, employees, onOpenChat }: { project: any; employees: any
       <div className="text-xs text-gray-500 mt-0.5">{project.client}</div>
       <div className="inline-block mt-2 text-[11px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{project.deadline}</div>
       <div onPointerDown={(e) => e.stopPropagation()} className="mt-2 space-y-1.5">
-        <ProjectEmployeeSelect project={project} employees={employees} className="w-full px-2 py-1 border border-gray-200 rounded-md text-xs" />
+        <div>
+          <div className="text-[11px] font-medium text-gray-500 mb-0.5">Assigned To</div>
+          <ProjectEmployeeSelect project={project} employees={employees} className="w-full px-2 py-1 border border-gray-200 rounded-md text-xs" />
+        </div>
         <button
           onClick={(e) => { e.stopPropagation(); onOpenChat(project); }}
           className="w-full text-xs text-gray-600 hover:text-gray-900 border border-gray-200 rounded-md py-1"
@@ -128,16 +132,20 @@ export function ProjectBoard() {
             <p className="text-xs text-gray-500 mb-4">Status: {modalStatus}</p>
             {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</div>}
             <div className="space-y-3">
-              <input required placeholder="Project name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <select required value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                <option value="">Select client</option>
-                {clients?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-              <select value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                <option value="">Unassigned</option>
-                {employees?.map((emp) => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
-              </select>
-              <input required type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <Field label="Project Name"><input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Client">
+                <select required value={form.clientId} onChange={(e) => setForm({ ...form, clientId: e.target.value })} className={fieldClass}>
+                  <option value="">Select client</option>
+                  {clients?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </Field>
+              <Field label="Assign Employee">
+                <select value={form.employeeId} onChange={(e) => setForm({ ...form, employeeId: e.target.value })} className={fieldClass}>
+                  <option value="">Unassigned</option>
+                  {employees?.map((emp) => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
+                </select>
+              </Field>
+              <Field label="Deadline"><input required type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} className={fieldClass} /></Field>
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setModalStatus(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>

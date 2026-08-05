@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useServices, useCreateService } from "../hooks";
+import { Field, fieldClass } from "../components";
 
 export default function ServicesPage() {
   const { data: services } = useServices();
@@ -46,9 +47,9 @@ export default function ServicesPage() {
             <h2 className="text-lg font-bold mb-4">Add Service</h2>
             {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</div>}
             <div className="space-y-3">
-              <input required placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <input required placeholder="Price (e.g. $199)" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <input required placeholder="Duration (e.g. 3-5 days)" value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <Field label="Name"><input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Price"><input required placeholder="e.g. $199" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Duration"><input required placeholder="e.g. 3-5 days" value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} className={fieldClass} /></Field>
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>

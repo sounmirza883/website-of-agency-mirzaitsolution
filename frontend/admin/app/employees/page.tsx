@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useEmployees, useCreateEmployee, useSetEmployeePermission, useUpdateUserDetails, useDeleteUser } from "../hooks";
+import { Field, fieldClass } from "../components";
 
 export default function EmployeesPage() {
   const { data: employees } = useEmployees();
@@ -99,11 +100,11 @@ export default function EmployeesPage() {
             <h2 className="text-lg font-bold mb-4">Add Employee</h2>
             {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</div>}
             <div className="space-y-3">
-              <input required placeholder="Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <input required type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <input required type="password" placeholder="Temporary password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <input required placeholder="Department" value={form.dept} onChange={(e) => setForm({ ...form, dept: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <input required placeholder="Position" value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <Field label="Name"><input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Email"><input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Temporary Password"><input required type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Department"><input required value={form.dept} onChange={(e) => setForm({ ...form, dept: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Position"><input required value={form.position} onChange={(e) => setForm({ ...form, position: e.target.value })} className={fieldClass} /></Field>
               <label className="flex items-center gap-2 text-sm text-gray-700">
                 <input type="checkbox" checked={form.canCreateClients} onChange={(e) => setForm({ ...form, canCreateClients: e.target.checked })} />
                 Allow this employee to create clients
@@ -123,10 +124,10 @@ export default function EmployeesPage() {
             <h2 className="text-lg font-bold mb-4">Edit Employee</h2>
             {editError && <div className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{editError}</div>}
             <div className="space-y-3">
-              <input required placeholder="Name" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <input required type="email" placeholder="Email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <input required placeholder="Department" value={editForm.dept} onChange={(e) => setEditForm({ ...editForm, dept: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <input required placeholder="Position" value={editForm.position} onChange={(e) => setEditForm({ ...editForm, position: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <Field label="Name"><input required value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Email"><input required type="email" value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Department"><input required value={editForm.dept} onChange={(e) => setEditForm({ ...editForm, dept: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Position"><input required value={editForm.position} onChange={(e) => setEditForm({ ...editForm, position: e.target.value })} className={fieldClass} /></Field>
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setEditing(null)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>

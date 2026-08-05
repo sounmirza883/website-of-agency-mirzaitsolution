@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useNotifications, useCreateNotification, useClientsList } from "../hooks";
+import { Field, fieldClass } from "../components";
 
 export default function NotificationsPage() {
   const { data: notifications } = useNotifications();
@@ -52,18 +53,22 @@ export default function NotificationsPage() {
             <h2 className="text-lg font-bold mb-4">Send Notification</h2>
             {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</div>}
             <div className="space-y-3">
-              <input required placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <textarea required placeholder="Message" value={form.msg} onChange={(e) => setForm({ ...form, msg: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" rows={4} />
-              <select value={form.targetRole} onChange={(e) => setForm({ ...form, targetRole: e.target.value as "all" | "employee" | "client", targetUserId: "" })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                <option value="all">Everyone</option>
-                <option value="employee">Employees Only</option>
-                <option value="client">Specific Client</option>
-              </select>
-              {form.targetRole === "client" && (
-                <select required value={form.targetUserId} onChange={(e) => setForm({ ...form, targetUserId: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                  <option value="">Select client</option>
-                  {clients?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              <Field label="Title"><input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Message"><textarea required value={form.msg} onChange={(e) => setForm({ ...form, msg: e.target.value })} className={fieldClass} rows={4} /></Field>
+              <Field label="Send To">
+                <select value={form.targetRole} onChange={(e) => setForm({ ...form, targetRole: e.target.value as "all" | "employee" | "client", targetUserId: "" })} className={fieldClass}>
+                  <option value="all">Everyone</option>
+                  <option value="employee">Employees Only</option>
+                  <option value="client">Specific Client</option>
                 </select>
+              </Field>
+              {form.targetRole === "client" && (
+                <Field label="Client">
+                  <select required value={form.targetUserId} onChange={(e) => setForm({ ...form, targetUserId: e.target.value })} className={fieldClass}>
+                    <option value="">Select client</option>
+                    {clients?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </Field>
               )}
             </div>
             <div className="flex justify-end gap-2 mt-6">

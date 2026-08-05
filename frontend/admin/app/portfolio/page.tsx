@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { usePortfolioList, useCreatePortfolioItem } from "../hooks";
+import { Field, fieldClass } from "../components";
 
 export default function PortfolioPage() {
   const { data: items } = usePortfolioList();
@@ -46,10 +47,10 @@ export default function PortfolioPage() {
             <h2 className="text-lg font-bold mb-4">Add Portfolio Item</h2>
             {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</div>}
             <div className="space-y-3">
-              <input required placeholder="Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <input required placeholder="Client" value={form.client} onChange={(e) => setForm({ ...form, client: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <input required placeholder="Category" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <textarea placeholder="Description (optional)" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" rows={3} />
+              <Field label="Title"><input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Client"><input required value={form.client} onChange={(e) => setForm({ ...form, client: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Category"><input required value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Description (optional)"><textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={fieldClass} rows={3} /></Field>
             </div>
             <div className="flex justify-end gap-2 mt-6">
               <button type="button" onClick={() => setOpen(false)} className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900">Cancel</button>

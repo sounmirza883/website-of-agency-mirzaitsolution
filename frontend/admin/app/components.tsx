@@ -2,9 +2,23 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { cloneElement, useEffect, useId, useState } from "react";
 import { useAuth } from "./auth";
 import { useChangePassword } from "./hooks";
+
+export const fieldClass = "w-full px-3 py-2 border border-gray-200 rounded-lg text-sm";
+
+// Every input gets a visible label naming it. Placeholders disappear as soon as
+// you type, and date/select/file controls never show one at all.
+export function Field({ label, children }: { label: string; children: React.ReactElement<{ id?: string }> }) {
+  const id = useId();
+  return (
+    <div>
+      <label htmlFor={id} className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
+      {cloneElement(children, { id })}
+    </div>
+  );
+}
 
 function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
@@ -31,9 +45,9 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
           <>
             {error && <div className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</div>}
             <div className="space-y-3">
-              <input required type="password" placeholder="Current password" value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <input required type="password" placeholder="New password" minLength={8} value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
-              <input required type="password" placeholder="Confirm new password" minLength={8} value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+              <Field label="Current Password"><input required type="password" value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} className={fieldClass} /></Field>
+              <Field label="New Password (min 8 characters)"><input required type="password" minLength={8} value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} className={fieldClass} /></Field>
+              <Field label="Confirm New Password"><input required type="password" minLength={8} value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} className={fieldClass} /></Field>
             </div>
           </>
         )}

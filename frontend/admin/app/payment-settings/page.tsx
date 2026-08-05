@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePaymentSettings, useUpdatePaymentSettings } from "../hooks";
+import { Field, fieldClass } from "../components";
 
 const LOCAL_FIELDS: Array<[key: string, label: string, placeholder: string]> = [
   ["bankName", "Bank Name", "e.g. Habib Bank Limited"],
@@ -29,15 +30,14 @@ function FieldGrid({ fields, form, setForm }: { fields: typeof LOCAL_FIELDS; for
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
       {fields.map(([key, label, placeholder]) => (
-        <div key={key}>
-          <label className="block text-xs font-medium text-gray-500 mb-1">{label}</label>
+        <Field key={key} label={label}>
           <input
             placeholder={placeholder}
             value={form[key as keyof typeof form]}
             onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+            className={fieldClass}
           />
-        </div>
+        </Field>
       ))}
     </div>
   );
@@ -88,14 +88,15 @@ export default function PaymentSettingsPage() {
           <h2 className="text-sm font-bold mb-4">Local Bank Transfer</h2>
           <FieldGrid fields={LOCAL_FIELDS} form={form} setForm={setForm} />
           <div className="mt-3">
-            <label className="block text-xs font-medium text-gray-500 mb-1">Payment Instructions (optional)</label>
-            <textarea
-              placeholder="Any extra notes for the client, e.g. reference to include with the transfer"
-              value={form.instructions}
-              onChange={(e) => setForm({ ...form, instructions: e.target.value })}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-vertical"
-            />
+            <Field label="Payment Instructions (optional)">
+              <textarea
+                placeholder="Any extra notes for the client, e.g. reference to include with the transfer"
+                value={form.instructions}
+                onChange={(e) => setForm({ ...form, instructions: e.target.value })}
+                rows={3}
+                className={`${fieldClass} resize-vertical`}
+              />
+            </Field>
           </div>
         </div>
 
@@ -103,14 +104,15 @@ export default function PaymentSettingsPage() {
           <h2 className="text-sm font-bold mb-4">International Payment</h2>
           <FieldGrid fields={INTL_FIELDS} form={form} setForm={setForm} />
           <div className="mt-3">
-            <label className="block text-xs font-medium text-gray-500 mb-1">Payment Instructions (optional)</label>
-            <textarea
-              placeholder="Any extra notes for international clients"
-              value={form.intlInstructions}
-              onChange={(e) => setForm({ ...form, intlInstructions: e.target.value })}
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm resize-vertical"
-            />
+            <Field label="Payment Instructions (optional)">
+              <textarea
+                placeholder="Any extra notes for international clients"
+                value={form.intlInstructions}
+                onChange={(e) => setForm({ ...form, intlInstructions: e.target.value })}
+                rows={3}
+                className={`${fieldClass} resize-vertical`}
+              />
+            </Field>
           </div>
         </div>
 
