@@ -73,19 +73,21 @@ export function ContactForm() {
     <div className="form-group"><input required type="email" placeholder=" " value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /><label>Email Address</label></div>
     <div className="form-row">
       <div className="form-group form-group-country">
-        <select value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} aria-label="Country code">
+        <select id="contact-country" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })}>
           {countries.map(([iso, name, dial]) => <option key={iso} value={iso}>{name} ({dial})</option>)}
         </select>
+        <label htmlFor="contact-country">Country Code</label>
       </div>
       <div className="form-group"><input type="tel" inputMode="tel" placeholder=" " value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} /><label>Phone Number</label></div>
     </div>
-    <div className="form-group"><select value={form.service} onChange={(e) => setForm({ ...form, service: e.target.value })}><option value="">Select a service</option>{serviceLinks.map((item) => <option key={item}>{item}</option>)}</select></div>
+    <div className="form-group"><select id="contact-service" value={form.service} onChange={(e) => setForm({ ...form, service: e.target.value })}><option value="">Select a service</option>{serviceLinks.map((item) => <option key={item}>{item}</option>)}</select><label htmlFor="contact-service">Service</label></div>
     <div className="form-row">
       <div className="form-group"><input type="number" min="0" step="any" placeholder=" " value={form.budget} onChange={(e) => setForm({ ...form, budget: e.target.value })} /><label>Estimated Budget</label></div>
       <div className="form-group form-group-narrow">
-        <select value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })} aria-label="Currency">
+        <select id="contact-currency" value={form.currency} onChange={(e) => setForm({ ...form, currency: e.target.value })}>
           {currencies.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
+        <label htmlFor="contact-currency">Currency</label>
       </div>
     </div>
     <div className="form-group"><textarea required placeholder=" " value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} /><label>Project Details</label></div>
