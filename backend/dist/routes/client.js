@@ -61,6 +61,14 @@ router.get("/invoices", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("clien
     }));
     return res.json(withUrls);
 });
+router.get("/payment-settings", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("client"), async (_req, res) => {
+    if (!supabase_js_1.supabase)
+        return res.json(null);
+    const { data, error } = await supabase_js_1.supabase.from("payment_settings").select("*").eq("id", 1).maybeSingle();
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.json(data);
+});
 router.post("/invoices/:id/submit-payment", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("client"), upload.single("file"), async (req, res) => {
     const id = req.params.id;
     const file = req.file;
@@ -108,20 +116,6 @@ router.post("/tickets", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("clien
     if (error)
         return res.status(500).json({ error: error.message });
     return res.status(201).json(data);
-});
-router.patch("/tickets/:id/status", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("client"), async (req, res) => {
-    const id = req.params.id;
-    const { status } = req.body ?? {};
-    if (!status)
-        return res.status(400).json({ error: "status is required" });
-    if (!supabase_js_1.supabase)
-        return res.status(503).json({ error: "Database not configured" });
-    const { data, error } = await supabase_js_1.supabase.from("client_tickets").update({ status, updated: "Just now" }).eq("id", id).eq("client_id", req.user.id).select().maybeSingle();
-    if (error)
-        return res.status(500).json({ error: error.message });
-    if (!data)
-        return res.status(404).json({ error: "Ticket not found" });
-    return res.json(data);
 });
 router.get("/messages", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("client"), async (req, res) => {
     const projectId = Number(req.query.projectId);

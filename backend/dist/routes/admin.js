@@ -18,6 +18,8 @@ function toClientProfile(u) {
 // and /client/projects already alias to — so an assigned employee silently read as
 // undefined. Every admin_projects read/write goes through these aliases.
 const PROJECT_COLUMNS = "id,name,client,clientId:client_id,employeeId:employee_id,status,deadline,progress";
+const WORK_SETTINGS_COLUMNS = "workDays:work_days,startTime:start_time,endTime:end_time,breakMinutes:break_minutes,timezone";
+const SCHEDULE_COLUMNS = "employee_id,workDays:work_days,startTime:start_time,endTime:end_time,breakMinutes:break_minutes";
 router.get("/employees", auth_js_1.requireAuth, (0, asyncHandler_js_1.asyncHandler)(async (_req, res) => {
     const employees = await (0, authStore_js_1.listUsersByRole)("employee");
     return res.json(employees.map(toEmployeeProfile));
@@ -111,6 +113,35 @@ router.get("/contact-submissions", auth_js_1.requireAuth, (0, auth_js_1.requireR
     const { data, error } = await supabase_js_1.supabase.from("website_contact_submissions").select("*").order("created_at", { ascending: false });
     if (error)
         return res.status(500).json({ error: error.message });
+    return res.json(data);
+});
+router.delete("/contact-submissions/:id", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
+    if (!supabase_js_1.supabase)
+        return res.status(503).json({ error: "Database not configured" });
+    const { error } = await supabase_js_1.supabase.from("website_contact_submissions").delete().eq("id", Number(req.params.id));
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.status(204).send();
+}));
+router.get("/tickets", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (_req, res) => {
+    if (!supabase_js_1.supabase)
+        return res.json([]);
+    const { data, error } = await supabase_js_1.supabase.from("client_tickets").select("id,subject,status,priority,updated,description,client_id,users(name,company)");
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.json(data);
+});
+router.patch("/tickets/:id/status", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
+    const { status } = req.body ?? {};
+    if (!status)
+        return res.status(400).json({ error: "status is required" });
+    if (!supabase_js_1.supabase)
+        return res.status(503).json({ error: "Database not configured" });
+    const { data, error } = await supabase_js_1.supabase.from("client_tickets").update({ status, updated: "Just now" }).eq("id", req.params.id).select().maybeSingle();
+    if (error)
+        return res.status(500).json({ error: error.message });
+    if (!data)
+        return res.status(404).json({ error: "Ticket not found" });
     return res.json(data);
 });
 router.post("/services", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
@@ -216,6 +247,113 @@ router.patch("/invoices/:id/verify", auth_js_1.requireAuth, (0, auth_js_1.requir
     await supabase_js_1.supabase.from("client_invoices").update(patch).eq("id", id);
     return res.json((await attachProofUrl([data]))[0]);
 });
+router.get("/payment-settings", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (_req, res) => {
+    if (!supabase_js_1.supabase)
+        return res.json(null);
+    const { data, error } = await supabase_js_1.supabase.from("payment_settings").select("*").eq("id", 1).maybeSingle();
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.json(data);
+});
+router.patch("/payment-settings", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
+    const { bankName, accountTitle, accountNumber, iban, branchCode, swiftCode, instructions, intlBankName, intlAccountTitle, intlAccountNumber, intlIban, intlSwiftCode, intlInstructions, } = req.body ?? {};
+    if (!supabase_js_1.supabase)
+        return res.status(503).json({ error: "Database not configured" });
+    const { data, error } = await supabase_js_1.supabase.from("payment_settings").upsert({
+        id: 1,
+        bank_name: bankName ?? null,
+        account_title: accountTitle ?? null,
+        account_number: accountNumber ?? null,
+        iban: iban ?? null,
+        branch_code: branchCode ?? null,
+        swift_code: swiftCode ?? null,
+        instructions: instructions ?? null,
+        intl_bank_name: intlBankName ?? null,
+        intl_account_title: intlAccountTitle ?? null,
+        intl_account_number: intlAccountNumber ?? null,
+        intl_iban: intlIban ?? null,
+        intl_swift_code: intlSwiftCode ?? null,
+        intl_instructions: intlInstructions ?? null,
+    }).select().single();
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.json(data);
+});
+// ---------------------------------------------------------------------------
+// Working hours: one company default, plus a per-employee override where a NULL
+// column means "inherit". Nothing here blocks scheduling — it only describes
+// when someone is expected to be working, so conflicts can be warned about.
+// ---------------------------------------------------------------------------
+router.get("/work-settings", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), (0, asyncHandler_js_1.asyncHandler)(async (_req, res) => {
+    if (!supabase_js_1.supabase)
+        return res.json(null);
+    const { data, error } = await supabase_js_1.supabase.from("work_settings").select(WORK_SETTINGS_COLUMNS).eq("id", 1).maybeSingle();
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.json(data);
+}));
+router.patch("/work-settings", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
+    const { workDays, startTime, endTime, breakMinutes, timezone } = req.body ?? {};
+    if (!supabase_js_1.supabase)
+        return res.status(503).json({ error: "Database not configured" });
+    const { data, error } = await supabase_js_1.supabase
+        .from("work_settings")
+        .upsert({
+        id: 1,
+        work_days: Array.isArray(workDays) ? workDays.map(Number).filter((d) => d >= 0 && d <= 6) : undefined,
+        start_time: startTime || undefined,
+        end_time: endTime || undefined,
+        break_minutes: breakMinutes == null ? undefined : Number(breakMinutes),
+        timezone: timezone || undefined,
+        updated_at: new Date().toISOString(),
+    })
+        .select(WORK_SETTINGS_COLUMNS)
+        .single();
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.json(data);
+}));
+router.get("/employee-schedules", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), (0, asyncHandler_js_1.asyncHandler)(async (_req, res) => {
+    if (!supabase_js_1.supabase)
+        return res.json([]);
+    const { data, error } = await supabase_js_1.supabase.from("employee_schedules").select(SCHEDULE_COLUMNS);
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.json(data);
+}));
+router.put("/employee-schedules/:id", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
+    const employeeId = Number(req.params.id);
+    if (!Number.isFinite(employeeId))
+        return res.status(400).json({ error: "Invalid employee id" });
+    if (!supabase_js_1.supabase)
+        return res.status(503).json({ error: "Database not configured" });
+    const { workDays, startTime, endTime, breakMinutes } = req.body ?? {};
+    // An explicit null clears the override for that field, so the employee falls
+    // back to the company default. Sending nothing at all leaves it as it was.
+    const { data, error } = await supabase_js_1.supabase
+        .from("employee_schedules")
+        .upsert({
+        employee_id: employeeId,
+        work_days: Array.isArray(workDays) ? workDays.map(Number).filter((d) => d >= 0 && d <= 6) : null,
+        start_time: startTime || null,
+        end_time: endTime || null,
+        break_minutes: breakMinutes == null || breakMinutes === "" ? null : Number(breakMinutes),
+        updated_at: new Date().toISOString(),
+    })
+        .select(SCHEDULE_COLUMNS)
+        .single();
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.json(data);
+}));
+router.delete("/employee-schedules/:id", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
+    if (!supabase_js_1.supabase)
+        return res.status(503).json({ error: "Database not configured" });
+    const { error } = await supabase_js_1.supabase.from("employee_schedules").delete().eq("employee_id", Number(req.params.id));
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.status(204).end();
+}));
 router.post("/notifications", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
     const { title, msg, targetRole, targetUserId } = req.body ?? {};
     if (!title || !msg)
@@ -232,32 +370,6 @@ router.post("/notifications", auth_js_1.requireAuth, (0, auth_js_1.requireRole)(
     if (error)
         return res.status(500).json({ error: error.message });
     return res.status(201).json(data);
-});
-router.post("/blog", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
-    const { title, author, content, status } = req.body ?? {};
-    if (!title || !author || !content)
-        return res.status(400).json({ error: "title, author, content are required" });
-    if (!supabase_js_1.supabase)
-        return res.status(503).json({ error: "Database not configured" });
-    const date = new Date().toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric" });
-    const { data, error } = await supabase_js_1.supabase.from("admin_blog").insert({ title, author, content, status: status === "Published" ? "Published" : "Draft", date }).select().single();
-    if (error)
-        return res.status(500).json({ error: error.message });
-    return res.status(201).json(data);
-});
-router.patch("/blog/:id/status", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
-    const id = Number(req.params.id);
-    const { status } = req.body ?? {};
-    if (status !== "Draft" && status !== "Published")
-        return res.status(400).json({ error: "status must be Draft or Published" });
-    if (!supabase_js_1.supabase)
-        return res.status(503).json({ error: "Database not configured" });
-    const { data, error } = await supabase_js_1.supabase.from("admin_blog").update({ status }).eq("id", id).select().maybeSingle();
-    if (error)
-        return res.status(500).json({ error: error.message });
-    if (!data)
-        return res.status(404).json({ error: "Blog post not found" });
-    return res.json(data);
 });
 router.post("/portfolio", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (req, res) => {
     const { title, client, category, description } = req.body ?? {};
@@ -283,7 +395,6 @@ router.get("/projects", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin
 const tableMap = {
     services: "admin_services",
     notifications: "notifications",
-    blog: "admin_blog",
     portfolio: "admin_portfolio",
 };
 Object.entries(tableMap).forEach(([key, table]) => {

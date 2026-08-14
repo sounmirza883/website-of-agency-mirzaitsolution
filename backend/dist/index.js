@@ -11,6 +11,7 @@ const admin_js_1 = __importDefault(require("./routes/admin.js"));
 const employee_js_1 = __importDefault(require("./routes/employee.js"));
 const client_js_1 = __importDefault(require("./routes/client.js"));
 const auth_js_1 = __importDefault(require("./routes/auth.js"));
+const chat_js_1 = __importDefault(require("./routes/chat.js"));
 const app = (0, express_1.default)();
 const port = process.env.PORT || 4000;
 const allowedOrigins = [
@@ -38,6 +39,7 @@ app.use("/api/website", website_js_1.default);
 app.use("/api/admin", admin_js_1.default);
 app.use("/api/employee", employee_js_1.default);
 app.use("/api/client", client_js_1.default);
+app.use("/api/chat", chat_js_1.default);
 // Last-resort error handler: turns a thrown/forwarded error into a 500 response
 // rather than letting it escape as an unhandled rejection (which crashes Node).
 // Must stay after the routes and keep all four params for Express to treat it as

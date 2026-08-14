@@ -16,6 +16,48 @@ function nowTimeStr(): string {
   return new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
 
+const WORK_DEFAULTS = { workDays: [1, 2, 3, 4, 5], startTime: "09:00", endTime: "18:00", breakMinutes: 60, timezone: "Asia/Karachi" };
+
+/**
+ * An employee's effective hours: their override merged over the company
+ * default, field by field. A NULL column in employee_schedules means "inherit",
+ * so the override row can set only the parts that actually differ.
+ *
+ * Exported because the scheduling conflict checks need the same resolution —
+ * two implementations would drift.
+ */
+export async function resolveSchedule(employeeId: number) {
+  if (!supabase) return { ...WORK_DEFAULTS, source: "default" as const };
+
+  const [settings, override] = await Promise.all([
+    supabase.from("work_settings").select("work_days,start_time,end_time,break_minutes,timezone").eq("id", 1).maybeSingle(),
+    supabase.from("employee_schedules").select("work_days,start_time,end_time,break_minutes").eq("employee_id", employeeId).maybeSingle(),
+  ]);
+
+  const base = {
+    workDays: settings.data?.work_days ?? WORK_DEFAULTS.workDays,
+    startTime: settings.data?.start_time ?? WORK_DEFAULTS.startTime,
+    endTime: settings.data?.end_time ?? WORK_DEFAULTS.endTime,
+    breakMinutes: settings.data?.break_minutes ?? WORK_DEFAULTS.breakMinutes,
+    timezone: settings.data?.timezone ?? WORK_DEFAULTS.timezone,
+  };
+  const o = override.data;
+  if (!o) return { ...base, source: "default" as const };
+
+  return {
+    workDays: o.work_days ?? base.workDays,
+    startTime: o.start_time ?? base.startTime,
+    endTime: o.end_time ?? base.endTime,
+    breakMinutes: o.break_minutes ?? base.breakMinutes,
+    timezone: base.timezone,
+    source: "override" as const,
+  };
+}
+
+router.get("/my-schedule", requireAuth, requireRole("employee"), asyncHandler(async (req: AuthedRequest, res) => {
+  return res.json(await resolveSchedule(req.user!.id));
+}));
+
 router.get("/clients", requireAuth, requireRole("employee"), asyncHandler(async (req, res) => {
   const clients = await listUsersByRole("client", (req as AuthedRequest).user!.id);
   return res.json(clients.map((c) => ({ id: c.id, name: c.name, email: c.email, company: c.company, status: c.status })));

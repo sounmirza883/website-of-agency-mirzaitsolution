@@ -235,6 +235,11 @@ const USER_REFERENCES: Array<[table: string, column: string]> = [
   ["users", "created_by"],
   ["chat_messages", "sender_id"],
   ["chat_conversations", "created_by"],
+  ["employee_tasks", "assigned_by"],
+  ["task_time_entries", "employee_id"],
+  ["task_time_entries", "edited_by"],
+  ["task_reports", "employee_id"],
+  ["daily_reports", "employee_id"],
 ];
 
 /**
@@ -245,6 +250,8 @@ const USER_REFERENCES: Array<[table: string, column: string]> = [
  */
 const USER_MEMBERSHIPS: Array<[table: string, column: string]> = [
   ["chat_members", "user_id"],
+  ["employee_schedules", "employee_id"],
+  ["project_message_reads", "user_id"],
 ];
 
 export async function deleteUser(id: number): Promise<boolean> {

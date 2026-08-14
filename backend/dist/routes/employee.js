@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.resolveSchedule = resolveSchedule;
 const express_1 = require("express");
 const multer_1 = __importDefault(require("multer"));
 const supabase_js_1 = require("../supabase.js");
@@ -18,6 +19,44 @@ function todayStr() {
 function nowTimeStr() {
     return new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
 }
+const WORK_DEFAULTS = { workDays: [1, 2, 3, 4, 5], startTime: "09:00", endTime: "18:00", breakMinutes: 60, timezone: "Asia/Karachi" };
+/**
+ * An employee's effective hours: their override merged over the company
+ * default, field by field. A NULL column in employee_schedules means "inherit",
+ * so the override row can set only the parts that actually differ.
+ *
+ * Exported because the scheduling conflict checks need the same resolution —
+ * two implementations would drift.
+ */
+async function resolveSchedule(employeeId) {
+    if (!supabase_js_1.supabase)
+        return { ...WORK_DEFAULTS, source: "default" };
+    const [settings, override] = await Promise.all([
+        supabase_js_1.supabase.from("work_settings").select("work_days,start_time,end_time,break_minutes,timezone").eq("id", 1).maybeSingle(),
+        supabase_js_1.supabase.from("employee_schedules").select("work_days,start_time,end_time,break_minutes").eq("employee_id", employeeId).maybeSingle(),
+    ]);
+    const base = {
+        workDays: settings.data?.work_days ?? WORK_DEFAULTS.workDays,
+        startTime: settings.data?.start_time ?? WORK_DEFAULTS.startTime,
+        endTime: settings.data?.end_time ?? WORK_DEFAULTS.endTime,
+        breakMinutes: settings.data?.break_minutes ?? WORK_DEFAULTS.breakMinutes,
+        timezone: settings.data?.timezone ?? WORK_DEFAULTS.timezone,
+    };
+    const o = override.data;
+    if (!o)
+        return { ...base, source: "default" };
+    return {
+        workDays: o.work_days ?? base.workDays,
+        startTime: o.start_time ?? base.startTime,
+        endTime: o.end_time ?? base.endTime,
+        breakMinutes: o.break_minutes ?? base.breakMinutes,
+        timezone: base.timezone,
+        source: "override",
+    };
+}
+router.get("/my-schedule", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("employee"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
+    return res.json(await resolveSchedule(req.user.id));
+}));
 router.get("/clients", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("employee"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
     const clients = await (0, authStore_js_1.listUsersByRole)("client", req.user.id);
     return res.json(clients.map((c) => ({ id: c.id, name: c.name, email: c.email, company: c.company, status: c.status })));
@@ -219,6 +258,27 @@ router.post("/messages", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("empl
     if (error)
         return res.status(500).json({ error: error.message });
     return res.status(201).json(data);
+});
+router.get("/tickets", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("employee"), async (_req, res) => {
+    if (!supabase_js_1.supabase)
+        return res.json([]);
+    const { data, error } = await supabase_js_1.supabase.from("client_tickets").select("id,subject,status,priority,updated,description,client_id,users(name,company)");
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.json(data);
+});
+router.patch("/tickets/:id/status", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("employee"), async (req, res) => {
+    const { status } = req.body ?? {};
+    if (!status)
+        return res.status(400).json({ error: "status is required" });
+    if (!supabase_js_1.supabase)
+        return res.status(503).json({ error: "Database not configured" });
+    const { data, error } = await supabase_js_1.supabase.from("client_tickets").update({ status, updated: "Just now" }).eq("id", req.params.id).select().maybeSingle();
+    if (error)
+        return res.status(500).json({ error: error.message });
+    if (!data)
+        return res.status(404).json({ error: "Ticket not found" });
+    return res.json(data);
 });
 router.get("/notifications", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("employee"), async (req, res) => {
     if (!supabase_js_1.supabase)

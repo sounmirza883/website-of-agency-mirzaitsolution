@@ -393,3 +393,116 @@ ON CONFLICT (email) DO NOTHING;
 
 -- Admin Services/Projects/Invoices/Notifications/Portfolio are no longer seeded —
 -- populated only through the admin CRUD UI from here on (see the one-time cleanup above).
+
+-- ============================================================
+-- Phase 5: scheduling, time tracking and reporting
+--
+-- Everything below is additive. Existing columns keep their meaning and
+-- existing screens keep working; new code reads the typed columns.
+--
+-- Why typed columns at all: the original schema stores dates and times as
+-- pre-formatted display strings ("Aug 14, 2026", "9:05 AM"), which cannot be
+-- sorted, compared or subtracted — so hours worked were not computable. Time
+-- tracking needs real timestamps, so it gets them.
+-- ============================================================
+
+-- Company-wide working hours. Single row, enforced by the CHECK on id.
+CREATE TABLE IF NOT EXISTS work_settings (
+  id INTEGER PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+  work_days INTEGER[] NOT NULL DEFAULT '{1,2,3,4,5}',  -- 0=Sun .. 6=Sat
+  start_time TIME NOT NULL DEFAULT '09:00',
+  end_time TIME NOT NULL DEFAULT '18:00',
+  break_minutes INTEGER NOT NULL DEFAULT 60,
+  timezone TEXT NOT NULL DEFAULT 'Asia/Karachi',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+INSERT INTO work_settings (id) VALUES (1) ON CONFLICT (id) DO NOTHING;
+
+-- Per-employee override. A NULL column means "inherit the company default",
+-- which is why none of these are NOT NULL.
+CREATE TABLE IF NOT EXISTS employee_schedules (
+  employee_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  work_days INTEGER[],
+  start_time TIME,
+  end_time TIME,
+  break_minutes INTEGER,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Tasks gain an owner, a schedule window and an estimate. `project` stays a
+-- free-text name because the employee board, the mobile app and the status feed
+-- all match on it; project_id is the FK the client-facing views need.
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS project_id INTEGER REFERENCES admin_projects(id) ON DELETE SET NULL;
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS assigned_by INTEGER REFERENCES users(id) ON DELETE SET NULL;
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS scheduled_start TIMESTAMPTZ;
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS scheduled_end TIMESTAMPTZ;
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS estimated_minutes INTEGER;
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS progress INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS client_visible BOOLEAN NOT NULL DEFAULT TRUE;
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ;
+ALTER TABLE employee_tasks ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now();
+CREATE INDEX IF NOT EXISTS employee_tasks_employee_idx ON employee_tasks (employee_id);
+CREATE INDEX IF NOT EXISTS employee_tasks_project_idx ON employee_tasks (project_id);
+
+-- One row per timer run. ended_at IS NULL means it is still running.
+CREATE TABLE IF NOT EXISTS task_time_entries (
+  id SERIAL PRIMARY KEY,
+  task_id INTEGER NOT NULL REFERENCES employee_tasks(id) ON DELETE CASCADE,
+  employee_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  started_at TIMESTAMPTZ NOT NULL,
+  ended_at TIMESTAMPTZ,
+  note TEXT,
+  edited_at TIMESTAMPTZ,
+  edited_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS task_time_entries_task_idx ON task_time_entries (task_id);
+CREATE INDEX IF NOT EXISTS task_time_entries_employee_idx ON task_time_entries (employee_id, started_at DESC);
+-- One running timer per person, enforced here rather than by a check-then-insert
+-- that two concurrent taps would both pass.
+CREATE UNIQUE INDEX IF NOT EXISTS task_time_entries_one_running
+  ON task_time_entries (employee_id) WHERE ended_at IS NULL;
+
+-- Written when a task is completed; the task cannot close without one.
+CREATE TABLE IF NOT EXISTS task_reports (
+  id SERIAL PRIMARY KEY,
+  task_id INTEGER NOT NULL REFERENCES employee_tasks(id) ON DELETE CASCADE,
+  employee_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  summary TEXT NOT NULL,
+  blockers TEXT,
+  client_visible BOOLEAN NOT NULL DEFAULT TRUE,
+  submitted_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS task_reports_task_idx ON task_reports (task_id);
+
+-- End-of-day summary. Internal only: it spans projects, so it can never be
+-- safely shown to one client.
+CREATE TABLE IF NOT EXISTS daily_reports (
+  id SERIAL PRIMARY KEY,
+  employee_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+  work_date DATE NOT NULL,
+  summary TEXT NOT NULL,
+  submitted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (employee_id, work_date)
+);
+
+-- Attendance gains real timestamps beside the display strings. Both are written
+-- from here on, so existing pages reading date/check_in/check_out keep working.
+ALTER TABLE employee_attendance ADD COLUMN IF NOT EXISTS work_date DATE;
+ALTER TABLE employee_attendance ADD COLUMN IF NOT EXISTS checked_in_at TIMESTAMPTZ;
+ALTER TABLE employee_attendance ADD COLUMN IF NOT EXISTS checked_out_at TIMESTAMPTZ;
+-- Closes the double check-in race: the old guard was a check-then-insert with no
+-- constraint, so two concurrent requests both passed it.
+CREATE UNIQUE INDEX IF NOT EXISTS employee_attendance_one_per_day
+  ON employee_attendance (employee_id, work_date) WHERE work_date IS NOT NULL;
+
+-- Per-project chat read cursor. Keyed on message id, never a timestamp:
+-- project_messages.time is a display string, and Postgres now() was measured
+-- ~2s ahead of the Node clock, which left timestamp-based unread badges stuck.
+CREATE TABLE IF NOT EXISTS project_message_reads (
+  project_id INTEGER NOT NULL REFERENCES admin_projects(id) ON DELETE CASCADE,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  last_read_message_id INTEGER,
+  PRIMARY KEY (project_id, user_id)
+);

@@ -20,6 +20,9 @@ function toClientProfile(u: Awaited<ReturnType<typeof listUsersByRole>>[number])
 // undefined. Every admin_projects read/write goes through these aliases.
 const PROJECT_COLUMNS = "id,name,client,clientId:client_id,employeeId:employee_id,status,deadline,progress";
 
+const WORK_SETTINGS_COLUMNS = "workDays:work_days,startTime:start_time,endTime:end_time,breakMinutes:break_minutes,timezone";
+const SCHEDULE_COLUMNS = "employee_id,workDays:work_days,startTime:start_time,endTime:end_time,breakMinutes:break_minutes";
+
 router.get("/employees", requireAuth, asyncHandler(async (_req, res) => {
   const employees = await listUsersByRole("employee");
   return res.json(employees.map(toEmployeeProfile));
@@ -257,6 +260,77 @@ router.patch("/payment-settings", requireAuth, requireRole("admin"), async (req,
   if (error) return res.status(500).json({ error: error.message });
   return res.json(data);
 });
+
+// ---------------------------------------------------------------------------
+// Working hours: one company default, plus a per-employee override where a NULL
+// column means "inherit". Nothing here blocks scheduling — it only describes
+// when someone is expected to be working, so conflicts can be warned about.
+// ---------------------------------------------------------------------------
+
+router.get("/work-settings", requireAuth, requireRole("admin"), asyncHandler(async (_req, res) => {
+  if (!supabase) return res.json(null);
+  const { data, error } = await supabase.from("work_settings").select(WORK_SETTINGS_COLUMNS).eq("id", 1).maybeSingle();
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json(data);
+}));
+
+router.patch("/work-settings", requireAuth, requireRole("admin"), asyncHandler(async (req, res) => {
+  const { workDays, startTime, endTime, breakMinutes, timezone } = req.body ?? {};
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+  const { data, error } = await supabase
+    .from("work_settings")
+    .upsert({
+      id: 1,
+      work_days: Array.isArray(workDays) ? workDays.map(Number).filter((d) => d >= 0 && d <= 6) : undefined,
+      start_time: startTime || undefined,
+      end_time: endTime || undefined,
+      break_minutes: breakMinutes == null ? undefined : Number(breakMinutes),
+      timezone: timezone || undefined,
+      updated_at: new Date().toISOString(),
+    })
+    .select(WORK_SETTINGS_COLUMNS)
+    .single();
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json(data);
+}));
+
+router.get("/employee-schedules", requireAuth, requireRole("admin"), asyncHandler(async (_req, res) => {
+  if (!supabase) return res.json([]);
+  const { data, error } = await supabase.from("employee_schedules").select(SCHEDULE_COLUMNS);
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json(data);
+}));
+
+router.put("/employee-schedules/:id", requireAuth, requireRole("admin"), asyncHandler(async (req, res) => {
+  const employeeId = Number(req.params.id);
+  if (!Number.isFinite(employeeId)) return res.status(400).json({ error: "Invalid employee id" });
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+
+  const { workDays, startTime, endTime, breakMinutes } = req.body ?? {};
+  // An explicit null clears the override for that field, so the employee falls
+  // back to the company default. Sending nothing at all leaves it as it was.
+  const { data, error } = await supabase
+    .from("employee_schedules")
+    .upsert({
+      employee_id: employeeId,
+      work_days: Array.isArray(workDays) ? workDays.map(Number).filter((d) => d >= 0 && d <= 6) : null,
+      start_time: startTime || null,
+      end_time: endTime || null,
+      break_minutes: breakMinutes == null || breakMinutes === "" ? null : Number(breakMinutes),
+      updated_at: new Date().toISOString(),
+    })
+    .select(SCHEDULE_COLUMNS)
+    .single();
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json(data);
+}));
+
+router.delete("/employee-schedules/:id", requireAuth, requireRole("admin"), asyncHandler(async (req, res) => {
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+  const { error } = await supabase.from("employee_schedules").delete().eq("employee_id", Number(req.params.id));
+  if (error) return res.status(500).json({ error: error.message });
+  return res.status(204).end();
+}));
 
 router.post("/notifications", requireAuth, requireRole("admin"), async (req: AuthedRequest, res) => {
   const { title, msg, targetRole, targetUserId } = req.body ?? {};

@@ -39,14 +39,6 @@ export interface Notification {
     targetRole: string;
     targetUserId: number | null;
 }
-export interface BlogPost {
-    id: number;
-    title: string;
-    author: string;
-    date: string;
-    status: string;
-    content: string;
-}
 export interface PortfolioItem {
     id: number;
     title: string;
