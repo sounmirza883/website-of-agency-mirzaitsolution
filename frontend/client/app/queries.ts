@@ -46,3 +46,11 @@ export function createTicket(token: string, payload: { subject: string; priority
 }
 export function sendMessage(token: string, projectId: string, text: string) { return apiPost<any>("/client/messages", token, { projectId, text }); }
 export function fetchClientNotifications(token: string) { return apiGet<any[]>("/client/notifications", token); }
+
+// --- Work visibility --------------------------------------------------------
+export function fetchProjectTasks(token: string, projectId: number) {
+  return apiGet<any[]>(`/client/projects/${projectId}/tasks`, token);
+}
+export function fetchProjectReports(token: string, projectId: number) {
+  return apiGet<any[]>(`/client/projects/${projectId}/reports`, token);
+}

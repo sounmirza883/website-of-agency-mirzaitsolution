@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
-import { fetchProjects, fetchMilestones, fetchFiles, fetchInvoices, fetchPaymentSettings, fetchTickets, fetchMessages, submitInvoicePayment, createTicket, sendMessage, fetchClientNotifications, changePassword } from "./queries";
+import { fetchProjects, fetchMilestones, fetchFiles, fetchInvoices, fetchPaymentSettings, fetchTickets, fetchMessages, submitInvoicePayment, createTicket, sendMessage, fetchClientNotifications, changePassword , fetchProjectTasks, fetchProjectReports} from "./queries";
 
 export function useChangePassword() {
   const { token } = useAuth();
@@ -76,4 +76,13 @@ export function useSendMessage() {
     mutationFn: (vars: { projectId: string; text: string }) => sendMessage(token!, vars.projectId, vars.text),
     onSuccess: (_data, vars) => qc.invalidateQueries({ queryKey: ["messages", vars.projectId] }),
   });
+}
+
+export function useProjectTasks(projectId: number | null) {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["projectTasks", projectId], queryFn: () => fetchProjectTasks(token!, projectId!), enabled: !!token && !!projectId, staleTime: 1000 * 60 });
+}
+export function useProjectReports(projectId: number | null) {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["projectReports", projectId], queryFn: () => fetchProjectReports(token!, projectId!), enabled: !!token && !!projectId, staleTime: 1000 * 60 });
 }

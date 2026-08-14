@@ -8,6 +8,7 @@ const multer_1 = __importDefault(require("multer"));
 const supabase_js_1 = require("../supabase.js");
 const supabaseAdmin_js_1 = require("../supabaseAdmin.js");
 const auth_js_1 = require("../middleware/auth.js");
+const asyncHandler_js_1 = require("../middleware/asyncHandler.js");
 const router = (0, express_1.Router)();
 const upload = (0, multer_1.default)({ storage: multer_1.default.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
 function todayStr() {
@@ -21,6 +22,64 @@ router.get("/projects", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("clien
         return res.status(500).json({ error: error.message });
     return res.json(data);
 });
+// ---------------------------------------------------------------------------
+// What the client can see about work on their project.
+//
+// The column lists below are written out deliberately and must stay that way.
+// select("*") would leak whatever the table gains later, and the shared
+// PROJECT_COLUMNS constant includes employeeId. Clients get task status,
+// progress and the completion write-ups — never hours logged, never who did it.
+// Showing hours would tell a client exactly how long a fixed-price job took.
+// ---------------------------------------------------------------------------
+/** 403 unless this project belongs to the caller. Used by both routes below. */
+async function assertOwnsProject(projectId, clientId) {
+    if (!supabase_js_1.supabase)
+        return false;
+    const { data } = await supabase_js_1.supabase.from("admin_projects").select("id").eq("id", projectId).eq("client_id", clientId).maybeSingle();
+    return !!data;
+}
+router.get("/projects/:id/tasks", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("client"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
+    if (!supabase_js_1.supabase)
+        return res.json([]);
+    const projectId = Number(req.params.id);
+    if (!(await assertOwnsProject(projectId, req.user.id)))
+        return res.status(403).json({ error: "Not your project" });
+    const { data, error } = await supabase_js_1.supabase
+        .from("employee_tasks")
+        .select("id,task,description,status,progress,due,completedAt:completed_at")
+        .eq("project_id", projectId)
+        .eq("client_visible", true)
+        .order("id", { ascending: true })
+        .limit(500);
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.json(data);
+}));
+router.get("/projects/:id/reports", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("client"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
+    if (!supabase_js_1.supabase)
+        return res.json([]);
+    const projectId = Number(req.params.id);
+    if (!(await assertOwnsProject(projectId, req.user.id)))
+        return res.status(403).json({ error: "Not your project" });
+    // Two hops rather than an embed: task_reports has no project_id, and joining
+    // through employee_tasks would put the task's employee_id within reach of a
+    // careless select. Fetching the id list first keeps that impossible.
+    const { data: taskRows } = await supabase_js_1.supabase.from("employee_tasks").select("id,task").eq("project_id", projectId).eq("client_visible", true).limit(500);
+    const ids = (taskRows ?? []).map((t) => t.id);
+    if (ids.length === 0)
+        return res.json([]);
+    const { data, error } = await supabase_js_1.supabase
+        .from("task_reports")
+        .select("id,taskId:task_id,summary,submittedAt:submitted_at")
+        .in("task_id", ids)
+        .eq("client_visible", true)
+        .order("submitted_at", { ascending: false })
+        .limit(200);
+    if (error)
+        return res.status(500).json({ error: error.message });
+    const titles = new Map((taskRows ?? []).map((t) => [t.id, t.task]));
+    return res.json((data ?? []).map((r) => ({ ...r, task: titles.get(r.taskId) ?? null })));
+}));
 router.get("/milestones", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("client"), async (req, res) => {
     if (!supabase_js_1.supabase)
         return res.json([]);

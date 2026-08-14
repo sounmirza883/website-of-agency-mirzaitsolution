@@ -61,6 +61,19 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+/** Matches the inline-style convention the rest of the client portal uses. */
+export function ProgressBar({ value, showLabel = true }: { value: number; showLabel?: boolean }) {
+  const pct = Math.max(0, Math.min(100, Math.round(value || 0)));
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      <div style={{ flex: 1, background: "var(--soft)", borderRadius: "8px", height: "8px" }} role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+        <div style={{ width: `${pct}%`, background: "var(--accent)", height: "8px", borderRadius: "8px", transition: "width .3s" }} />
+      </div>
+      {showLabel && <span className="text-xs" style={{ color: "var(--ink-soft)", width: "32px" }}>{pct}%</span>}
+    </div>
+  );
+}
+
 const nav = [
   { label: "Dashboard", icon: "fa-chart-pie", href: "/" },
   { label: "Projects", icon: "fa-folder-open", href: "/projects" },
