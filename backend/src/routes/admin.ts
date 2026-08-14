@@ -4,7 +4,7 @@ import { supabaseAdmin, FILES_BUCKET } from "../supabaseAdmin.js";
 import { createUser, deleteUser, EmailTakenError, listAllUsers, listUsersByRole, setCanCreateClients, setUserStatus, updateUserDetails } from "../authStore.js";
 import { type AuthedRequest, requireAuth, requireRole } from "../middleware/auth.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
-import { resolveSchedule } from "./employee.js";
+import { rollUpProjectProgress, scheduleWarnings } from "../scheduling.js";
 
 const router = Router();
 
@@ -272,91 +272,6 @@ router.patch("/payment-settings", requireAuth, requireRole("admin"), async (req,
 // bare users(name) embed is ambiguous and fails at runtime while the build stays
 // green. Both embeds below name their column explicitly.
 // ---------------------------------------------------------------------------
-
-/**
- * Recompute a project's progress from its tasks: the mean of their per-task
- * progress, with a completed task counting as 100 regardless of what its
- * progress column says.
- *
- * admin_projects.progress has existed since the beginning, is returned by three
- * endpoints, and is rendered as a bar in the client portal — but nothing has
- * ever written to it, so those bars have always shown 0%. This is the writer.
- *
- * Failures are swallowed: a rollup is a derived convenience, and it must never
- * fail the task write that already succeeded.
- */
-async function rollUpProjectProgress(projectId: number | null): Promise<void> {
-  if (!supabase || !projectId) return;
-  try {
-    const { data: tasks } = await supabase.from("employee_tasks").select("status,progress").eq("project_id", projectId).limit(1000);
-    if (!tasks) return;
-    // No tasks means nothing is done. Returning early here would strand the last
-    // computed value on a project whose tasks were all deleted.
-    const progress = tasks.length === 0
-      ? 0
-      : Math.round(tasks.reduce((sum, t) => sum + (isDone(t.status) ? 100 : Math.max(0, Math.min(100, t.progress ?? 0))), 0) / tasks.length);
-    await supabase.from("admin_projects").update({ progress }).eq("id", projectId);
-  } catch (err) {
-    console.warn("project progress rollup failed:", err instanceof Error ? err.message : err);
-  }
-}
-
-/** The employee board says "Done", the admin board says "Completed". Both mean finished. */
-export function isDone(status: string | null | undefined): boolean {
-  return status === "Done" || status === "Completed";
-}
-
-/**
- * Non-blocking checks on a proposed task window. The admin knows things the
- * system does not — someone agreed to cover, a deadline moved — so a conflict
- * is reported and overridable, never enforced.
- *
- * This is also the first time approved leave is read by anything: it has been
- * stored and displayed since the beginning and consulted by no other code path.
- */
-async function scheduleWarnings(employeeId: number, start?: string | null, end?: string | null): Promise<string[]> {
-  if (!supabase || !start) return [];
-  const warnings: string[] = [];
-  try {
-    const startsAt = new Date(start);
-    if (Number.isNaN(startsAt.getTime())) return [];
-
-    const schedule = await resolveSchedule(employeeId);
-    if (!schedule.workDays.includes(startsAt.getDay())) {
-      warnings.push("This falls on a day the employee does not normally work.");
-    } else {
-      const hhmm = `${String(startsAt.getHours()).padStart(2, "0")}:${String(startsAt.getMinutes()).padStart(2, "0")}`;
-      if (hhmm < String(schedule.startTime).slice(0, 5) || hhmm >= String(schedule.endTime).slice(0, 5)) {
-        warnings.push(`This starts outside the employee's hours (${String(schedule.startTime).slice(0, 5)}–${String(schedule.endTime).slice(0, 5)}).`);
-      }
-    }
-
-    const { data: leave } = await supabase
-      .from("employee_leave_requests")
-      .select("from_date,to_date,type")
-      .eq("employee_id", employeeId)
-      .eq("status", "Approved");
-    const day = startsAt.toISOString().slice(0, 10);
-    for (const l of leave ?? []) {
-      // from_date/to_date are free-text and historically hold two formats, so
-      // parse defensively rather than comparing strings.
-      const from = new Date(l.from_date), to = new Date(l.to_date);
-      if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime())) continue;
-      if (day >= from.toISOString().slice(0, 10) && day <= to.toISOString().slice(0, 10)) {
-        warnings.push(`The employee has approved ${l.type || "leave"} on this date.`);
-        break;
-      }
-    }
-
-    if (end) {
-      const endsAt = new Date(end);
-      if (!Number.isNaN(endsAt.getTime()) && endsAt <= startsAt) warnings.push("The end time is not after the start time.");
-    }
-  } catch (err) {
-    console.warn("schedule warning check failed:", err instanceof Error ? err.message : err);
-  }
-  return warnings;
-}
 
 // One literal, not a concatenation: the Supabase client infers the row type from
 // this string, and `+` widens it to `string`, which erases the inference.

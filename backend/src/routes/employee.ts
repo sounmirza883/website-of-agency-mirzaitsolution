@@ -5,6 +5,7 @@ import { supabaseAdmin, FILES_BUCKET } from "../supabaseAdmin.js";
 import { createUser, EmailTakenError, listUsersByRole } from "../authStore.js";
 import { type AuthedRequest, requireAuth, requireRole } from "../middleware/auth.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
+import { isDone, resolveSchedule, rollUpProjectProgress } from "../scheduling.js";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
@@ -14,44 +15,6 @@ function todayStr(): string {
 }
 function nowTimeStr(): string {
   return new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
-}
-
-const WORK_DEFAULTS = { workDays: [1, 2, 3, 4, 5], startTime: "09:00", endTime: "18:00", breakMinutes: 60, timezone: "Asia/Karachi" };
-
-/**
- * An employee's effective hours: their override merged over the company
- * default, field by field. A NULL column in employee_schedules means "inherit",
- * so the override row can set only the parts that actually differ.
- *
- * Exported because the scheduling conflict checks need the same resolution —
- * two implementations would drift.
- */
-export async function resolveSchedule(employeeId: number) {
-  if (!supabase) return { ...WORK_DEFAULTS, source: "default" as const };
-
-  const [settings, override] = await Promise.all([
-    supabase.from("work_settings").select("work_days,start_time,end_time,break_minutes,timezone").eq("id", 1).maybeSingle(),
-    supabase.from("employee_schedules").select("work_days,start_time,end_time,break_minutes").eq("employee_id", employeeId).maybeSingle(),
-  ]);
-
-  const base = {
-    workDays: settings.data?.work_days ?? WORK_DEFAULTS.workDays,
-    startTime: settings.data?.start_time ?? WORK_DEFAULTS.startTime,
-    endTime: settings.data?.end_time ?? WORK_DEFAULTS.endTime,
-    breakMinutes: settings.data?.break_minutes ?? WORK_DEFAULTS.breakMinutes,
-    timezone: settings.data?.timezone ?? WORK_DEFAULTS.timezone,
-  };
-  const o = override.data;
-  if (!o) return { ...base, source: "default" as const };
-
-  return {
-    workDays: o.work_days ?? base.workDays,
-    startTime: o.start_time ?? base.startTime,
-    endTime: o.end_time ?? base.endTime,
-    breakMinutes: o.break_minutes ?? base.breakMinutes,
-    timezone: base.timezone,
-    source: "override" as const,
-  };
 }
 
 router.get("/my-schedule", requireAuth, requireRole("employee"), asyncHandler(async (req: AuthedRequest, res) => {
@@ -87,16 +50,168 @@ router.post("/tasks", requireAuth, requireRole("employee"), async (req: AuthedRe
   return res.status(201).json(data);
 });
 
-router.patch("/tasks/:id/status", requireAuth, requireRole("employee"), async (req: AuthedRequest, res) => {
+router.patch("/tasks/:id/status", requireAuth, requireRole("employee"), asyncHandler(async (req: AuthedRequest, res) => {
   const id = Number(req.params.id);
   const { status } = req.body ?? {};
   if (!status) return res.status(400).json({ error: "status is required" });
   if (!supabase) return res.status(503).json({ error: "Database not configured" });
-  const { data, error } = await supabase.from("employee_tasks").update({ status }).eq("id", id).eq("employee_id", req.user!.id).select().maybeSingle();
+
+  // Finishing a task requires a report. The write-up is the point of the task
+  // being closed, so it is a precondition rather than a reminder afterwards.
+  if (isDone(status)) {
+    const { count } = await supabase.from("task_reports").select("id", { count: "exact", head: true }).eq("task_id", id);
+    if (!count) return res.status(400).json({ error: "Submit a completion report before marking this task complete" });
+  }
+
+  const patch: Record<string, unknown> = { status };
+  if (isDone(status)) { patch.progress = 100; patch.completed_at = new Date().toISOString(); }
+
+  const { data, error } = await supabase.from("employee_tasks").update(patch).eq("id", id).eq("employee_id", req.user!.id).select("id,project_id,status,progress").maybeSingle();
   if (error) return res.status(500).json({ error: error.message });
   if (!data) return res.status(404).json({ error: "Task not found" });
+  await rollUpProjectProgress(data.project_id);
   return res.json(data);
-});
+}));
+
+router.patch("/tasks/:id/progress", requireAuth, requireRole("employee"), asyncHandler(async (req: AuthedRequest, res) => {
+  const progress = Math.max(0, Math.min(100, Number(req.body?.progress)));
+  if (!Number.isFinite(progress)) return res.status(400).json({ error: "progress must be a number between 0 and 100" });
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+  const { data, error } = await supabase.from("employee_tasks").update({ progress }).eq("id", Number(req.params.id)).eq("employee_id", req.user!.id).select("id,project_id,progress").maybeSingle();
+  if (error) return res.status(500).json({ error: error.message });
+  if (!data) return res.status(404).json({ error: "Task not found" });
+  await rollUpProjectProgress(data.project_id);
+  return res.json(data);
+}));
+
+// ---------------------------------------------------------------------------
+// Time tracking. One row per timer run; ended_at IS NULL means running.
+//
+// Hours were previously not computable at all: attendance stores two display
+// strings a day with no duration, and the strings are unparseable. These are
+// real timestamps, so a duration is a subtraction rather than a guess.
+// ---------------------------------------------------------------------------
+
+const TIME_ENTRY_COLUMNS = "id,taskId:task_id,employee_id,startedAt:started_at,endedAt:ended_at,note,editedAt:edited_at,editedBy:edited_by";
+
+router.get("/time-entries", requireAuth, requireRole("employee"), asyncHandler(async (req: AuthedRequest, res) => {
+  if (!supabase) return res.json([]);
+  let query = supabase.from("task_time_entries").select(TIME_ENTRY_COLUMNS).eq("employee_id", req.user!.id).order("started_at", { ascending: false }).limit(200);
+  if (req.query.taskId) query = query.eq("task_id", Number(req.query.taskId));
+  const { data, error } = await query;
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json(data);
+}));
+
+/** The entry currently running, if any. Drives the timer indicator in the shell. */
+router.get("/time-entries/running", requireAuth, requireRole("employee"), asyncHandler(async (req: AuthedRequest, res) => {
+  if (!supabase) return res.json(null);
+  const { data, error } = await supabase.from("task_time_entries").select(TIME_ENTRY_COLUMNS).eq("employee_id", req.user!.id).is("ended_at", null).maybeSingle();
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json(data);
+}));
+
+router.post("/tasks/:id/start", requireAuth, requireRole("employee"), asyncHandler(async (req: AuthedRequest, res) => {
+  const taskId = Number(req.params.id);
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+
+  const { data: task } = await supabase.from("employee_tasks").select("id").eq("id", taskId).eq("employee_id", req.user!.id).maybeSingle();
+  if (!task) return res.status(404).json({ error: "Task not found" });
+
+  const { data, error } = await supabase.from("task_time_entries")
+    .insert({ task_id: taskId, employee_id: req.user!.id, started_at: new Date().toISOString() })
+    .select(TIME_ENTRY_COLUMNS).single();
+
+  // A partial unique index enforces one running timer per person, so a second
+  // start is rejected by the database rather than by a check that two
+  // concurrent taps would both pass.
+  if (error) {
+    if (/duplicate key|unique/i.test(error.message)) return res.status(409).json({ error: "You already have a timer running. Stop it first." });
+    return res.status(500).json({ error: error.message });
+  }
+  return res.status(201).json(data);
+}));
+
+router.post("/time-entries/:id/stop", requireAuth, requireRole("employee"), asyncHandler(async (req: AuthedRequest, res) => {
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+  const { data, error } = await supabase.from("task_time_entries")
+    .update({ ended_at: new Date().toISOString(), note: req.body?.note || null })
+    .eq("id", Number(req.params.id)).eq("employee_id", req.user!.id).is("ended_at", null)
+    .select(TIME_ENTRY_COLUMNS).maybeSingle();
+  if (error) return res.status(500).json({ error: error.message });
+  if (!data) return res.status(404).json({ error: "No running timer with that id" });
+  return res.json(data);
+}));
+
+router.patch("/time-entries/:id", requireAuth, requireRole("employee"), asyncHandler(async (req: AuthedRequest, res) => {
+  const { startedAt, endedAt, note } = req.body ?? {};
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+  if (startedAt && endedAt && new Date(endedAt) <= new Date(startedAt)) {
+    return res.status(400).json({ error: "End time must be after start time" });
+  }
+  // edited_at/edited_by are what keep a corrected entry visibly a correction
+  // rather than indistinguishable from tracked time.
+  const patch: Record<string, unknown> = { edited_at: new Date().toISOString(), edited_by: req.user!.id };
+  if (startedAt !== undefined) patch.started_at = startedAt;
+  if (endedAt !== undefined) patch.ended_at = endedAt || null;
+  if (note !== undefined) patch.note = note || null;
+
+  const { data, error } = await supabase.from("task_time_entries").update(patch).eq("id", Number(req.params.id)).eq("employee_id", req.user!.id).select(TIME_ENTRY_COLUMNS).maybeSingle();
+  if (error) return res.status(500).json({ error: error.message });
+  if (!data) return res.status(404).json({ error: "Time entry not found" });
+  return res.json(data);
+}));
+
+// ---------------------------------------------------------------------------
+// Reports: one per task on completion, plus a daily summary.
+// ---------------------------------------------------------------------------
+
+router.get("/tasks/:id/reports", requireAuth, requireRole("employee"), asyncHandler(async (req, res) => {
+  if (!supabase) return res.json([]);
+  const { data, error } = await supabase.from("task_reports").select("id,taskId:task_id,summary,blockers,clientVisible:client_visible,submittedAt:submitted_at").eq("task_id", Number(req.params.id)).order("id", { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json(data);
+}));
+
+router.post("/tasks/:id/report", requireAuth, requireRole("employee"), asyncHandler(async (req: AuthedRequest, res) => {
+  const { summary, blockers, clientVisible } = req.body ?? {};
+  if (!summary?.trim()) return res.status(400).json({ error: "summary is required" });
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+
+  const taskId = Number(req.params.id);
+  const { data: task } = await supabase.from("employee_tasks").select("id").eq("id", taskId).eq("employee_id", req.user!.id).maybeSingle();
+  if (!task) return res.status(404).json({ error: "Task not found" });
+
+  const { data, error } = await supabase.from("task_reports").insert({
+    task_id: taskId, employee_id: req.user!.id, summary: summary.trim(),
+    blockers: blockers?.trim() || null, client_visible: clientVisible === false ? false : true,
+  }).select("id,taskId:task_id,summary,blockers,clientVisible:client_visible,submittedAt:submitted_at").single();
+  if (error) return res.status(500).json({ error: error.message });
+  return res.status(201).json(data);
+}));
+
+router.get("/daily-reports", requireAuth, requireRole("employee"), asyncHandler(async (req: AuthedRequest, res) => {
+  if (!supabase) return res.json([]);
+  const { data, error } = await supabase.from("daily_reports").select("id,workDate:work_date,summary,submittedAt:submitted_at").eq("employee_id", req.user!.id).order("work_date", { ascending: false }).limit(90);
+  if (error) return res.status(500).json({ error: error.message });
+  return res.json(data);
+}));
+
+router.post("/daily-reports", requireAuth, requireRole("employee"), asyncHandler(async (req: AuthedRequest, res) => {
+  const { summary, workDate } = req.body ?? {};
+  if (!summary?.trim()) return res.status(400).json({ error: "summary is required" });
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+  // UNIQUE (employee_id, work_date) makes this an edit of today's entry rather
+  // than a second one, which is what re-submitting a day's summary should mean.
+  const { data, error } = await supabase.from("daily_reports").upsert({
+    employee_id: req.user!.id,
+    work_date: workDate || new Date().toISOString().slice(0, 10),
+    summary: summary.trim(),
+    submitted_at: new Date().toISOString(),
+  }, { onConflict: "employee_id,work_date" }).select("id,workDate:work_date,summary,submittedAt:submitted_at").single();
+  if (error) return res.status(500).json({ error: error.message });
+  return res.status(201).json(data);
+}));
 
 router.get("/status-updates", requireAuth, requireRole("employee"), async (req: AuthedRequest, res) => {
   if (!supabase) return res.json([]);

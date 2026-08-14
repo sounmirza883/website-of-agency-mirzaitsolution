@@ -1,13 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.isDone = isDone;
 const express_1 = require("express");
 const supabase_js_1 = require("../supabase.js");
 const supabaseAdmin_js_1 = require("../supabaseAdmin.js");
 const authStore_js_1 = require("../authStore.js");
 const auth_js_1 = require("../middleware/auth.js");
 const asyncHandler_js_1 = require("../middleware/asyncHandler.js");
-const employee_js_1 = require("./employee.js");
+const scheduling_js_1 = require("../scheduling.js");
 const router = (0, express_1.Router)();
 function toEmployeeProfile(u) {
     return { id: u.id, name: u.name, email: u.email, dept: u.dept, position: u.position, status: u.status, canCreateClients: u.canCreateClients };
@@ -291,94 +290,6 @@ router.patch("/payment-settings", auth_js_1.requireAuth, (0, auth_js_1.requireRo
 // bare users(name) embed is ambiguous and fails at runtime while the build stays
 // green. Both embeds below name their column explicitly.
 // ---------------------------------------------------------------------------
-/**
- * Recompute a project's progress from its tasks: the mean of their per-task
- * progress, with a completed task counting as 100 regardless of what its
- * progress column says.
- *
- * admin_projects.progress has existed since the beginning, is returned by three
- * endpoints, and is rendered as a bar in the client portal — but nothing has
- * ever written to it, so those bars have always shown 0%. This is the writer.
- *
- * Failures are swallowed: a rollup is a derived convenience, and it must never
- * fail the task write that already succeeded.
- */
-async function rollUpProjectProgress(projectId) {
-    if (!supabase_js_1.supabase || !projectId)
-        return;
-    try {
-        const { data: tasks } = await supabase_js_1.supabase.from("employee_tasks").select("status,progress").eq("project_id", projectId).limit(1000);
-        if (!tasks)
-            return;
-        // No tasks means nothing is done. Returning early here would strand the last
-        // computed value on a project whose tasks were all deleted.
-        const progress = tasks.length === 0
-            ? 0
-            : Math.round(tasks.reduce((sum, t) => sum + (isDone(t.status) ? 100 : Math.max(0, Math.min(100, t.progress ?? 0))), 0) / tasks.length);
-        await supabase_js_1.supabase.from("admin_projects").update({ progress }).eq("id", projectId);
-    }
-    catch (err) {
-        console.warn("project progress rollup failed:", err instanceof Error ? err.message : err);
-    }
-}
-/** The employee board says "Done", the admin board says "Completed". Both mean finished. */
-function isDone(status) {
-    return status === "Done" || status === "Completed";
-}
-/**
- * Non-blocking checks on a proposed task window. The admin knows things the
- * system does not — someone agreed to cover, a deadline moved — so a conflict
- * is reported and overridable, never enforced.
- *
- * This is also the first time approved leave is read by anything: it has been
- * stored and displayed since the beginning and consulted by no other code path.
- */
-async function scheduleWarnings(employeeId, start, end) {
-    if (!supabase_js_1.supabase || !start)
-        return [];
-    const warnings = [];
-    try {
-        const startsAt = new Date(start);
-        if (Number.isNaN(startsAt.getTime()))
-            return [];
-        const schedule = await (0, employee_js_1.resolveSchedule)(employeeId);
-        if (!schedule.workDays.includes(startsAt.getDay())) {
-            warnings.push("This falls on a day the employee does not normally work.");
-        }
-        else {
-            const hhmm = `${String(startsAt.getHours()).padStart(2, "0")}:${String(startsAt.getMinutes()).padStart(2, "0")}`;
-            if (hhmm < String(schedule.startTime).slice(0, 5) || hhmm >= String(schedule.endTime).slice(0, 5)) {
-                warnings.push(`This starts outside the employee's hours (${String(schedule.startTime).slice(0, 5)}–${String(schedule.endTime).slice(0, 5)}).`);
-            }
-        }
-        const { data: leave } = await supabase_js_1.supabase
-            .from("employee_leave_requests")
-            .select("from_date,to_date,type")
-            .eq("employee_id", employeeId)
-            .eq("status", "Approved");
-        const day = startsAt.toISOString().slice(0, 10);
-        for (const l of leave ?? []) {
-            // from_date/to_date are free-text and historically hold two formats, so
-            // parse defensively rather than comparing strings.
-            const from = new Date(l.from_date), to = new Date(l.to_date);
-            if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()))
-                continue;
-            if (day >= from.toISOString().slice(0, 10) && day <= to.toISOString().slice(0, 10)) {
-                warnings.push(`The employee has approved ${l.type || "leave"} on this date.`);
-                break;
-            }
-        }
-        if (end) {
-            const endsAt = new Date(end);
-            if (!Number.isNaN(endsAt.getTime()) && endsAt <= startsAt)
-                warnings.push("The end time is not after the start time.");
-        }
-    }
-    catch (err) {
-        console.warn("schedule warning check failed:", err instanceof Error ? err.message : err);
-    }
-    return warnings;
-}
 // One literal, not a concatenation: the Supabase client infers the row type from
 // this string, and `+` widens it to `string`, which erases the inference.
 const TASK_COLUMNS = "id,project,projectId:project_id,task,description,priority,due,status,progress,employee_id,assignedBy:assigned_by,scheduledStart:scheduled_start,scheduledEnd:scheduled_end,estimatedMinutes:estimated_minutes,clientVisible:client_visible,completedAt:completed_at,createdAt:created_at";
@@ -428,7 +339,7 @@ router.post("/tasks", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin")
     }).select(TASK_COLUMNS).single();
     if (error)
         return res.status(500).json({ error: error.message });
-    return res.status(201).json({ ...data, warnings: await scheduleWarnings(Number(employeeId), scheduledStart, scheduledEnd) });
+    return res.status(201).json({ ...data, warnings: await (0, scheduling_js_1.scheduleWarnings)(Number(employeeId), scheduledStart, scheduledEnd) });
 }));
 router.patch("/tasks/:id", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
     const id = Number(req.params.id);
@@ -470,7 +381,7 @@ router.patch("/tasks/:id", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("ad
     if (!data)
         return res.status(404).json({ error: "Task not found" });
     if (patch.progress !== undefined || patch.status !== undefined)
-        await rollUpProjectProgress(data.projectId);
+        await (0, scheduling_js_1.rollUpProjectProgress)(data.projectId);
     return res.json(data);
 }));
 router.delete("/tasks/:id", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
@@ -480,7 +391,7 @@ router.delete("/tasks/:id", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("a
     const { error } = await supabase_js_1.supabase.from("employee_tasks").delete().eq("id", Number(req.params.id));
     if (error)
         return res.status(500).json({ error: error.message });
-    await rollUpProjectProgress(existing?.project_id ?? null);
+    await (0, scheduling_js_1.rollUpProjectProgress)(existing?.project_id ?? null);
     return res.status(204).end();
 }));
 // ---------------------------------------------------------------------------
