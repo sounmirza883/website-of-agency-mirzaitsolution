@@ -13,7 +13,7 @@ Express.js + TypeScript API server that connects all four frontend apps to Supab
 ## Stack
 
 - **Express.js** (`^4.21.2`) — HTTP server
-- **TypeScript** (`^5.7.3`) — compiled via `tsc`, run via `tsx`
+- **TypeScript** (`^7.0.2`) — compiled via `tsc` (native compiler), run via `tsx`
 - **Supabase** (`@supabase/supabase-js`) — database client
 - **CORS** — whitelisted origins: `agency.vesseldrop.com`, `admin.vesseldrop.com`, `client.vesseldrop.com`, `employee.vesseldrop.com`, localhost
 

@@ -11,7 +11,9 @@ Six subprojects in this repo:
 | `backend/` | Express.js + TypeScript API server | Built out. See `backend/AGENTS.md`. |
 | `temple/` | Static HTML/CSS/JS site | Reference implementation of the Zephtrix brand design. |
 
-All four Next.js apps share the same stack: **Next.js 16.2.11 + React 19.2.4 + Tailwind CSS v4** (via `@tailwindcss/postcss`) + TypeScript + TanStack Query.
+All four Next.js apps share the same stack: **Next.js 16.3.1 + React 19.2.4 + Tailwind CSS v4** (via `@tailwindcss/postcss`) + TypeScript 7 + TanStack Query.
+
+`npm run lint` in the four Next.js apps and in `app/` currently fails on TypeScript 7: `typescript-eslint` hard-refuses to run on TS 7 until it ships support (tracked at [typescript-eslint#10940](https://github.com/typescript-eslint/typescript-eslint/issues/10940), targeting TS 7.1 / ~autumn 2026). `npm run build` (the real typecheck+build gate) is unaffected and runs on the fast native TS7 compiler. `app/` works around this today via a package alias (`typescript` → `@typescript/typescript6` for the ESLint API, `typescript-native` → real `typescript@7` for the `tsc` binary) — the same trick doesn't work in the Next.js apps because `next build`'s TypeScript detection requires the literal `typescript` package to resolve to the real v7 install.
 
 The backend serves as a unified API layer connecting all frontends to Supabase. Each frontend's `app/queries.ts` calls the backend API with in-memory fallback data when Supabase credentials are not configured.
 

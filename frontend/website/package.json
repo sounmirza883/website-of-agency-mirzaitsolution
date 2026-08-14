@@ -11,7 +11,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.101.4",
     "framer-motion": "^12.42.2",
-    "next": "16.2.11",
+    "next": "^16.3.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "three": "^0.184.0"
@@ -23,8 +23,8 @@
     "@types/react-dom": "^19",
     "@types/three": "^0.185.1",
     "eslint": "^9",
-    "eslint-config-next": "16.2.11",
+    "eslint-config-next": "^16.3.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^7.0.2"
   }
 }
