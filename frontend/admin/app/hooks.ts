@@ -5,7 +5,8 @@ import { useAuth } from "./auth";
 import { fetchUsers, fetchEmployees, fetchClientsList, createEmployee, createClient, setEmployeePermission, fetchServices, fetchProjects, fetchInvoices, fetchNotifications, fetchPortfolioList, fetchContactSubmissions, deleteLead, fetchPaymentSettings, fetchAdminTickets, setTicketStatus, createService, createProject, updateProjectStatus, assignProjectEmployee, createInvoice, verifyInvoice, createNotification, createPortfolioItem, setUserStatus, updateUserDetails, deleteUserAccount, fetchAdminAttendance, fetchAdminLeaveRequests, setLeaveRequestStatus, fetchProjectMessages, sendProjectMessage, changePassword, updatePaymentSettings,
   fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, createChatChannel, markChatRead, sendChatAttachment, editChatMessage, deleteChatMessage, leaveChatConversation, toggleChatReaction, searchChatMessages, renameChatChannel, addChatMember, removeChatMember, deleteChatChannel,
   fetchWorkSettings, updateWorkSettings, fetchEmployeeSchedules, saveEmployeeSchedule, clearEmployeeSchedule,
-  fetchAdminTasks, createAdminTask, updateAdminTask, deleteAdminTask } from "./queries";
+  fetchAdminTasks, createAdminTask, updateAdminTask, deleteAdminTask,
+  fetchAdminTimeEntries, fetchAdminTaskReports, fetchAdminDailyReports } from "./queries";
 
 export function useChangePassword() {
   const { token } = useAuth();
@@ -511,4 +512,17 @@ export function useDeleteAdminTask() {
     mutationFn: (id: number) => deleteAdminTask(token!, id),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["adminTasks"] }); qc.invalidateQueries({ queryKey: ["projects"] }); },
   });
+}
+
+export function useAdminTimeEntries(employeeId?: string) {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["adminTimeEntries", employeeId ?? null], queryFn: () => fetchAdminTimeEntries(token!, employeeId), enabled: !!token, staleTime: 1000 * 60 });
+}
+export function useAdminTaskReports(employeeId?: string) {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["adminTaskReports", employeeId ?? null], queryFn: () => fetchAdminTaskReports(token!, employeeId), enabled: !!token, staleTime: 1000 * 60 });
+}
+export function useAdminDailyReports(employeeId?: string) {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["adminDailyReports", employeeId ?? null], queryFn: () => fetchAdminDailyReports(token!, employeeId), enabled: !!token, staleTime: 1000 * 60 });
 }

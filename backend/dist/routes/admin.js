@@ -395,6 +395,61 @@ router.delete("/tasks/:id", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("a
     return res.status(204).end();
 }));
 // ---------------------------------------------------------------------------
+// Reporting. Hours come from task_time_entries, which stores real timestamps —
+// none of this was computable from the display-string attendance columns.
+// ---------------------------------------------------------------------------
+/** Time entries in a window, with the task and employee they belong to. */
+router.get("/time-entries", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
+    if (!supabase_js_1.supabase)
+        return res.json([]);
+    let query = supabase_js_1.supabase
+        .from("task_time_entries")
+        .select("id,taskId:task_id,employee_id,startedAt:started_at,endedAt:ended_at,note,editedAt:edited_at,employee:users!employee_id(name)")
+        .not("ended_at", "is", null)
+        .order("started_at", { ascending: false })
+        .limit(1000);
+    if (req.query.employeeId)
+        query = query.eq("employee_id", Number(req.query.employeeId));
+    if (req.query.from)
+        query = query.gte("started_at", String(req.query.from));
+    if (req.query.to)
+        query = query.lte("started_at", String(req.query.to));
+    const { data, error } = await query;
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.json(data);
+}));
+router.get("/task-reports", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
+    if (!supabase_js_1.supabase)
+        return res.json([]);
+    let query = supabase_js_1.supabase
+        .from("task_reports")
+        .select("id,taskId:task_id,employee_id,summary,blockers,clientVisible:client_visible,submittedAt:submitted_at,employee:users!employee_id(name),task:employee_tasks!task_id(task,project)")
+        .order("submitted_at", { ascending: false })
+        .limit(300);
+    if (req.query.employeeId)
+        query = query.eq("employee_id", Number(req.query.employeeId));
+    const { data, error } = await query;
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.json(data);
+}));
+router.get("/daily-reports", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
+    if (!supabase_js_1.supabase)
+        return res.json([]);
+    let query = supabase_js_1.supabase
+        .from("daily_reports")
+        .select("id,employee_id,workDate:work_date,summary,submittedAt:submitted_at,employee:users!employee_id(name)")
+        .order("work_date", { ascending: false })
+        .limit(300);
+    if (req.query.employeeId)
+        query = query.eq("employee_id", Number(req.query.employeeId));
+    const { data, error } = await query;
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.json(data);
+}));
+// ---------------------------------------------------------------------------
 // Working hours: one company default, plus a per-employee override where a NULL
 // column means "inherit". Nothing here blocks scheduling — it only describes
 // when someone is expected to be working, so conflicts can be warned about.

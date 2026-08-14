@@ -201,3 +201,14 @@ export function fetchAdminTasks(token: string) { return apiGet<any[]>("/admin/ta
 export function createAdminTask(token: string, payload: any) { return apiPost<any>("/admin/tasks", token, payload); }
 export function updateAdminTask(token: string, id: number, payload: any) { return apiPatch<any>(`/admin/tasks/${id}`, token, payload); }
 export function deleteAdminTask(token: string, id: number) { return apiDelete(`/admin/tasks/${id}`, token); }
+
+// --- Reporting --------------------------------------------------------------
+export function fetchAdminTimeEntries(token: string, employeeId?: string) {
+  return apiGet<any[]>(`/admin/time-entries${employeeId ? `?employeeId=${employeeId}` : ""}`, token);
+}
+export function fetchAdminTaskReports(token: string, employeeId?: string) {
+  return apiGet<any[]>(`/admin/task-reports${employeeId ? `?employeeId=${employeeId}` : ""}`, token);
+}
+export function fetchAdminDailyReports(token: string, employeeId?: string) {
+  return apiGet<any[]>(`/admin/daily-reports${employeeId ? `?employeeId=${employeeId}` : ""}`, token);
+}

@@ -89,6 +89,7 @@ const nav = [
   { label: "Invoices", href: "/invoices" },
   { label: "Tickets", href: "/tickets" },
   { label: "Payment Settings", href: "/payment-settings" },
+  { label: "Reports", href: "/reports" },
   { label: "Work Schedule", href: "/work-schedule" },
   { label: "Attendance", href: "/attendance" },
   { label: "Leave", href: "/leave" },
