@@ -3,7 +3,9 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
 import { fetchUsers, fetchEmployees, fetchClientsList, createEmployee, createClient, setEmployeePermission, fetchServices, fetchProjects, fetchInvoices, fetchNotifications, fetchPortfolioList, fetchContactSubmissions, deleteLead, fetchPaymentSettings, fetchAdminTickets, setTicketStatus, createService, createProject, updateProjectStatus, assignProjectEmployee, createInvoice, verifyInvoice, createNotification, createPortfolioItem, setUserStatus, updateUserDetails, deleteUserAccount, fetchAdminAttendance, fetchAdminLeaveRequests, setLeaveRequestStatus, fetchProjectMessages, sendProjectMessage, changePassword, updatePaymentSettings,
-  fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, createChatChannel, markChatRead, sendChatAttachment, editChatMessage, deleteChatMessage, leaveChatConversation, toggleChatReaction, searchChatMessages, renameChatChannel, addChatMember, removeChatMember, deleteChatChannel } from "./queries";
+  fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, createChatChannel, markChatRead, sendChatAttachment, editChatMessage, deleteChatMessage, leaveChatConversation, toggleChatReaction, searchChatMessages, renameChatChannel, addChatMember, removeChatMember, deleteChatChannel,
+  fetchWorkSettings, updateWorkSettings, fetchEmployeeSchedules, saveEmployeeSchedule, clearEmployeeSchedule,
+  fetchAdminTasks, createAdminTask, updateAdminTask, deleteAdminTask } from "./queries";
 
 export function useChangePassword() {
   const { token } = useAuth();
@@ -444,5 +446,69 @@ export function useChatSearch(query: string) {
     queryFn: () => searchChatMessages(token!, query),
     enabled: !!token && query.trim().length >= 2,
     staleTime: 1000 * 30,
+  });
+}
+
+// --- Scheduling -------------------------------------------------------------
+export function useWorkSettings() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["workSettings"], queryFn: () => fetchWorkSettings(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
+}
+export function useUpdateWorkSettings() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: any) => updateWorkSettings(token!, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["workSettings"] }),
+  });
+}
+export function useEmployeeSchedules() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["employeeSchedules"], queryFn: () => fetchEmployeeSchedules(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
+}
+export function useSaveEmployeeSchedule() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { id: number; payload: any }) => saveEmployeeSchedule(token!, vars.id, vars.payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["employeeSchedules"] }),
+  });
+}
+export function useClearEmployeeSchedule() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => clearEmployeeSchedule(token!, id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["employeeSchedules"] }),
+  });
+}
+
+export function useAdminTasks() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["adminTasks"], queryFn: () => fetchAdminTasks(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
+}
+export function useCreateAdminTask() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: any) => createAdminTask(token!, payload),
+    // A task write moves project progress, so the project list is stale too.
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["adminTasks"] }); qc.invalidateQueries({ queryKey: ["projects"] }); },
+  });
+}
+export function useUpdateAdminTask() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { id: number; payload: any }) => updateAdminTask(token!, vars.id, vars.payload),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["adminTasks"] }); qc.invalidateQueries({ queryKey: ["projects"] }); },
+  });
+}
+export function useDeleteAdminTask() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => deleteAdminTask(token!, id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["adminTasks"] }); qc.invalidateQueries({ queryKey: ["projects"] }); },
   });
 }

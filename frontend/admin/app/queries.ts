@@ -24,6 +24,13 @@ async function apiPatch<T>(path: string, token: string, body: unknown): Promise<
   return data;
 }
 
+async function apiPut<T>(path: string, token: string, body: unknown): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Request failed");
+  return data;
+}
+
 async function apiDelete(path: string, token: string): Promise<void> {
   const res = await fetch(`${API_BASE}${path}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
   if (!res.ok) {
@@ -182,3 +189,15 @@ export function deleteChatChannel(token: string, conversationId: number) {
 export function searchChatMessages(token: string, q: string) {
   return apiGet<any[]>(`/chat/search?q=${encodeURIComponent(q)}`, token);
 }
+
+// --- Scheduling -------------------------------------------------------------
+export function fetchWorkSettings(token: string) { return apiGet<any>("/admin/work-settings", token); }
+export function updateWorkSettings(token: string, payload: any) { return apiPatch<any>("/admin/work-settings", token, payload); }
+export function fetchEmployeeSchedules(token: string) { return apiGet<any[]>("/admin/employee-schedules", token); }
+export function saveEmployeeSchedule(token: string, id: number, payload: any) { return apiPut<any>(`/admin/employee-schedules/${id}`, token, payload); }
+export function clearEmployeeSchedule(token: string, id: number) { return apiDelete(`/admin/employee-schedules/${id}`, token); }
+
+export function fetchAdminTasks(token: string) { return apiGet<any[]>("/admin/tasks", token); }
+export function createAdminTask(token: string, payload: any) { return apiPost<any>("/admin/tasks", token, payload); }
+export function updateAdminTask(token: string, id: number, payload: any) { return apiPatch<any>(`/admin/tasks/${id}`, token, payload); }
+export function deleteAdminTask(token: string, id: number) { return apiDelete(`/admin/tasks/${id}`, token); }
