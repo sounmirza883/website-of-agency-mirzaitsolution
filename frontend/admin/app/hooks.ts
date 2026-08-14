@@ -6,7 +6,8 @@ import { fetchUsers, fetchEmployees, fetchClientsList, createEmployee, createCli
   fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, createChatChannel, markChatRead, sendChatAttachment, editChatMessage, deleteChatMessage, leaveChatConversation, toggleChatReaction, searchChatMessages, renameChatChannel, addChatMember, removeChatMember, deleteChatChannel,
   fetchWorkSettings, updateWorkSettings, fetchEmployeeSchedules, saveEmployeeSchedule, clearEmployeeSchedule,
   fetchAdminTasks, createAdminTask, updateAdminTask, deleteAdminTask,
-  fetchAdminTimeEntries, fetchAdminTaskReports, fetchAdminDailyReports } from "./queries";
+  fetchAdminTimeEntries, fetchAdminTaskReports, fetchAdminDailyReports,
+  fetchActiveTimers, fetchProjectConversations, markProjectConversationRead } from "./queries";
 
 export function useChangePassword() {
   const { token } = useAuth();
@@ -525,4 +526,22 @@ export function useAdminTaskReports(employeeId?: string) {
 export function useAdminDailyReports(employeeId?: string) {
   const { token } = useAuth();
   return useQuery({ queryKey: ["adminDailyReports", employeeId ?? null], queryFn: () => fetchAdminDailyReports(token!, employeeId), enabled: !!token, staleTime: 1000 * 60 });
+}
+
+/** Who is working right now. Polled, because "right now" goes stale on its own. */
+export function useActiveTimers() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["activeTimers"], queryFn: () => fetchActiveTimers(token!), enabled: !!token, refetchInterval: 30000 });
+}
+export function useProjectConversations() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["projectConversations"], queryFn: () => fetchProjectConversations(token!), enabled: !!token, refetchInterval: 30000 });
+}
+export function useMarkProjectRead() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (projectId: number) => markProjectConversationRead(token!, projectId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["projectConversations"] }),
+  });
 }

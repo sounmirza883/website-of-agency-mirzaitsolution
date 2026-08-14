@@ -400,6 +400,25 @@ router.delete("/tasks/:id", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("a
 // Reporting. Hours come from task_time_entries, which stores real timestamps —
 // none of this was computable from the display-string attendance columns.
 // ---------------------------------------------------------------------------
+/**
+ * Who is working right now. One row per employee with an open timer.
+ *
+ * `ended_at IS NULL` is the same condition the partial unique index uses, so
+ * there can be at most one row per person by construction.
+ */
+router.get("/active-timers", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), (0, asyncHandler_js_1.asyncHandler)(async (_req, res) => {
+    if (!supabase_js_1.supabase)
+        return res.json([]);
+    const { data, error } = await supabase_js_1.supabase
+        .from("task_time_entries")
+        .select("id,taskId:task_id,employee_id,startedAt:started_at,employee:users!employee_id(name),task:employee_tasks!task_id(task,project)")
+        .is("ended_at", null)
+        .order("started_at", { ascending: true })
+        .limit(100);
+    if (error)
+        return res.status(500).json({ error: error.message });
+    return res.json(data);
+}));
 /** Time entries in a window, with the task and employee they belong to. */
 router.get("/time-entries", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
     if (!supabase_js_1.supabase)

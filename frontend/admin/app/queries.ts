@@ -212,3 +212,9 @@ export function fetchAdminTaskReports(token: string, employeeId?: string) {
 export function fetchAdminDailyReports(token: string, employeeId?: string) {
   return apiGet<any[]>(`/admin/daily-reports${employeeId ? `?employeeId=${employeeId}` : ""}`, token);
 }
+
+export function fetchActiveTimers(token: string) { return apiGet<any[]>("/admin/active-timers", token); }
+export function fetchProjectConversations(token: string) { return apiGet<any[]>("/admin/conversations", token); }
+export function markProjectConversationRead(token: string, projectId: number) {
+  return apiPost<void>(`/admin/conversations/${projectId}/read`, token, {});
+}

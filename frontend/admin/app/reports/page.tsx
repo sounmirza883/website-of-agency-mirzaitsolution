@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useAdminTimeEntries, useAdminTaskReports, useAdminDailyReports, useEmployees } from "../hooks";
-import { Field, fieldClass } from "../components";
+import { useAdminTimeEntries, useAdminTaskReports, useAdminDailyReports, useEmployees, useAdminTasks, useProjects } from "../hooks";
+import { Field, fieldClass, ProgressBar } from "../components";
 
-type Tab = "timesheet" | "tasks" | "daily";
+type Tab = "timesheet" | "projects" | "tasks" | "daily";
 
 function hours(ms: number) {
   return (ms / 3600000).toFixed(1);
@@ -39,6 +39,47 @@ export default function ReportsPage() {
   const { data: entries } = useAdminTimeEntries(employeeId || undefined);
   const { data: taskReports } = useAdminTaskReports(employeeId || undefined);
   const { data: dailyReports } = useAdminDailyReports(employeeId || undefined);
+  const { data: tasks } = useAdminTasks();
+  const { data: projects } = useProjects();
+
+  /**
+   * Per-project rollup. Hours reach a project through the task they were logged
+   * against — task_time_entries has no project_id — so tasks are the join.
+   */
+  const byProject = useMemo(() => {
+    const taskProject = new Map<number, number | null>();
+    for (const t of tasks ?? []) taskProject.set(t.id, t.projectId ?? null);
+
+    const hoursFor = new Map<number, number>();
+    for (const e of entries ?? []) {
+      if (!e.endedAt) continue;
+      const pid = taskProject.get(e.taskId);
+      if (pid == null) continue;
+      const ms = new Date(e.endedAt).getTime() - new Date(e.startedAt).getTime();
+      if (ms > 0) hoursFor.set(pid, (hoursFor.get(pid) ?? 0) + ms);
+    }
+
+    const reportsFor = new Map<number, number>();
+    for (const r of taskReports ?? []) {
+      const pid = taskProject.get(r.taskId);
+      if (pid != null) reportsFor.set(pid, (reportsFor.get(pid) ?? 0) + 1);
+    }
+
+    return (projects ?? []).map((p: any) => {
+      const mine = (tasks ?? []).filter((t: any) => t.projectId === p.id);
+      return {
+        id: p.id,
+        name: p.name,
+        client: p.client,
+        status: p.status,
+        progress: p.progress ?? 0,
+        taskCount: mine.length,
+        doneCount: mine.filter((t: any) => t.status === "Done" || t.status === "Completed").length,
+        ms: hoursFor.get(p.id) ?? 0,
+        reports: reportsFor.get(p.id) ?? 0,
+      };
+    });
+  }, [projects, tasks, entries, taskReports]);
 
   // Group tracked time by employee and day — the shape a timesheet is read in.
   const timesheet = useMemo(() => {
@@ -64,6 +105,10 @@ export default function ReportsPage() {
       const rows: (string | number)[][] = [["Employee", "Date", "Hours"]];
       for (const p of timesheet) for (const [day, ms] of [...p.days].sort()) rows.push([p.name, day, hours(ms)]);
       download("timesheet.csv", toCsv(rows));
+    } else if (tab === "projects") {
+      const rows: (string | number)[][] = [["Project", "Client", "Status", "Progress %", "Tasks", "Completed", "Hours", "Reports"]];
+      for (const p of byProject) rows.push([p.name, p.client ?? "", p.status ?? "", p.progress, p.taskCount, p.doneCount, hours(p.ms), p.reports]);
+      download("project-report.csv", toCsv(rows));
     } else if (tab === "tasks") {
       const rows: (string | number)[][] = [["Submitted", "Employee", "Project", "Task", "Summary", "Blockers"]];
       for (const r of taskReports ?? []) rows.push([dayKey(r.submittedAt), r.employee?.name ?? "", r.task?.project ?? "", r.task?.task ?? "", r.summary, r.blockers ?? ""]);
@@ -87,7 +132,7 @@ export default function ReportsPage() {
 
       <div className="flex flex-wrap items-end gap-4 mb-6">
         <div className="flex bg-gray-100 rounded-lg p-1">
-          {([["timesheet", "Timesheet"], ["tasks", "Task Reports"], ["daily", "Daily Reports"]] as const).map(([key, label]) => (
+          {([["timesheet", "Timesheet"], ["projects", "By Project"], ["tasks", "Task Reports"], ["daily", "Daily Reports"]] as const).map(([key, label]) => (
             <button
               key={key}
               onClick={() => setTab(key)}
@@ -138,6 +183,28 @@ export default function ReportsPage() {
             {timesheet.length === 0 && <div className="px-5 py-8 text-center text-sm text-gray-400">No time tracked yet</div>}
           </div>
         </>
+      )}
+
+      {tab === "projects" && (
+        <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead><tr className="bg-gray-50 text-left">{["Project", "Client", "Progress", "Tasks", "Hours", "Reports"].map((h) => <th key={h} className="px-5 py-3 font-medium text-gray-600">{h}</th>)}</tr></thead>
+            <tbody>{byProject.map((p) => (
+              <tr key={p.id} className="border-t border-gray-100 hover:bg-gray-50">
+                <td className="px-5 py-3 font-medium">{p.name}</td>
+                <td className="px-5 py-3 text-gray-600">{p.client ?? "—"}</td>
+                <td className="px-5 py-3 w-40"><ProgressBar value={p.progress} /></td>
+                <td className="px-5 py-3 text-gray-600">{p.doneCount}/{p.taskCount}</td>
+                <td className="px-5 py-3 text-gray-600">{p.ms ? `${hours(p.ms)}h` : "—"}</td>
+                <td className="px-5 py-3 text-gray-600">{p.reports || "—"}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+          {byProject.length === 0 && <div className="px-5 py-8 text-center text-sm text-gray-400">No projects yet</div>}
+          <p className="px-5 py-3 text-xs text-gray-500 border-t border-gray-100">
+            Hours reach a project through the task they were logged against, so time on tasks with no project is not counted here.
+          </p>
+        </div>
       )}
 
       {tab === "tasks" && (

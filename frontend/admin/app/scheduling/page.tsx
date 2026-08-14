@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useAdminTasks, useCreateAdminTask, useUpdateAdminTask, useDeleteAdminTask, useEmployees, useProjects } from "../hooks";
+import { useEffect, useMemo, useState } from "react";
+import { useAdminTasks, useCreateAdminTask, useUpdateAdminTask, useDeleteAdminTask, useEmployees, useProjects, useActiveTimers } from "../hooks";
 import { Field, fieldClass, ProgressBar } from "../components";
 
 const STATUSES = ["Pending", "In Progress", "Done"];
@@ -26,10 +26,23 @@ function fmtWindow(start?: string | null, end?: string | null) {
   return `${date}, ${from} – ${e.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
 }
 
+/** Ticks locally so an open timer's total moves without polling every second. */
+function Elapsed({ since }: { since: string }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const mins = Math.max(0, Math.floor((now - new Date(since).getTime()) / 60000));
+  const h = Math.floor(mins / 60);
+  return <>{h > 0 ? `${h}h ${mins % 60}m` : `${mins}m`}</>;
+}
+
 export default function SchedulingPage() {
   const { data: tasks } = useAdminTasks();
   const { data: employees } = useEmployees();
   const { data: projects } = useProjects();
+  const { data: activeTimers } = useActiveTimers();
   const createTask = useCreateAdminTask();
   const updateTask = useUpdateAdminTask();
   const deleteTask = useDeleteAdminTask();
@@ -100,6 +113,27 @@ export default function SchedulingPage() {
             </div>
           );
         })}
+      </div>
+
+      <div className="bg-white border border-gray-200 rounded-xl p-4 mb-6">
+        <h2 className="text-sm font-bold mb-3">Working Right Now</h2>
+        {(activeTimers ?? []).length === 0 ? (
+          <p className="text-sm text-gray-400">Nobody has a timer running.</p>
+        ) : (
+          <div className="grid gap-2">
+            {(activeTimers ?? []).map((t: any) => (
+              <div key={t.id} className="flex items-center justify-between gap-3 border border-gray-200 rounded-lg px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{t.employee?.name ?? `#${t.employee_id}`}</p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {t.task?.task ?? `task #${t.taskId}`}{t.task?.project ? ` · ${t.task.project}` : ""}
+                  </p>
+                </div>
+                <span className="shrink-0 text-xs font-medium text-green-600"><Elapsed since={t.startedAt} /></span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="mb-4 max-w-xs">
