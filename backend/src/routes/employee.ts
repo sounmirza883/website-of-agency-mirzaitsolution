@@ -236,23 +236,41 @@ router.get("/attendance", requireAuth, requireRole("employee"), async (req: Auth
   return res.json(data);
 });
 
-router.post("/attendance/check-in", requireAuth, requireRole("employee"), async (req: AuthedRequest, res) => {
+router.post("/attendance/check-in", requireAuth, requireRole("employee"), asyncHandler(async (req: AuthedRequest, res) => {
   if (!supabase) return res.status(503).json({ error: "Database not configured" });
-  const today = todayStr();
-  const { data: existing } = await supabase.from("employee_attendance").select("id").eq("employee_id", req.user!.id).eq("date", today).maybeSingle();
-  if (existing) return res.status(409).json({ error: "Already checked in today" });
-  const { data, error } = await supabase.from("employee_attendance").insert({ date: today, check_in: nowTimeStr(), check_out: "", status: "Present", employee_id: req.user!.id }).select("id,date,checkIn:check_in,checkOut:check_out,status,employee_id").single();
-  if (error) return res.status(500).json({ error: error.message });
+  const now = new Date();
+  const workDate = now.toISOString().slice(0, 10);
+
+  // Dual write: the display strings keep every existing screen working, the
+  // typed columns make hours computable and back the unique index.
+  const { data, error } = await supabase.from("employee_attendance").insert({
+    date: todayStr(), check_in: nowTimeStr(), check_out: "", status: "Present", employee_id: req.user!.id,
+    work_date: workDate, checked_in_at: now.toISOString(),
+  }).select("id,date,checkIn:check_in,checkOut:check_out,status,employee_id,workDate:work_date").single();
+
+  // The old guard was a check-then-insert with no constraint, so two concurrent
+  // requests both passed it — and once duplicates existed, .maybeSingle() errored,
+  // the error was discarded, and check-in silently succeeded forever after.
+  // UNIQUE (employee_id, work_date) makes the database the arbiter instead.
+  if (error) {
+    if (/duplicate key|unique/i.test(error.message)) return res.status(409).json({ error: "Already checked in today" });
+    return res.status(500).json({ error: error.message });
+  }
   return res.status(201).json(data);
-});
+}));
 
 router.post("/attendance/check-out", requireAuth, requireRole("employee"), async (req: AuthedRequest, res) => {
   if (!supabase) return res.status(503).json({ error: "Database not configured" });
   const today = todayStr();
-  const { data: existing } = await supabase.from("employee_attendance").select("id,check_out").eq("employee_id", req.user!.id).eq("date", today).maybeSingle();
+  // Matches on the typed column where it exists, falling back to the display
+  // string for rows written before the migration.
+  const workDate = new Date().toISOString().slice(0, 10);
+  const byDate = await supabase.from("employee_attendance").select("id,check_out").eq("employee_id", req.user!.id).eq("work_date", workDate).maybeSingle();
+  const existing = byDate.data
+    ?? (await supabase.from("employee_attendance").select("id,check_out").eq("employee_id", req.user!.id).eq("date", today).maybeSingle()).data;
   if (!existing) return res.status(400).json({ error: "You haven't checked in today" });
   if (existing.check_out) return res.status(409).json({ error: "Already checked out today" });
-  const { data, error } = await supabase.from("employee_attendance").update({ check_out: nowTimeStr() }).eq("id", existing.id).select("id,date,checkIn:check_in,checkOut:check_out,status,employee_id").single();
+  const { data, error } = await supabase.from("employee_attendance").update({ check_out: nowTimeStr(), checked_out_at: new Date().toISOString() }).eq("id", existing.id).select("id,date,checkIn:check_in,checkOut:check_out,status,employee_id").single();
   if (error) return res.status(500).json({ error: error.message });
   return res.json(data);
 });

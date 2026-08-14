@@ -9,6 +9,13 @@ export default function EmployeeTabsLayout() {
         options={{ title: 'Home', tabBarIcon: ({ color, size }) => <Ionicons name="home" color={color} size={size} /> }}
       />
       <Tabs.Screen
+        name="my-work"
+        options={{
+          title: 'My Work',
+          tabBarIcon: ({ color, size }) => <Ionicons name="time" color={color} size={size} />,
+        }}
+      />
+      <Tabs.Screen
         name="tasks"
         options={{
           title: 'Tasks',

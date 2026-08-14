@@ -14,6 +14,8 @@ import {
   sendEmployeeMessage,
   updateEmployeeTaskStatus,
   type EmployeeTask,
+  fetchMySchedule, fetchRunningEntry, fetchTimeEntries, startTaskTimer, stopTimeEntry,
+  setTaskProgress, submitTaskReport, submitDailyReport,
 } from './employee';
 
 export function useAssignedProjects() {
@@ -139,4 +141,62 @@ export function useEmployeeNotifications() {
     enabled: !!token,
     staleTime: 1000 * 60 * 5,
   });
+}
+
+// --- Scheduling, timer and reports -----------------------------------------
+export function useMySchedule() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ['mySchedule'], queryFn: () => fetchMySchedule(token!), enabled: !!token, staleTime: 1000 * 60 * 30 });
+}
+
+/** Polled: a timer started in the browser must read as running here too. */
+export function useRunningEntry() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ['runningEntry'], queryFn: () => fetchRunningEntry(token!), enabled: !!token, refetchInterval: 30000 });
+}
+
+export function useTimeEntries() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ['timeEntries'], queryFn: () => fetchTimeEntries(token!), enabled: !!token, staleTime: 1000 * 60 });
+}
+
+export function useStartTimer() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (taskId: number) => startTaskTimer(token!, taskId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['runningEntry'] }); qc.invalidateQueries({ queryKey: ['timeEntries'] }); },
+  });
+}
+
+export function useStopTimer() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => stopTimeEntry(token!, id),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['runningEntry'] }); qc.invalidateQueries({ queryKey: ['timeEntries'] }); },
+  });
+}
+
+export function useSetTaskProgress() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { id: number; progress: number }) => setTaskProgress(token!, vars.id, vars.progress),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['employeeTasks'] }),
+  });
+}
+
+export function useSubmitTaskReport() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { taskId: number; payload: { summary: string; blockers?: string } }) => submitTaskReport(token!, vars.taskId, vars.payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['employeeTasks'] }),
+  });
+}
+
+export function useSubmitDailyReport() {
+  const { token } = useAuth();
+  return useMutation({ mutationFn: (summary: string) => submitDailyReport(token!, summary) });
 }

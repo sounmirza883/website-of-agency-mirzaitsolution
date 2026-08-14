@@ -110,3 +110,15 @@ export function sendEmployeeMessage(token: string, projectId: number, text: stri
 export function fetchEmployeeNotifications(token: string) {
   return apiGet<EmployeeNotification[]>('/employee/notifications', token);
 }
+
+// --- Scheduling, timer and reports -----------------------------------------
+export type TimeEntry = { id: number; taskId: number; startedAt: string; endedAt: string | null; note: string | null; editedAt: string | null };
+
+export function fetchMySchedule(token: string) { return apiGet<any>('/employee/my-schedule', token); }
+export function fetchRunningEntry(token: string) { return apiGet<TimeEntry | null>('/employee/time-entries/running', token); }
+export function fetchTimeEntries(token: string) { return apiGet<TimeEntry[]>('/employee/time-entries', token); }
+export function startTaskTimer(token: string, taskId: number) { return apiPost<TimeEntry>(`/employee/tasks/${taskId}/start`, token, {}); }
+export function stopTimeEntry(token: string, id: number) { return apiPost<TimeEntry>(`/employee/time-entries/${id}/stop`, token, {}); }
+export function setTaskProgress(token: string, id: number, progress: number) { return apiPatch<any>(`/employee/tasks/${id}/progress`, token, { progress }); }
+export function submitTaskReport(token: string, taskId: number, payload: { summary: string; blockers?: string }) { return apiPost<any>(`/employee/tasks/${taskId}/report`, token, payload); }
+export function submitDailyReport(token: string, summary: string) { return apiPost<any>('/employee/daily-reports', token, { summary }); }
