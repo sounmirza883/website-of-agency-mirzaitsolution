@@ -132,3 +132,18 @@ export function leaveChatConversation(token: string, conversationId: number) {
 export function searchChatMessages(token: string, q: string) {
   return apiGet<any[]>(`/chat/search?q=${encodeURIComponent(q)}`, token);
 }
+
+// --- Scheduling, timer and reports -----------------------------------------
+export function fetchMySchedule(token: string) { return apiGet<any>("/employee/my-schedule", token); }
+export function fetchTimeEntries(token: string, taskId?: number) {
+  return apiGet<any[]>(`/employee/time-entries${taskId ? `?taskId=${taskId}` : ""}`, token);
+}
+export function fetchRunningEntry(token: string) { return apiGet<any>("/employee/time-entries/running", token); }
+export function startTaskTimer(token: string, taskId: number) { return apiPost<any>(`/employee/tasks/${taskId}/start`, token, {}); }
+export function stopTimeEntry(token: string, id: number, note?: string) { return apiPost<any>(`/employee/time-entries/${id}/stop`, token, { note }); }
+export function correctTimeEntry(token: string, id: number, payload: any) { return apiPatch<any>(`/employee/time-entries/${id}`, token, payload); }
+export function setTaskProgress(token: string, id: number, progress: number) { return apiPatch<any>(`/employee/tasks/${id}/progress`, token, { progress }); }
+export function fetchTaskReports(token: string, taskId: number) { return apiGet<any[]>(`/employee/tasks/${taskId}/reports`, token); }
+export function submitTaskReport(token: string, taskId: number, payload: any) { return apiPost<any>(`/employee/tasks/${taskId}/report`, token, payload); }
+export function fetchDailyReports(token: string) { return apiGet<any[]>("/employee/daily-reports", token); }
+export function submitDailyReport(token: string, payload: any) { return apiPost<any>("/employee/daily-reports", token, payload); }

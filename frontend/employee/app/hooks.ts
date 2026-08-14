@@ -3,7 +3,9 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
 import { fetchMyClients, createClient, fetchAssignedProjects, fetchEmpTasks, fetchEmpFiles, fetchStatusUpdates, fetchAttendance, fetchLeaveRequests, createTask, updateTaskStatus, postStatusUpdate, checkIn, checkOut, requestLeave, uploadFile, fetchProjectMessages, sendProjectMessage, fetchEmpNotifications, createEmpNotification, changePassword, fetchEmpTickets, setEmpTicketStatus,
-  fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, markChatRead, sendChatAttachment, editChatMessage, deleteChatMessage, leaveChatConversation, toggleChatReaction, searchChatMessages } from "./queries";
+  fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, markChatRead, sendChatAttachment, editChatMessage, deleteChatMessage, leaveChatConversation, toggleChatReaction, searchChatMessages,
+  fetchMySchedule, fetchTimeEntries, fetchRunningEntry, startTaskTimer, stopTimeEntry, correctTimeEntry,
+  setTaskProgress, fetchTaskReports, submitTaskReport, fetchDailyReports, submitDailyReport } from "./queries";
 
 export function useChangePassword() {
   const { token } = useAuth();
@@ -299,5 +301,81 @@ export function useChatSearch(query: string) {
     queryFn: () => searchChatMessages(token!, query),
     enabled: !!token && query.trim().length >= 2,
     staleTime: 1000 * 30,
+  });
+}
+
+// --- Scheduling, timer and reports -----------------------------------------
+export function useMySchedule() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["mySchedule"], queryFn: () => fetchMySchedule(token!), enabled: !!token, staleTime: 1000 * 60 * 30 });
+}
+
+/**
+ * Polled rather than derived from local state: a timer started on the phone has
+ * to show as running in the browser too, and the server row is the only thing
+ * both clients agree on.
+ */
+export function useRunningEntry() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["runningEntry"], queryFn: () => fetchRunningEntry(token!), enabled: !!token, refetchInterval: 30000 });
+}
+export function useTimeEntries(taskId?: number) {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["timeEntries", taskId ?? null], queryFn: () => fetchTimeEntries(token!, taskId), enabled: !!token, staleTime: 1000 * 60 });
+}
+export function useStartTimer() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (taskId: number) => startTaskTimer(token!, taskId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["runningEntry"] }); qc.invalidateQueries({ queryKey: ["timeEntries"] }); },
+  });
+}
+export function useStopTimer() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { id: number; note?: string }) => stopTimeEntry(token!, vars.id, vars.note),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["runningEntry"] }); qc.invalidateQueries({ queryKey: ["timeEntries"] }); },
+  });
+}
+export function useCorrectTimeEntry() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { id: number; payload: any }) => correctTimeEntry(token!, vars.id, vars.payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["timeEntries"] }),
+  });
+}
+export function useSetTaskProgress() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { id: number; progress: number }) => setTaskProgress(token!, vars.id, vars.progress),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["empTasks"] }); qc.invalidateQueries({ queryKey: ["assignedProjects"] }); },
+  });
+}
+export function useTaskReports(taskId: number | null) {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["taskReports", taskId], queryFn: () => fetchTaskReports(token!, taskId!), enabled: !!token && !!taskId });
+}
+export function useSubmitTaskReport() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { taskId: number; payload: any }) => submitTaskReport(token!, vars.taskId, vars.payload),
+    onSuccess: (_d, vars) => { qc.invalidateQueries({ queryKey: ["taskReports", vars.taskId] }); qc.invalidateQueries({ queryKey: ["empTasks"] }); },
+  });
+}
+export function useDailyReports() {
+  const { token } = useAuth();
+  return useQuery({ queryKey: ["dailyReports"], queryFn: () => fetchDailyReports(token!), enabled: !!token, staleTime: 1000 * 60 * 5 });
+}
+export function useSubmitDailyReport() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: any) => submitDailyReport(token!, payload),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["dailyReports"] }),
   });
 }

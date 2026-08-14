@@ -60,10 +60,28 @@ function ChangePasswordModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+/**
+ * The one progress bar. Before this there was a single hand-rolled copy in the
+ * employee status feed and nothing anywhere else, so every new bar was a fresh
+ * invention. Value is clamped because task progress arrives from user input.
+ */
+export function ProgressBar({ value, showLabel = true }: { value: number; showLabel?: boolean }) {
+  const pct = Math.max(0, Math.min(100, Math.round(value || 0)));
+  return (
+    <div className="flex items-center gap-2">
+      <div className="flex-1 bg-gray-100 rounded-full h-2" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+        <div className="bg-accent-2 h-2 rounded-full transition-[width] duration-300" style={{ width: `${pct}%` }} />
+      </div>
+      {showLabel && <span className="text-xs text-gray-500 w-9 text-right">{pct}%</span>}
+    </div>
+  );
+}
+
 const baseNav = [
   { label: "Dashboard", href: "/" },
   { label: "Messages", href: "/messages" },
   { label: "Projects", href: "/projects" },
+  { label: "My Work", href: "/my-work" },
   { label: "Tasks", href: "/tasks" },
   { label: "Files", href: "/files" },
   { label: "Status", href: "/status" },
