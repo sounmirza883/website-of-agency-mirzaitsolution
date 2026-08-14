@@ -5,6 +5,8 @@ import { createUser, deleteUser, EmailTakenError, listAllUsers, listUsersByRole,
 import { type AuthedRequest, requireAuth, requireRole } from "../middleware/auth.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { rollUpProjectProgress, scheduleWarnings } from "../scheduling.js";
+import { listProjectConversations, markProjectRead, projectAudience } from "../projectChat.js";
+import { broadcastChatActivity } from "../realtime.js";
 
 const router = Router();
 
@@ -545,6 +547,11 @@ router.post("/messages", requireAuth, requireRole("admin"), async (req: AuthedRe
     project_id: projectId, sender_id: req.user!.id, sender_role: "admin", text, time, client_id: project.data.client_id,
   }).select("id,projectId:project_id,senderId:sender_id,senderRole:sender_role,text,time,client_id").single();
   if (error) return res.status(500).json({ error: error.message });
+
+  // Poke Supabase Realtime so the other participants' sidebars update without
+  // waiting for the poll. Carries only the project id — never the message text —
+  // because the browser socket is authenticated with a public anon key.
+  await broadcastChatActivity(await projectAudience(projectId), projectId);
   return res.status(201).json(data);
 });
 
@@ -572,5 +579,20 @@ router.patch("/leave-requests/:id/status", requireAuth, requireRole("admin"), as
   if (!data) return res.status(404).json({ error: "Leave request not found" });
   return res.json(data);
 });
+
+// ---------------------------------------------------------------------------
+// Project chat: admin can read and post in every project thread.
+// ---------------------------------------------------------------------------
+
+router.get("/conversations", requireAuth, requireRole("admin"), asyncHandler(async (req: AuthedRequest, res) => {
+  if (!supabase) return res.json([]);
+  const { data: projects } = await supabase.from("admin_projects").select("id,name,client,status").limit(500);
+  return res.json(await listProjectConversations(projects ?? [], req.user!.id));
+}));
+
+router.post("/conversations/:projectId/read", requireAuth, requireRole("admin"), asyncHandler(async (req: AuthedRequest, res) => {
+  await markProjectRead(Number(req.params.projectId), req.user!.id);
+  return res.status(204).end();
+}));
 
 export default router;

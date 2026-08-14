@@ -5,7 +5,7 @@ import { useAuth } from "./auth";
 import { fetchMyClients, createClient, fetchAssignedProjects, fetchEmpTasks, fetchEmpFiles, fetchStatusUpdates, fetchAttendance, fetchLeaveRequests, createTask, updateTaskStatus, postStatusUpdate, checkIn, checkOut, requestLeave, uploadFile, fetchProjectMessages, sendProjectMessage, fetchEmpNotifications, createEmpNotification, changePassword, fetchEmpTickets, setEmpTicketStatus,
   fetchChatContacts, fetchChatConversations, fetchChatMessages, sendChatMessage, openChatDm, markChatRead, sendChatAttachment, editChatMessage, deleteChatMessage, leaveChatConversation, toggleChatReaction, searchChatMessages,
   fetchMySchedule, fetchTimeEntries, fetchRunningEntry, startTaskTimer, stopTimeEntry, correctTimeEntry,
-  setTaskProgress, fetchTaskReports, submitTaskReport, fetchDailyReports, submitDailyReport } from "./queries";
+  setTaskProgress, fetchTaskReports, submitTaskReport, fetchDailyReports, submitDailyReport , fetchProjectConversations, markProjectConversationRead} from "./queries";
 
 export function useChangePassword() {
   const { token } = useAuth();
@@ -377,5 +377,19 @@ export function useSubmitDailyReport() {
   return useMutation({
     mutationFn: (payload: any) => submitDailyReport(token!, payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["dailyReports"] }),
+  });
+}
+
+export function useProjectConversations() {
+  const { token } = useAuth();
+  // 30s is a fallback behind the realtime broadcast, matching the staff chat.
+  return useQuery({ queryKey: ["projectConversations"], queryFn: () => fetchProjectConversations(token!), enabled: !!token, refetchInterval: 30000 });
+}
+export function useMarkProjectRead() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (projectId: number) => markProjectConversationRead(token!, projectId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["projectConversations"] }),
   });
 }

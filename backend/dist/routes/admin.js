@@ -7,6 +7,8 @@ const authStore_js_1 = require("../authStore.js");
 const auth_js_1 = require("../middleware/auth.js");
 const asyncHandler_js_1 = require("../middleware/asyncHandler.js");
 const scheduling_js_1 = require("../scheduling.js");
+const projectChat_js_1 = require("../projectChat.js");
+const realtime_js_1 = require("../realtime.js");
 const router = (0, express_1.Router)();
 function toEmployeeProfile(u) {
     return { id: u.id, name: u.name, email: u.email, dept: u.dept, position: u.position, status: u.status, canCreateClients: u.canCreateClients };
@@ -603,6 +605,10 @@ router.post("/messages", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admi
     }).select("id,projectId:project_id,senderId:sender_id,senderRole:sender_role,text,time,client_id").single();
     if (error)
         return res.status(500).json({ error: error.message });
+    // Poke Supabase Realtime so the other participants' sidebars update without
+    // waiting for the poll. Carries only the project id — never the message text —
+    // because the browser socket is authenticated with a public anon key.
+    await (0, realtime_js_1.broadcastChatActivity)(await (0, projectChat_js_1.projectAudience)(projectId), projectId);
     return res.status(201).json(data);
 });
 router.get("/attendance", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), async (_req, res) => {
@@ -635,4 +641,17 @@ router.patch("/leave-requests/:id/status", auth_js_1.requireAuth, (0, auth_js_1.
         return res.status(404).json({ error: "Leave request not found" });
     return res.json(data);
 });
+// ---------------------------------------------------------------------------
+// Project chat: admin can read and post in every project thread.
+// ---------------------------------------------------------------------------
+router.get("/conversations", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
+    if (!supabase_js_1.supabase)
+        return res.json([]);
+    const { data: projects } = await supabase_js_1.supabase.from("admin_projects").select("id,name,client,status").limit(500);
+    return res.json(await (0, projectChat_js_1.listProjectConversations)(projects ?? [], req.user.id));
+}));
+router.post("/conversations/:projectId/read", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("admin"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
+    await (0, projectChat_js_1.markProjectRead)(Number(req.params.projectId), req.user.id);
+    return res.status(204).end();
+}));
 exports.default = router;

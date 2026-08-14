@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "./auth";
-import { fetchProjects, fetchMilestones, fetchFiles, fetchInvoices, fetchPaymentSettings, fetchTickets, fetchMessages, submitInvoicePayment, createTicket, sendMessage, fetchClientNotifications, changePassword , fetchProjectTasks, fetchProjectReports} from "./queries";
+import { fetchProjects, fetchMilestones, fetchFiles, fetchInvoices, fetchPaymentSettings, fetchTickets, fetchMessages, submitInvoicePayment, createTicket, sendMessage, fetchClientNotifications, changePassword , fetchProjectTasks, fetchProjectReports, fetchProjectConversations, markProjectConversationRead} from "./queries";
 
 export function useChangePassword() {
   const { token } = useAuth();
@@ -85,4 +85,18 @@ export function useProjectTasks(projectId: number | null) {
 export function useProjectReports(projectId: number | null) {
   const { token } = useAuth();
   return useQuery({ queryKey: ["projectReports", projectId], queryFn: () => fetchProjectReports(token!, projectId!), enabled: !!token && !!projectId, staleTime: 1000 * 60 });
+}
+
+export function useProjectConversations() {
+  const { token } = useAuth();
+  // 30s is a fallback behind the realtime broadcast, matching the staff chat.
+  return useQuery({ queryKey: ["projectConversations"], queryFn: () => fetchProjectConversations(token!), enabled: !!token, refetchInterval: 30000 });
+}
+export function useMarkProjectRead() {
+  const { token } = useAuth();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (projectId: number) => markProjectConversationRead(token!, projectId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["projectConversations"] }),
+  });
 }

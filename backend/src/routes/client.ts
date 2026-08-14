@@ -4,6 +4,8 @@ import { supabase } from "../supabase.js";
 import { supabaseAdmin, FILES_BUCKET } from "../supabaseAdmin.js";
 import { type AuthedRequest, requireAuth, requireRole } from "../middleware/auth.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
+import { listProjectConversations, markProjectRead, projectAudience } from "../projectChat.js";
+import { broadcastChatActivity } from "../realtime.js";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
@@ -182,6 +184,11 @@ router.post("/messages", requireAuth, requireRole("client"), async (req: AuthedR
     project_id: projectId, sender_id: req.user!.id, sender_role: "client", text, time, client_id: req.user!.id,
   }).select("id,projectId:project_id,senderId:sender_id,senderRole:sender_role,text,time,client_id").single();
   if (error) return res.status(500).json({ error: error.message });
+
+  // Poke Supabase Realtime so the other participants' sidebars update without
+  // waiting for the poll. Carries only the project id — never the message text —
+  // because the browser socket is authenticated with a public anon key.
+  await broadcastChatActivity(await projectAudience(projectId), projectId);
   return res.status(201).json(data);
 });
 
@@ -191,5 +198,24 @@ router.get("/notifications", requireAuth, requireRole("client"), async (req: Aut
   if (error) return res.status(500).json({ error: error.message });
   return res.json(data);
 });
+
+// ---------------------------------------------------------------------------
+// Project chat: one thread per project the client owns.
+// ---------------------------------------------------------------------------
+
+router.get("/conversations", requireAuth, requireRole("client"), asyncHandler(async (req: AuthedRequest, res) => {
+  if (!supabase) return res.json([]);
+  const { data: projects } = await supabase.from("admin_projects").select("id,name,client,status").eq("client_id", req.user!.id);
+  return res.json(await listProjectConversations(projects ?? [], req.user!.id));
+}));
+
+router.post("/conversations/:projectId/read", requireAuth, requireRole("client"), asyncHandler(async (req: AuthedRequest, res) => {
+  const projectId = Number(req.params.projectId);
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+  const { data: project } = await supabase.from("admin_projects").select("id").eq("id", projectId).eq("client_id", req.user!.id).maybeSingle();
+  if (!project) return res.status(403).json({ error: "Not your project" });
+  await markProjectRead(projectId, req.user!.id);
+  return res.status(204).end();
+}));
 
 export default router;

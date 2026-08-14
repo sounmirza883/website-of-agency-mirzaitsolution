@@ -11,6 +11,8 @@ const authStore_js_1 = require("../authStore.js");
 const auth_js_1 = require("../middleware/auth.js");
 const asyncHandler_js_1 = require("../middleware/asyncHandler.js");
 const scheduling_js_1 = require("../scheduling.js");
+const projectChat_js_1 = require("../projectChat.js");
+const realtime_js_1 = require("../realtime.js");
 const router = (0, express_1.Router)();
 const upload = (0, multer_1.default)({ storage: multer_1.default.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
 function todayStr() {
@@ -403,6 +405,10 @@ router.post("/messages", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("empl
     }).select("id,projectId:project_id,senderId:sender_id,senderRole:sender_role,text,time,client_id").single();
     if (error)
         return res.status(500).json({ error: error.message });
+    // Poke Supabase Realtime so the other participants' sidebars update without
+    // waiting for the poll. Carries only the project id — never the message text —
+    // because the browser socket is authenticated with a public anon key.
+    await (0, realtime_js_1.broadcastChatActivity)(await (0, projectChat_js_1.projectAudience)(projectId), projectId);
     return res.status(201).json(data);
 });
 router.get("/tickets", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("employee"), async (_req, res) => {
@@ -453,4 +459,24 @@ router.post("/notifications", auth_js_1.requireAuth, (0, auth_js_1.requireRole)(
         return res.status(500).json({ error: error.message });
     return res.status(201).json(data);
 });
+// ---------------------------------------------------------------------------
+// Project chat: one thread per project. An employee can hold several projects,
+// so this is a list rather than the single-thread dropdown it replaces.
+// ---------------------------------------------------------------------------
+router.get("/conversations", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("employee"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
+    if (!supabase_js_1.supabase)
+        return res.json([]);
+    const { data: projects } = await supabase_js_1.supabase.from("admin_projects").select("id,name,client,status").eq("employee_id", req.user.id);
+    return res.json(await (0, projectChat_js_1.listProjectConversations)(projects ?? [], req.user.id));
+}));
+router.post("/conversations/:projectId/read", auth_js_1.requireAuth, (0, auth_js_1.requireRole)("employee"), (0, asyncHandler_js_1.asyncHandler)(async (req, res) => {
+    const projectId = Number(req.params.projectId);
+    if (!supabase_js_1.supabase)
+        return res.status(503).json({ error: "Database not configured" });
+    const { data: project } = await supabase_js_1.supabase.from("admin_projects").select("id").eq("id", projectId).eq("employee_id", req.user.id).maybeSingle();
+    if (!project)
+        return res.status(403).json({ error: "Not your project" });
+    await (0, projectChat_js_1.markProjectRead)(projectId, req.user.id);
+    return res.status(204).end();
+}));
 exports.default = router;

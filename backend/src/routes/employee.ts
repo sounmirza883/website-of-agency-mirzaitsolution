@@ -6,6 +6,8 @@ import { createUser, EmailTakenError, listUsersByRole } from "../authStore.js";
 import { type AuthedRequest, requireAuth, requireRole } from "../middleware/auth.js";
 import { asyncHandler } from "../middleware/asyncHandler.js";
 import { isDone, resolveSchedule, rollUpProjectProgress } from "../scheduling.js";
+import { listProjectConversations, markProjectRead, projectAudience } from "../projectChat.js";
+import { broadcastChatActivity } from "../realtime.js";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 25 * 1024 * 1024 } });
@@ -360,6 +362,11 @@ router.post("/messages", requireAuth, requireRole("employee"), async (req: Authe
     project_id: projectId, sender_id: req.user!.id, sender_role: "employee", text, time, client_id: project.data.client_id,
   }).select("id,projectId:project_id,senderId:sender_id,senderRole:sender_role,text,time,client_id").single();
   if (error) return res.status(500).json({ error: error.message });
+
+  // Poke Supabase Realtime so the other participants' sidebars update without
+  // waiting for the poll. Carries only the project id — never the message text —
+  // because the browser socket is authenticated with a public anon key.
+  await broadcastChatActivity(await projectAudience(projectId), projectId);
   return res.status(201).json(data);
 });
 
@@ -401,5 +408,25 @@ router.post("/notifications", requireAuth, requireRole("employee"), async (req: 
   if (error) return res.status(500).json({ error: error.message });
   return res.status(201).json(data);
 });
+
+// ---------------------------------------------------------------------------
+// Project chat: one thread per project. An employee can hold several projects,
+// so this is a list rather than the single-thread dropdown it replaces.
+// ---------------------------------------------------------------------------
+
+router.get("/conversations", requireAuth, requireRole("employee"), asyncHandler(async (req: AuthedRequest, res) => {
+  if (!supabase) return res.json([]);
+  const { data: projects } = await supabase.from("admin_projects").select("id,name,client,status").eq("employee_id", req.user!.id);
+  return res.json(await listProjectConversations(projects ?? [], req.user!.id));
+}));
+
+router.post("/conversations/:projectId/read", requireAuth, requireRole("employee"), asyncHandler(async (req: AuthedRequest, res) => {
+  const projectId = Number(req.params.projectId);
+  if (!supabase) return res.status(503).json({ error: "Database not configured" });
+  const { data: project } = await supabase.from("admin_projects").select("id").eq("id", projectId).eq("employee_id", req.user!.id).maybeSingle();
+  if (!project) return res.status(403).json({ error: "Not your project" });
+  await markProjectRead(projectId, req.user!.id);
+  return res.status(204).end();
+}));
 
 export default router;

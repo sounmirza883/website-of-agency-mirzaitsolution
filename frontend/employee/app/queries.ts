@@ -147,3 +147,9 @@ export function fetchTaskReports(token: string, taskId: number) { return apiGet<
 export function submitTaskReport(token: string, taskId: number, payload: any) { return apiPost<any>(`/employee/tasks/${taskId}/report`, token, payload); }
 export function fetchDailyReports(token: string) { return apiGet<any[]>("/employee/daily-reports", token); }
 export function submitDailyReport(token: string, payload: any) { return apiPost<any>("/employee/daily-reports", token, payload); }
+
+// --- Project conversations --------------------------------------------------
+export function fetchProjectConversations(token: string) { return apiGet<any[]>("/employee/conversations", token); }
+export function markProjectConversationRead(token: string, projectId: number) {
+  return apiPost<void>(`/employee/conversations/${projectId}/read`, token, {});
+}

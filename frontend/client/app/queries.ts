@@ -54,3 +54,9 @@ export function fetchProjectTasks(token: string, projectId: number) {
 export function fetchProjectReports(token: string, projectId: number) {
   return apiGet<any[]>(`/client/projects/${projectId}/reports`, token);
 }
+
+// --- Project conversations --------------------------------------------------
+export function fetchProjectConversations(token: string) { return apiGet<any[]>("/client/conversations", token); }
+export function markProjectConversationRead(token: string, projectId: number) {
+  return apiPost<void>(`/client/conversations/${projectId}/read`, token, {});
+}
